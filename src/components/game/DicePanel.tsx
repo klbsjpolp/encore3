@@ -11,6 +11,8 @@ interface DicePanelProps {
   canSelect?: boolean;
   selectedColorDice?: DiceResult | null;
   selectedNumberDice?: DiceResult | null;
+  jokersRemaining?: number;
+  onUseJoker?: (type: 'color' | 'number') => void;
 }
 
 const getDiceColorClass = (value: DiceColor): string => {
@@ -70,7 +72,9 @@ export const DicePanel = ({
   canRoll = false,
   canSelect = false,
   selectedColorDice,
-  selectedNumberDice
+  selectedNumberDice,
+  jokersRemaining = 0,
+  onUseJoker
 }: DicePanelProps) => {
   const colorDice = dice.filter(d => d.type === 'color');
   const numberDice = dice.filter(d => d.type === 'number');
@@ -96,7 +100,7 @@ export const DicePanel = ({
         {/* Color Dice */}
         <div>
           <p className="text-sm font-medium text-muted-foreground mb-2">Color Dice</p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {colorDice.map(die => (
               <DiceDisplay
                 key={die.id}
@@ -106,13 +110,29 @@ export const DicePanel = ({
                 isSelected={selectedColorDice?.id === die.id}
               />
             ))}
+            {onUseJoker && (
+              <button
+                onClick={() => onUseJoker('color')}
+                disabled={!canSelect || jokersRemaining <= 0}
+                className={cn(
+                  "w-16 h-16 rounded-xl shadow-dice transition-all duration-300",
+                  "flex items-center justify-center font-bold text-lg",
+                  "hover:scale-105 active:scale-95",
+                  "bg-gradient-dice text-foreground border-2 border-dashed border-primary",
+                  selectedColorDice?.id === 'joker-color' && "ring-4 ring-ring shadow-glow scale-110",
+                  (!canSelect || jokersRemaining <= 0) && "cursor-not-allowed opacity-50"
+                )}
+              >
+                <HelpCircle className="w-6 h-6" />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Number Dice */}
         <div>
           <p className="text-sm font-medium text-muted-foreground mb-2">Number Dice</p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {numberDice.map(die => (
               <DiceDisplay
                 key={die.id}
@@ -122,6 +142,22 @@ export const DicePanel = ({
                 isSelected={selectedNumberDice?.id === die.id}
               />
             ))}
+            {onUseJoker && (
+              <button
+                onClick={() => onUseJoker('number')}
+                disabled={!canSelect || jokersRemaining <= 0}
+                className={cn(
+                  "w-16 h-16 rounded-xl shadow-dice transition-all duration-300",
+                  "flex items-center justify-center font-bold text-lg",
+                  "hover:scale-105 active:scale-95",
+                  "bg-gradient-dice text-foreground border-2 border-dashed border-primary",
+                  selectedNumberDice?.id === 'joker-number' && "ring-4 ring-ring shadow-glow scale-110",
+                  (!canSelect || jokersRemaining <= 0) && "cursor-not-allowed opacity-50"
+                )}
+              >
+                <HelpCircle className="w-6 h-6" />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -131,7 +167,15 @@ export const DicePanel = ({
           <p className="text-sm font-medium">Selected Combination:</p>
           <p className="text-lg font-bold">
             {selectedColorDice.value} + {selectedNumberDice.value}
+            {(selectedColorDice.id === 'joker-color' || selectedNumberDice.id === 'joker-number') && ' (Joker)'}
           </p>
+        </div>
+      )}
+
+      {jokersRemaining !== undefined && (
+        <div className="bg-muted rounded-lg p-3">
+          <p className="text-sm font-medium text-muted-foreground mb-1">Jokers Remaining</p>
+          <p className="text-lg font-bold">{jokersRemaining} / 8</p>
         </div>
       )}
     </div>

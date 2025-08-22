@@ -92,6 +92,25 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
           </div>
         </div>
 
+        {/* Jokers */}
+        <div>
+          <p className="text-sm font-medium mb-2">Jokers</p>
+          <div className="flex items-center gap-2">
+            <span className="font-bold">{player.jokersRemaining} / 8</span>
+            <div className="flex gap-1">
+              {Array.from({ length: 8 }, (_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-2 h-2 rounded-full",
+                    i < player.jokersRemaining ? "bg-primary" : "bg-muted"
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Score Breakdown */}
         {gameComplete && (
           <div className="space-y-2 pt-2 border-t">

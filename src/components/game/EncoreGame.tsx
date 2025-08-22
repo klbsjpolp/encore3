@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useEncoreGame } from '@/hooks/useEncoreGame';
+import { DiceResult } from '@/types/game';
 import { GameBoard } from './GameBoard';
 import { DicePanel } from './DicePanel';
 import { ScorePanel } from './ScorePanel';
@@ -72,11 +73,24 @@ export const EncoreGame = () => {
     if (selectedSquares.length === 0) return false;
     
     const player = gameState.players[gameState.currentPlayer];
-    const colorValue = gameState.selectedDice.color.value === 'wild' ? 'yellow' : gameState.selectedDice.color.value;
+    // If color is wild, determine actual color from first selected square
+    const colorValue = gameState.selectedDice.color.value === 'wild' ? 
+      (selectedSquares.length > 0 ? player.board[selectedSquares[0].row][selectedSquares[0].col].color : 'yellow') :
+      gameState.selectedDice.color.value;
     const numberValue = gameState.selectedDice.number.value === 'wild' ? selectedSquares.length : gameState.selectedDice.number.value;
     
     return selectedSquares.length === numberValue && 
            isValidMove(selectedSquares, colorValue as any, player.board);
+  };
+
+  const handleUseJoker = (type: 'color' | 'number') => {
+    const jokerDice: DiceResult = {
+      id: `joker-${type}`,
+      type,
+      value: 'wild',
+      selected: false
+    };
+    selectDice(jokerDice);
   };
 
   const resetGame = () => {
@@ -224,6 +238,8 @@ export const EncoreGame = () => {
               canSelect={canSelectDice}
               selectedColorDice={gameState.selectedDice.color}
               selectedNumberDice={gameState.selectedDice.number}
+              jokersRemaining={currentPlayer?.jokersRemaining}
+              onUseJoker={handleUseJoker}
             />
           </div>
 

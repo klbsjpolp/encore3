@@ -25,6 +25,7 @@ export interface Player {
   starsCollected: number;
   completedColors: GameColor[];
   score: number;
+  jokersRemaining: number;
 }
 
 export interface GameState {
@@ -33,6 +34,7 @@ export interface GameState {
   phase: 'rolling' | 'active-selection' | 'passive-selection' | 'game-over';
   dice: DiceResult[];
   selectedDice: { color: DiceResult | null; number: DiceResult | null };
+  selectedFromJoker: { color: boolean; number: boolean };
   gameStarted: boolean;
   winner: Player | null;
 }

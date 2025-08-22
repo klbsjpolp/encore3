@@ -69,6 +69,7 @@ export const useEncoreGame = () => {
     phase: 'rolling',
     dice: [],
     selectedDice: { color: null, number: null },
+    selectedFromJoker: { color: false, number: false },
     gameStarted: false,
     winner: null
   });
@@ -81,7 +82,8 @@ export const useEncoreGame = () => {
       board: createInitialBoard(),
       starsCollected: 0,
       completedColors: [],
-      score: 0
+      score: 0,
+      jokersRemaining: 8
     }));
 
     setGameState({
@@ -90,6 +92,7 @@ export const useEncoreGame = () => {
       phase: 'rolling',
       dice: rollDice(),
       selectedDice: { color: null, number: null },
+      selectedFromJoker: { color: false, number: false },
       gameStarted: true,
       winner: null
     });
@@ -102,7 +105,8 @@ export const useEncoreGame = () => {
       ...prev,
       dice: rollDice(),
       phase: 'active-selection',
-      selectedDice: { color: null, number: null }
+      selectedDice: { color: null, number: null },
+      selectedFromJoker: { color: false, number: false }
     }));
   }, [gameState.phase]);
 
@@ -112,18 +116,37 @@ export const useEncoreGame = () => {
 
     setGameState(prev => {
       const newSelectedDice = { ...prev.selectedDice };
+      const newSelectedFromJoker = { ...prev.selectedFromJoker };
+      const currentPlayer = prev.players[prev.currentPlayer];
       
-      if (dice.type === 'color') {
-        newSelectedDice.color = dice;
+      // Handle joker dice
+      if (dice.id === 'joker-color' || dice.id === 'joker-number') {
+        if (currentPlayer.jokersRemaining <= 0) return prev;
+        
+        if (dice.id === 'joker-color') {
+          newSelectedDice.color = { ...dice, value: 'wild' };
+          newSelectedFromJoker.color = true;
+        } else {
+          newSelectedDice.number = { ...dice, value: 'wild' };
+          newSelectedFromJoker.number = true;
+        }
       } else {
-        // Number dice wild can only be selected by active player
-        if (dice.value === 'wild' && prev.phase === 'passive-selection') return prev;
-        newSelectedDice.number = dice;
+        // Handle regular dice
+        if (dice.type === 'color') {
+          newSelectedDice.color = dice;
+          newSelectedFromJoker.color = false;
+        } else {
+          // Number dice wild can only be selected by active player unless using joker
+          if (dice.value === 'wild' && prev.phase === 'passive-selection') return prev;
+          newSelectedDice.number = dice;
+          newSelectedFromJoker.number = false;
+        }
       }
 
       return {
         ...prev,
-        selectedDice: newSelectedDice
+        selectedDice: newSelectedDice,
+        selectedFromJoker: newSelectedFromJoker
       };
     });
   }, [gameState.phase]);
@@ -203,12 +226,15 @@ export const useEncoreGame = () => {
   }, []);
 
   const makeMove = useCallback((squares: { row: number; col: number }[]) => {
-    const { selectedDice, currentPlayer, players } = gameState;
+    const { selectedDice, currentPlayer, players, selectedFromJoker } = gameState;
     if (!selectedDice.color || !selectedDice.number) return false;
     if (gameState.phase !== 'active-selection' && gameState.phase !== 'passive-selection') return false;
 
     const player = players[currentPlayer];
-    const colorValue = selectedDice.color.value === 'wild' ? 'yellow' : selectedDice.color.value as GameColor; // Simplified wild selection
+    // If color is wild, determine actual color from first selected square
+    const colorValue = selectedDice.color.value === 'wild' ? 
+      (squares.length > 0 ? player.board[squares[0].row][squares[0].col].color : 'yellow') : 
+      selectedDice.color.value as GameColor;
     const numberValue = selectedDice.number.value === 'wild' ? squares.length : selectedDice.number.value as number;
 
     if (squares.length !== numberValue) return false;
@@ -227,10 +253,14 @@ export const useEncoreGame = () => {
         }
       });
 
+      // Deduct jokers if used
+      const jokersUsed = (selectedFromJoker.color ? 1 : 0) + (selectedFromJoker.number ? 1 : 0);
+      
       newPlayers[currentPlayer] = {
         ...newPlayers[currentPlayer],
         board: newBoard,
-        starsCollected
+        starsCollected,
+        jokersRemaining: Math.max(0, newPlayers[currentPlayer].jokersRemaining - jokersUsed)
       };
 
       // Mark dice as selected
@@ -253,6 +283,7 @@ export const useEncoreGame = () => {
         players: newPlayers,
         dice: newDice,
         selectedDice: { color: null, number: null },
+        selectedFromJoker: { color: false, number: false },
         phase: gameEnded ? 'game-over' : prev.phase === 'active-selection' ? 'passive-selection' : 'rolling',
         currentPlayer: prev.phase === 'passive-selection' ? (currentPlayer + 1) % prev.players.length : currentPlayer,
         winner: gameEnded ? newPlayers[currentPlayer] : null
@@ -277,7 +308,8 @@ export const useEncoreGame = () => {
           ...prev,
           phase: 'rolling',
           currentPlayer: (prev.currentPlayer + 1) % prev.players.length,
-          selectedDice: { color: null, number: null }
+          selectedDice: { color: null, number: null },
+          selectedFromJoker: { color: false, number: false }
         };
       }
       return prev;
