@@ -61,7 +61,30 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				game: {
+					yellow: 'hsl(var(--game-yellow))',
+					green: 'hsl(var(--game-green))',
+					blue: 'hsl(var(--game-blue))',
+					red: 'hsl(var(--game-red))',
+					orange: 'hsl(var(--game-orange))',
+					purple: 'hsl(var(--game-purple))',
+					wild: 'hsl(var(--game-wild))'
 				}
+			},
+			backgroundImage: {
+				'gradient-board': 'var(--gradient-board)',
+				'gradient-dice': 'var(--gradient-dice)',
+				'gradient-active': 'var(--gradient-active)'
+			},
+			boxShadow: {
+				'dice': 'var(--shadow-dice)',
+				'square': 'var(--shadow-square)',
+				'glow': 'var(--shadow-glow)'
+			},
+			transitionTimingFunction: {
+				'smooth': 'var(--transition-smooth)',
+				'bounce': 'var(--transition-bounce)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -89,6 +112,9 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
+			},
+			gridTemplateColumns: {
+				'15': 'repeat(15, minmax(0, 1fr))'
 			}
 		}
 	},
