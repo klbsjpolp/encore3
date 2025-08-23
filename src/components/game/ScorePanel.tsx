@@ -48,7 +48,7 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
           <div className="grid grid-cols-8 gap-1">
             {COLUMN_FIRST_PLAYER_POINTS.map((points, index) => {
               const column = String.fromCharCode(65 + index);
-              const isCompletedByPlayer = player.completedColumns.includes(column);
+              const isCompletedByPlayer = player.completedColumnsFirst.includes(column) || player.completedColumnsNotFirst.includes(column);
               const firstBonusClaimedBy = claimedFirstColumnBonus[column];
               const didPlayerClaimFirstBonus = isCompletedByPlayer && firstBonusClaimedBy === player.id;
 

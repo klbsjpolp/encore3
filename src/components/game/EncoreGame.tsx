@@ -138,6 +138,7 @@ export const EncoreGame = () => {
   const otherPlayer = gameState.players[(gameState.currentPlayer+1) % gameState.players.length];
   const canRoll = gameState.phase === 'rolling';
   const canSelectDice = gameState.phase === 'active-selection' || gameState.phase === 'passive-selection';
+  const firstBonusClaimed = gameState.players.flatMap(p => p.completedColumnsFirst);
 
   return (
     <div className="min-h-screen bg-gradient-board p-4">
@@ -179,9 +180,9 @@ export const EncoreGame = () => {
               onSquareClick={handleSquareClick}
               selectedSquares={selectedSquares}
               disabled={gameState.phase === 'rolling' || gameState.phase === 'game-over'}
-              firstBonusClaimed={[]}
-              iClaimedFirstBonus={[]}
-              iClaimedSecondBonus={[]}
+              firstBonusClaimed={firstBonusClaimed}
+              iClaimedFirstBonus={currentPlayer.completedColumnsFirst}
+              iClaimedSecondBonus={currentPlayer.completedColumnsNotFirst}
             />
             
             {/* Move Controls */}
@@ -230,9 +231,9 @@ export const EncoreGame = () => {
                 board={otherPlayer?.board || []}
                 selectedSquares={[]}
                 disabled={true}
-                firstBonusClaimed={[]}
-                iClaimedFirstBonus={[]}
-                iClaimedSecondBonus={[]}
+                firstBonusClaimed={firstBonusClaimed}
+                iClaimedFirstBonus={otherPlayer.completedColumnsFirst}
+                iClaimedSecondBonus={otherPlayer.completedColumnsNotFirst}
               />
             </div>
           </div>

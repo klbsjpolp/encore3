@@ -24,7 +24,8 @@ export interface Player {
   board: Square[][];
   starsCollected: number;
   completedColors: GameColor[];
-  completedColumns: string[];
+  completedColumnsFirst: string[];
+  completedColumnsNotFirst: string[];
   score: number;
   jokersRemaining: number;
 }

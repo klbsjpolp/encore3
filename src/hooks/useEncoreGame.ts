@@ -122,7 +122,8 @@ export const useEncoreGame = () => {
       board: createInitialBoard(),
       starsCollected: 0,
       completedColors: [],
-      completedColumns: [],
+      completedColumnsFirst: [],
+      completedColumnsNotFirst: [],
       score: 0,
       jokersRemaining: 8
     }));
@@ -281,7 +282,7 @@ export const useEncoreGame = () => {
           const newBoard = p.board.map(row => row.map(cell => ({ ...cell })));
           let starsCollected = p.starsCollected;
           let newScore = p.score;
-          const newCompletedColumns = [...p.completedColumns];
+          const newCompletedColumns = [...p.completedColumnsFirst, ...p.completedColumnsNotFirst];
 
           squares.forEach(({ row, col }) => {
             if (!newBoard[row][col].crossed) {
@@ -323,7 +324,8 @@ export const useEncoreGame = () => {
             board: newBoard,
             starsCollected,
             completedColors,
-            completedColumns: newCompletedColumns,
+            completedColumnsFirst: newCompletedColumns,
+            completedColumnsNotFirst: [], //FIXME we nned to know if the newly completed column was competed for the first time or not
             score: newScore,
             jokersRemaining: p.jokersRemaining - jokersUsed,
           };

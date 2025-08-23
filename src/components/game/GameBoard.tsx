@@ -9,9 +9,9 @@ interface GameBoardProps {
   selectedSquares?: { row: number; col: number }[];
   previewSquares?: { row: number; col: number }[];
   disabled?: boolean;
-  firstBonusClaimed: boolean[];
-  iClaimedFirstBonus: boolean[];
-  iClaimedSecondBonus: boolean[];
+  firstBonusClaimed: string[];
+  iClaimedFirstBonus: string[];
+  iClaimedSecondBonus: string[];
 }
 
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
@@ -107,8 +107,8 @@ export const GameBoard = ({
       {/* Column Point Values */}
       <div className="grid grid-cols-15 gap-1 mt-3">
         {COLUMN_FIRST_PLAYER_POINTS.map((points, index) => {
-          const isClaimedByMe = iClaimedFirstBonus[index];
-          const isClaimedByOther = firstBonusClaimed[index] && !isClaimedByMe;
+          const isClaimedByMe = iClaimedFirstBonus.includes(COLUMNS[index]);
+          const isClaimedByOther = firstBonusClaimed.includes(COLUMNS[index]) && !isClaimedByMe;
           return (
             <div key={index} className={cn(
               "aspect-square rounded-md bg-secondary flex items-center justify-center",
@@ -125,7 +125,7 @@ export const GameBoard = ({
           )
         })}
         {COLUMN_SECOND_PLAYER_POINTS.map((points, index) => {
-          const isClaimedByMe = iClaimedSecondBonus[index];
+          const isClaimedByMe = iClaimedSecondBonus.includes(COLUMNS[index]);
           return (
             <div key={index} className={cn(
               "aspect-square rounded-md bg-secondary flex items-center justify-center",
