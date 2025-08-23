@@ -282,7 +282,8 @@ export const useEncoreGame = () => {
           const newBoard = p.board.map(row => row.map(cell => ({ ...cell })));
           let starsCollected = p.starsCollected;
           let newScore = p.score;
-          const newCompletedColumns = [...p.completedColumnsFirst, ...p.completedColumnsNotFirst];
+          const newCompletedColumnsFirst = [...p.completedColumnsFirst];
+          const newCompletedColumnsNotFirst = [...p.completedColumnsNotFirst];
 
           squares.forEach(({ row, col }) => {
             if (!newBoard[row][col].crossed) {
@@ -296,20 +297,21 @@ export const useEncoreGame = () => {
           // Check for column completions
           for (let col = 0; col < newBoard[0].length; col++) {
             const column = String.fromCharCode(65 + col);
-            const isAlreadyCompletedByPlayer = newCompletedColumns.includes(column);
+            const isAlreadyCompletedByPlayer = newCompletedColumnsFirst.includes(column) || newCompletedColumnsNotFirst.includes(column);
             
             if (!isAlreadyCompletedByPlayer) {
               const isColumnComplete = newBoard.every(row => row[col].crossed);
               
               if (isColumnComplete) {
-                newCompletedColumns.push(column);
                 const isFirstBonusClaimed = !!newClaimedFirstColumnBonus[column];
 
                 if (!isFirstBonusClaimed) {
                   newScore += COLUMN_FIRST_PLAYER_POINTS[col];
                   newClaimedFirstColumnBonus[column] = p.id;
+                  newCompletedColumnsFirst.push(column);
                 } else {
                   newScore += COLUMN_SECOND_PLAYER_POINTS[col];
+                  newCompletedColumnsNotFirst.push(column);
                 }
               }
             }
@@ -324,8 +326,8 @@ export const useEncoreGame = () => {
             board: newBoard,
             starsCollected,
             completedColors,
-            completedColumnsFirst: newCompletedColumns,
-            completedColumnsNotFirst: [], //FIXME we nned to know if the newly completed column was competed for the first time or not
+            completedColumnsFirst: newCompletedColumnsFirst,
+            completedColumnsNotFirst: newCompletedColumnsNotFirst,
             score: newScore,
             jokersRemaining: p.jokersRemaining - jokersUsed,
           };

@@ -80,6 +80,11 @@ export const EncoreGame = () => {
     setSelectedSquares([]);
   };
 
+  const onSkipTurn = () => {
+    setSelectedSquares([]);
+    skipTurn();
+  }
+
   if (setupMode) {
     return (
       <div className="min-h-screen bg-gradient-board flex items-center justify-center p-4">
@@ -203,8 +208,8 @@ export const EncoreGame = () => {
                   Effacer
                 </Button>
                 {gameState.phase === 'passive-selection' && (
-                  <Button 
-                    onClick={skipTurn}
+                  <Button
+                    onClick={onSkipTurn}
                     variant="secondary"
                   >
                     Passer le tour
