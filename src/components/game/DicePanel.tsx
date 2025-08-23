@@ -148,7 +148,7 @@ export const DicePanel = ({
       </div>
 
       {selectedColorDice && selectedNumberDice && (
-        <div className="bg-gradient-active text-primary-foreground rounded-lg p-3">
+        <div className="hidden bg-gradient-active text-primary-foreground rounded-lg p-3">
           <p className="text-sm font-medium">Combinaison sélectionnée :</p>
           <p className="text-lg font-bold">
             {getDiceDisplayValue(selectedColorDice.value)} + {getDiceDisplayValue(selectedNumberDice.value)}

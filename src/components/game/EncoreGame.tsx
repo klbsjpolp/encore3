@@ -135,6 +135,7 @@ export const EncoreGame = () => {
   }
 
   const currentPlayer = gameState.players[gameState.currentPlayer];
+  const otherPlayer = gameState.players[(gameState.currentPlayer+1) % gameState.players.length];
   const canRoll = gameState.phase === 'rolling';
   const canSelectDice = gameState.phase === 'active-selection' || gameState.phase === 'passive-selection';
 
@@ -161,29 +162,31 @@ export const EncoreGame = () => {
           </Button>
         </div>
 
-        {/* Current Player Info */}
-        {gameState.phase !== 'game-over' && (
-          <div className="bg-card rounded-lg p-4">
-            <p className="text-lg font-semibold">
-              Tour actuel : {currentPlayer?.name}
-              {gameState.phase === 'passive-selection' && ' (Tous les autres joueurs peuvent jouer)'}
-            </p>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Game Board - Takes up most space */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            {/* Current Player Info */}
+            {gameState.phase !== 'game-over' && (
+              <div className="bg-card rounded-lg p-4">
+                <p className="text-lg font-semibold">
+                  Tour actuel : {currentPlayer?.name}
+                  {gameState.phase === 'passive-selection' && ' (Tous les autres joueurs peuvent jouer)'}
+                </p>
+              </div>
+            )}
             <GameBoard
               board={currentPlayer?.board || []}
               onSquareClick={handleSquareClick}
               selectedSquares={selectedSquares}
               disabled={gameState.phase === 'rolling' || gameState.phase === 'game-over'}
+              firstBonusClaimed={[]}
+              iClaimedFirstBonus={[]}
+              iClaimedSecondBonus={[]}
             />
             
             {/* Move Controls */}
             {(gameState.phase === 'active-selection' || gameState.phase === 'passive-selection') && (
-              <div className="mt-4 flex gap-2">
+              <div className="flex gap-2">
                 <Button 
                   onClick={handleConfirmMove}
                   disabled={!canMakeMove()}
@@ -211,7 +214,7 @@ export const EncoreGame = () => {
           </div>
 
           {/* Dice Panel */}
-          <div>
+          <div className="flex flex-col gap-2">
             <DicePanel
               dice={gameState.dice}
               onDiceSelect={selectDice}
@@ -221,6 +224,17 @@ export const EncoreGame = () => {
               selectedColorDice={gameState.selectedDice.color}
               selectedNumberDice={gameState.selectedDice.number}
             />
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-medium text-muted-foreground mb-2">Autre joueur ({otherPlayer.name}) :</p>
+              <GameBoard
+                board={otherPlayer?.board || []}
+                selectedSquares={[]}
+                disabled={true}
+                firstBonusClaimed={[]}
+                iClaimedFirstBonus={[]}
+                iClaimedSecondBonus={[]}
+              />
+            </div>
           </div>
 
           {/* Score Panel */}
