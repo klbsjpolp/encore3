@@ -3,37 +3,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Star, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS, TOTAL_STARS} from "@/hooks/useEncoreGame.ts";
 
 interface ScorePanelProps {
   player: Player;
   isCurrentPlayer?: boolean;
   gameComplete?: boolean;
+  claimedFirstColumnBonus: Record<string, string>;
 }
-const COLUMN_POINTS = [4, 7, 1, 3, 8, 2, 5, 10, 5, 2, 8, 3, 1, 7, 4];
-const TOTAL_STARS = 15;
 
-export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = false }: ScorePanelProps) => {
-  const calculateColumnScore = () => {
-    let total = 0;
-    for (let col = 0; col < 15; col++) {
-      const columnComplete = player.board.every(row => row[col].crossed);
-      if (columnComplete) {
-        total += COLUMN_POINTS[col];
-      }
-    }
-    return total;
-  };
+export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = false, claimedFirstColumnBonus = {} }: ScorePanelProps) => {
 
   const calculateColorScore = () => {
     // This would need to be calculated based on first completion logic
-    return player.completedColors.length * 15; // Simplified for now
+    return player.completedColors.length * 5; // Simplified for now
   };
 
   const calculateStarPenalty = () => {
-    return (TOTAL_STARS - player.starsCollected) * 2;
+    return (TOTAL_STARS - player.starsCollected) * -1;
   };
 
-  const totalScore = calculateColumnScore() + calculateColorScore() - calculateStarPenalty();
+  const finalScore = player.score + calculateStarPenalty();
 
   return (
     <Card className={cn(
@@ -52,6 +42,37 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Completed Columns */}
+        <div>
+          <p className="text-sm font-medium mb-2">Colonnes</p>
+          <div className="grid grid-cols-8 gap-1">
+            {COLUMN_FIRST_PLAYER_POINTS.map((points, index) => {
+              const column = String.fromCharCode(65 + index);
+              const isCompletedByPlayer = player.completedColumns.includes(column);
+              const firstBonusClaimedBy = claimedFirstColumnBonus[column];
+              const didPlayerClaimFirstBonus = isCompletedByPlayer && firstBonusClaimedBy === player.id;
+
+              return (
+                <div key={column} className={cn(
+                  "text-center border rounded-md p-1",
+                  isCompletedByPlayer ? 'bg-primary/20' : 'bg-muted/50'
+                )}>
+                  <div className="font-bold text-xs">{column}</div>
+                  <div className={cn(
+                    "text-xs",
+                    !!firstBonusClaimedBy && !didPlayerClaimFirstBonus && "line-through text-muted-foreground",
+                    didPlayerClaimFirstBonus && "font-bold text-primary"
+                  )}>{points}</div>
+                  <div className={cn(
+                    "text-xs",
+                    isCompletedByPlayer && !didPlayerClaimFirstBonus && "font-bold text-primary"
+                  )}>{COLUMN_SECOND_PLAYER_POINTS[index]}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Completed Colors */}
         <div>
           <p className="text-sm font-medium mb-2">Couleurs complétées</p>
@@ -112,20 +133,16 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         {gameComplete && (
           <div className="space-y-2 pt-2 border-t">
             <div className="flex justify-between text-sm">
-              <span>Colonnes :</span>
-              <span>+{calculateColumnScore()}</span>
-            </div>
-            <div className="flex justify-between text-sm">
               <span>Couleurs :</span>
               <span>+{calculateColorScore()}</span>
             </div>
             <div className="flex justify-between text-sm text-destructive">
               <span>Pénalité d'étoile :</span>
-              <span>-{calculateStarPenalty()}</span>
+              <span>{calculateStarPenalty()}</span>
             </div>
             <div className="flex justify-between font-bold text-lg border-t pt-2">
               <span>Total :</span>
-              <span>{totalScore}</span>
+              <span>{finalScore}</span>
             </div>
           </div>
         )}

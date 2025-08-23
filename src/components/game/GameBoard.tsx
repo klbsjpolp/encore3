@@ -1,6 +1,7 @@
 import { Square, GameColor } from '@/types/game';
 import { cn } from '@/lib/utils';
 import { Star } from 'lucide-react';
+import {COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS} from "@/hooks/useEncoreGame.ts";
 
 interface GameBoardProps {
   board: Square[][];
@@ -14,8 +15,6 @@ interface GameBoardProps {
 }
 
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
-const FIRST_ROW_POINTS = [5,3,3,3,2,2,2,1,2,2,2,3,3,3,5];
-const SECOND_ROW_POINTS = [3,2,2,2,1,1,1,0,1,1,1,2,2,2,3];
 
 const getColorClass = (color: GameColor): string => {
   const colorMap = {
@@ -107,7 +106,7 @@ export const GameBoard = ({
 
       {/* Column Point Values */}
       <div className="grid grid-cols-15 gap-1 mt-3">
-        {FIRST_ROW_POINTS.map((points, index) => {
+        {COLUMN_FIRST_PLAYER_POINTS.map((points, index) => {
           const isClaimedByMe = iClaimedFirstBonus[index];
           const isClaimedByOther = firstBonusClaimed[index] && !isClaimedByMe;
           return (
@@ -125,7 +124,7 @@ export const GameBoard = ({
             </div>
           )
         })}
-        {SECOND_ROW_POINTS.map((points, index) => {
+        {COLUMN_SECOND_PLAYER_POINTS.map((points, index) => {
           const isClaimedByMe = iClaimedSecondBonus[index];
           return (
             <div key={index} className={cn(

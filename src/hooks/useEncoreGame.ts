@@ -1,6 +1,11 @@
 import { useState, useCallback } from 'react';
 import {GameState, Player, DiceResult, GameColor, DiceColor, DiceNumber, Square } from '@/types/game';
 
+export const COLUMN_FIRST_PLAYER_POINTS = [5,3,3,3,2,2,2,1,2,2,2,3,3,3,5];
+export const COLUMN_SECOND_PLAYER_POINTS = [3,2,2,2,1,1,1,0,1,1,1,2,2,2,3];
+
+export const TOTAL_STARS = 15;
+
 // Create initial game board based on the standard Encore! layout
 const createInitialBoard = (): Square[][] => {
   const colorLayout: GameColor[][] = [
@@ -23,9 +28,9 @@ const createInitialBoard = (): Square[][] => {
     '3,5',  // Col F
     '2,6',  // Col G
     '0,7',  // Col H
-    '4,8',  // Col I
+    '5,8',  // Col I
     '1,9',  // Col J
-    '4,10', // Col K
+    '5,10', // Col K
     '0,11', // Col L
     '6,12', // Col M
     '3,13', // Col N
@@ -105,7 +110,8 @@ export const useEncoreGame = () => {
     selectedDice: { color: null, number: null },
     selectedFromJoker: { color: false, number: false },
     gameStarted: false,
-    winner: null
+    winner: null,
+    claimedFirstColumnBonus: {},
   });
 
   const initializeGame = useCallback((playerNames: string[], aiPlayers: boolean[] = []) => {
@@ -116,6 +122,7 @@ export const useEncoreGame = () => {
       board: createInitialBoard(),
       starsCollected: 0,
       completedColors: [],
+      completedColumns: [],
       score: 0,
       jokersRemaining: 8
     }));
@@ -129,7 +136,8 @@ export const useEncoreGame = () => {
       selectedDice: { color: null, number: null },
       selectedFromJoker: { color: false, number: false },
       gameStarted: true,
-      winner: null
+      winner: null,
+      claimedFirstColumnBonus: {}
     });
   }, []);
 
@@ -248,7 +256,7 @@ export const useEncoreGame = () => {
 
   const makeMove = useCallback((squares: { row: number; col: number }[]) => {
     setGameState(prev => {
-      const { selectedDice, currentPlayer, players, phase, selectedFromJoker } = prev;
+      const { selectedDice, currentPlayer, players, phase, selectedFromJoker, claimedFirstColumnBonus } = prev;
 
       if (!selectedDice.color || !selectedDice.number || (phase !== 'active-selection' && phase !== 'passive-selection')) {
         return prev;
@@ -265,18 +273,46 @@ export const useEncoreGame = () => {
       }
 
       const jokersUsed = (selectedFromJoker.color ? 1 : 0) + (selectedFromJoker.number ? 1 : 0);
+      
+      const newClaimedFirstColumnBonus = {...claimedFirstColumnBonus};
 
       const newPlayers = players.map((p, index) => {
         if (index === currentPlayer) {
           const newBoard = p.board.map(row => row.map(cell => ({ ...cell })));
           let starsCollected = p.starsCollected;
+          let newScore = p.score;
+          const newCompletedColumns = [...p.completedColumns];
 
           squares.forEach(({ row, col }) => {
-            newBoard[row][col].crossed = true;
-            if (newBoard[row][col].hasStar) {
-              starsCollected++;
+            if (!newBoard[row][col].crossed) {
+              newBoard[row][col].crossed = true;
+              if (newBoard[row][col].hasStar) {
+                starsCollected++;
+              }
             }
           });
+          
+          // Check for column completions
+          for (let col = 0; col < newBoard[0].length; col++) {
+            const column = String.fromCharCode(65 + col);
+            const isAlreadyCompletedByPlayer = newCompletedColumns.includes(column);
+            
+            if (!isAlreadyCompletedByPlayer) {
+              const isColumnComplete = newBoard.every(row => row[col].crossed);
+              
+              if (isColumnComplete) {
+                newCompletedColumns.push(column);
+                const isFirstBonusClaimed = !!newClaimedFirstColumnBonus[column];
+
+                if (!isFirstBonusClaimed) {
+                  newScore += COLUMN_FIRST_PLAYER_POINTS[col];
+                  newClaimedFirstColumnBonus[column] = p.id;
+                } else {
+                  newScore += COLUMN_SECOND_PLAYER_POINTS[col];
+                }
+              }
+            }
+          }
 
           const completedColors = colorValue && checkColorCompletion(newBoard, colorValue) ? 
             [...p.completedColors, colorValue] : 
@@ -287,6 +323,8 @@ export const useEncoreGame = () => {
             board: newBoard,
             starsCollected,
             completedColors,
+            completedColumns: newCompletedColumns,
+            score: newScore,
             jokersRemaining: p.jokersRemaining - jokersUsed,
           };
         }
@@ -302,6 +340,7 @@ export const useEncoreGame = () => {
           players: newPlayers,
           phase: 'game-over',
           winner: updatedPlayer,
+          claimedFirstColumnBonus: newClaimedFirstColumnBonus,
         };
       }
 
@@ -337,7 +376,8 @@ export const useEncoreGame = () => {
         selectedFromJoker: { color: false, number: false },
         phase: nextPhase,
         currentPlayer: nextPlayer,
-        activePlayer: nextActivePlayer
+        activePlayer: nextActivePlayer,
+        claimedFirstColumnBonus: newClaimedFirstColumnBonus,
       };
     });
   }, [isValidMove]);

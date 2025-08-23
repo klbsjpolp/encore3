@@ -24,6 +24,7 @@ export interface Player {
   board: Square[][];
   starsCollected: number;
   completedColors: GameColor[];
+  completedColumns: string[];
   score: number;
   jokersRemaining: number;
 }
@@ -38,6 +39,7 @@ export interface GameState {
   selectedFromJoker: { color: boolean; number: boolean };
   gameStarted: boolean;
   winner: Player | null;
+  claimedFirstColumnBonus: Record<string, string>; // Maps column char to player ID
 }
 
 export interface GameMove {
