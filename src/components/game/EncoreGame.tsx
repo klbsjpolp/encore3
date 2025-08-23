@@ -207,14 +207,12 @@ export const EncoreGame = () => {
                 >
                   Effacer
                 </Button>
-                {gameState.phase === 'passive-selection' && (
-                  <Button
-                    onClick={onSkipTurn}
-                    variant="secondary"
-                  >
-                    Passer le tour
-                  </Button>
-                )}
+                <Button
+                  onClick={onSkipTurn}
+                  variant="secondary"
+                >
+                  Passer le tour
+                </Button>
               </div>
             )}
           </div>

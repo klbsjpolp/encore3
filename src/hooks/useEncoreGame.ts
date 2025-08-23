@@ -388,16 +388,36 @@ export const useEncoreGame = () => {
 
   const skipTurn = useCallback(() => {
     setGameState(prev => {
-      if (prev.phase !== 'passive-selection') return prev;
+      const { phase, currentPlayer, players, activePlayer } = prev;
 
-      let nextPlayer = (prev.currentPlayer + 1) % prev.players.length;
-      let nextPhase: GameState['phase'] = prev.phase;
-      let nextActivePlayer = prev.activePlayer;
+      if (phase !== 'active-selection' && phase !== 'passive-selection') {
+        return prev;
+      }
 
-      if (nextPlayer === prev.activePlayer) {
-        nextPhase = 'rolling';
-        nextPlayer = (prev.activePlayer + 1) % prev.players.length;
-        nextActivePlayer = nextPlayer;
+      let nextPhase: GameState['phase'] = phase;
+      let nextPlayer = currentPlayer;
+      let nextActivePlayer = activePlayer;
+
+      if (phase === 'active-selection') {
+        // Active player skips, move to passive selection for other players
+        nextPhase = 'passive-selection';
+        nextPlayer = (currentPlayer + 1) % players.length;
+        
+        // If we've cycled through all players (only one player), roll again
+        if (nextPlayer === activePlayer) {
+            nextPhase = 'rolling';
+        }
+      } else if (phase === 'passive-selection') {
+        // Passive player skips, move to next passive player
+        nextPlayer = (currentPlayer + 1) % players.length;
+
+        // If we've cycled back to the active player, start a new turn for the next player
+        if (nextPlayer === activePlayer) {
+            nextPhase = 'rolling';
+            const newActivePlayer = (activePlayer + 1) % players.length;
+            nextPlayer = newActivePlayer;
+            nextActivePlayer = newActivePlayer;
+        }
       }
 
       return {
@@ -406,7 +426,7 @@ export const useEncoreGame = () => {
         currentPlayer: nextPlayer,
         activePlayer: nextActivePlayer,
         selectedDice: { color: null, number: null },
-        selectedFromJoker: { color: false, number: false }
+        selectedFromJoker: { color: false, number: false },
       };
     });
   }, []);
