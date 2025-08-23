@@ -24,6 +24,10 @@ const getColorClass = (color: GameColor): string => {
   return colorMap[color];
 };
 
+function isStartingColumn(colIndex: number) {
+  return colIndex === 7;
+}
+
 export const GameBoard = ({ 
   board, 
   onSquareClick, 
@@ -40,10 +44,15 @@ export const GameBoard = ({
   return (
     <div className="bg-gradient-board rounded-xl p-6 shadow-square">
       {/* Column Headers */}
-      <div className="grid grid-cols-15 gap-1 mb-2">
-        {COLUMNS.map((col) => (
-          <div key={col} className="text-center text-sm font-bold text-muted-foreground">
-            {col}
+      <div className="grid grid-cols-15 gap-1 mb-3">
+        {COLUMNS.map((col, colIndex) => (
+          <div key={col} className="aspect-square rounded-md bg-secondary flex items-center justify-center">
+            <span className={cn(
+              "text-xs font-semibold text-primary",
+              isStartingColumn(colIndex) && "text-destructive font-black",
+            )}>
+              {col}
+            </span>
           </div>
         ))}
       </div>
@@ -58,12 +67,13 @@ export const GameBoard = ({
                 onClick={() => !disabled && onSquareClick?.(rowIndex, colIndex)}
                 disabled={disabled || square.crossed}
                 className={cn(
-                  "aspect-square rounded-md border-2 relative transition-all duration-200",
+                  "aspect-square rounded-md relative transition-all duration-200",
                   "hover:scale-105 hover:shadow-md active:scale-95",
                   getColorClass(square.color),
-                  square.crossed && "opacity-30 cursor-not-allowed bg-muted",
+                  square.crossed && "opacity-30 cursor-not-allowed",
                   isSquareSelected(rowIndex, colIndex) && "ring-4 ring-ring shadow-glow scale-110",
                   isSquarePreview(rowIndex, colIndex) && "ring-2 ring-primary/50 scale-105",
+                  isStartingColumn(colIndex) ? 'border-4' : 'border-2',
                   !disabled && !square.crossed && "cursor-pointer"
                 )}
               >
@@ -89,10 +99,25 @@ export const GameBoard = ({
       </div>
 
       {/* Column Point Values */}
-      <div className="grid grid-cols-15 gap-1 mt-4">
-        {[4, 7, 1, 3, 8, 2, 5, 10, 5, 2, 8, 3, 1, 7, 4].map((points, index) => (
-          <div key={index} className="text-center text-xs font-semibold text-primary bg-secondary rounded px-1 py-0.5">
-            {points}
+      <div className="grid grid-cols-15 gap-1 mt-3">
+        {[5,3,3,3,2,2,2,1,2,2,2,3,3,3,5].map((points, index) => (
+          <div key={index} className="aspect-square rounded-md bg-secondary flex items-center justify-center">
+            <span className={cn(
+              "text-xs font-semibold text-primary",
+              isStartingColumn(index) && "text-destructive font-black",
+            )}>
+              {points}
+            </span>
+          </div>
+        ))}
+        {[3,2,2,2,1,1,1,0,1,1,1,2,2,2,3].map((points, index) => (
+          <div key={index} className="aspect-square rounded-md bg-secondary flex items-center justify-center">
+            <span className={cn(
+              "text-xs font-semibold text-primary",
+              isStartingColumn(index) && "text-destructive font-black",
+            )}>
+              {points}
+            </span>
           </div>
         ))}
       </div>

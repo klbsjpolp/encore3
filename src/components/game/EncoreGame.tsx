@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useEncoreGame } from '@/hooks/useEncoreGame';
-import {DiceResult, GameColor} from '@/types/game';
+import { GameColor } from '@/types/game';
 import { GameBoard } from './GameBoard';
 import { DicePanel } from './DicePanel';
 import { ScorePanel } from './ScorePanel';
@@ -52,20 +52,12 @@ export const EncoreGame = () => {
   };
 
   const handleConfirmMove = () => {
-    const success = makeMove(selectedSquares);
-    if (success) {
-      setSelectedSquares([]);
-      toast({
-        title: "Déplacement terminé",
-        description: `${gameState.players[gameState.currentPlayer].name} a joué son tour.`
-      });
-    } else {
-      toast({
-        title: "Mouvement invalide",
-        description: "Veuillez vérifier les règles et réessayer.",
-        variant: "destructive"
-      });
-    }
+    makeMove(selectedSquares);
+    setSelectedSquares([]);
+    toast({
+      title: "Déplacement terminé",
+      description: `${gameState.players[gameState.currentPlayer].name} a joué son tour.`
+    });
   };
 
   const canMakeMove = () => {
@@ -81,16 +73,6 @@ export const EncoreGame = () => {
     
     return selectedSquares.length === numberValue && 
            isValidMove(selectedSquares, colorValue as GameColor, player.board);
-  };
-
-  const handleUseJoker = (type: 'color' | 'number') => {
-    const jokerDice: DiceResult = {
-      id: `joker-${type}`,
-      type,
-      value: 'wild',
-      selected: false
-    };
-    selectDice(jokerDice);
   };
 
   const resetGame = () => {
@@ -238,8 +220,6 @@ export const EncoreGame = () => {
               canSelect={canSelectDice}
               selectedColorDice={gameState.selectedDice.color}
               selectedNumberDice={gameState.selectedDice.number}
-              jokersRemaining={currentPlayer?.jokersRemaining}
-              onUseJoker={handleUseJoker}
             />
           </div>
 

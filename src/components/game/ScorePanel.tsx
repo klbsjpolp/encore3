@@ -76,9 +76,17 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         {/* Stars Collected */}
         <div>
           <p className="text-sm font-medium mb-2">Étoiles collectées</p>
-          <div className="flex items-center gap-2">
-            <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
-            <span className="font-bold">{player.starsCollected} / {TOTAL_STARS}</span>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: TOTAL_STARS }, (_, i) => (
+              <Star
+                key={i}
+                className={cn(
+                  "w-4 h-4",
+                  i < player.starsCollected ? "text-yellow-500" : "text-muted"
+                )}
+                fill="currentColor"
+              />
+            ))}
           </div>
         </div>
 
@@ -86,14 +94,13 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         <div>
           <p className="text-sm font-medium mb-2">Jokers</p>
           <div className="flex items-center gap-2">
-            <span className="font-bold">{player.jokersRemaining} / 8</span>
             <div className="flex gap-1">
               {Array.from({ length: 8 }, (_, i) => (
-                <div
+                <span
                   key={i}
                   className={cn(
                     "w-2 h-2 rounded-full",
-                    i < player.jokersRemaining ? "bg-primary" : "bg-muted"
+                    i >= (8-player.jokersRemaining) ? "bg-primary" : "bg-muted"
                   )}
                 />
               ))}

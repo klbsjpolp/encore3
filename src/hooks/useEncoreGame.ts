@@ -87,10 +87,19 @@ const rollDice = (): DiceResult[] => {
   return dice;
 };
 
+const checkColorCompletion = (board: Square[][], color: GameColor): boolean => {
+  return board.every(row =>
+    row.every(square =>
+      square.color !== color || square.crossed
+    )
+  );
+};
+
 export const useEncoreGame = () => {
   const [gameState, setGameState] = useState<GameState>({
     players: [],
     currentPlayer: 0,
+    activePlayer: 0,
     phase: 'rolling',
     dice: [],
     selectedDice: { color: null, number: null },
@@ -114,6 +123,7 @@ export const useEncoreGame = () => {
     setGameState({
       players,
       currentPlayer: 0,
+      activePlayer: 0,
       phase: 'rolling',
       dice: rollDice(),
       selectedDice: { color: null, number: null },
@@ -124,74 +134,64 @@ export const useEncoreGame = () => {
   }, []);
 
   const rollNewDice = useCallback(() => {
-    if (gameState.phase !== 'rolling') return;
-    
-    setGameState(prev => ({
-      ...prev,
-      dice: rollDice(),
-      phase: 'active-selection',
-      selectedDice: { color: null, number: null },
-      selectedFromJoker: { color: false, number: false }
-    }));
-  }, [gameState.phase]);
+    setGameState(prev => {
+      if (prev.phase !== 'rolling') return prev;
+      
+      return {
+        ...prev,
+        dice: rollDice(),
+        phase: 'active-selection',
+        activePlayer: prev.currentPlayer,
+        selectedDice: { color: null, number: null },
+        selectedFromJoker: { color: false, number: false }
+      }
+    });
+  }, []);
 
   const selectDice = useCallback((dice: DiceResult) => {
-    if (gameState.phase !== 'active-selection' && gameState.phase !== 'passive-selection') return;
-    if (dice.selected) return;
-
     setGameState(prev => {
+      if ((prev.phase !== 'active-selection' && prev.phase !== 'passive-selection') || dice.selected) {
+        return prev;
+      }
+      
       const newSelectedDice = { ...prev.selectedDice };
       const newSelectedFromJoker = { ...prev.selectedFromJoker };
-      const currentPlayer = prev.players[prev.currentPlayer];
-      
-      // Handle joker dice
-      if (dice.id === 'joker-color' || dice.id === 'joker-number') {
-        if (currentPlayer.jokersRemaining <= 0) return prev;
-        
-        if (dice.id === 'joker-color') {
-          newSelectedDice.color = { ...dice, value: 'wild' };
-          newSelectedFromJoker.color = true;
-        } else {
-          newSelectedDice.number = { ...dice, value: 'wild' };
-          newSelectedFromJoker.number = true;
-        }
-      } else {
-        // Handle regular dice
-        if (dice.type === 'color') {
-          newSelectedDice.color = dice;
-          newSelectedFromJoker.color = false;
-        } else {
-          // Number dice wild can only be selected by active player unless using joker
-          if (dice.value === 'wild' && prev.phase === 'passive-selection') return prev;
-          newSelectedDice.number = dice;
-          newSelectedFromJoker.number = false;
-        }
+
+      newSelectedDice[dice.type] = dice;
+      newSelectedFromJoker[dice.type] = dice.value === 'wild';
+
+      const jokersNeeded = (newSelectedFromJoker.color ? 1 : 0) + (newSelectedFromJoker.number ? 1 : 0);
+      if (jokersNeeded > prev.players[prev.currentPlayer].jokersRemaining) {
+        return prev; // Not enough jokers, so we revert the selection by returning the previous state
       }
 
       return {
         ...prev,
         selectedDice: newSelectedDice,
-        selectedFromJoker: newSelectedFromJoker
+        selectedFromJoker: newSelectedFromJoker,
       };
     });
-  }, [gameState.phase]);
+  }, []);
 
   const isValidMove = useCallback((
     squares: { row: number; col: number }[],
     color: GameColor,
     playerBoard: Square[][]
   ): boolean => {
-    if (squares.length === 0) return false;
+    if (squares.length === 0) {
+      console.error("Invalid move: No squares selected");
+      return false;
+    }
 
-    // Check if all squares match the color
     const allMatchColor = squares.every(({ row, col }) => 
       playerBoard[row][col].color === color && !playerBoard[row][col].crossed
     );
-    if (!allMatchColor) return false;
+    if (!allMatchColor) {
+      console.error("Invalid move: Squares do not match color");
+      return false;
+    }
 
-    // Check adjacency
     if (squares.length > 1) {
-      // All squares must form a connected group
       const visited = new Set<string>();
       const toVisit = [squares[0]];
       visited.add(`${squares[0].row},${squares[0].col}`);
@@ -215,20 +215,13 @@ export const useEncoreGame = () => {
         }
       }
 
-      if (visited.size !== squares.length) return false;
+      if (visited.size !== squares.length) {
+        console.error("Invalid move: Squares are not connected");
+        return false;
+      }
     }
-
-    // Check starting rule (first color must include column H)
-    const hasColorCrossed = playerBoard.some(row => 
-      row.some(square => square.color === color && square.crossed)
-    );
-    
-    if (!hasColorCrossed) {
-      // Must include column H (index 7)
-      const includesColumnH = squares.some(({ col }) => col === 7);
-      if (!includesColumnH) return false;
-    } else {
-      // Must be adjacent to any previously crossed square
+    const includesColumnH = squares.some(({ col }) => col === 7);
+    if (!includesColumnH) {
       const hasAdjacency = squares.some(({ row, col }) => {
         const neighbors = [
           { row: row - 1, col },
@@ -236,72 +229,105 @@ export const useEncoreGame = () => {
           { row, col: col - 1 },
           { row, col: col + 1 }
         ];
-        
-        return neighbors.some(({ row: nr, col: nc }) => 
-          nr >= 0 && nr < playerBoard.length && 
+
+        return neighbors.some(({ row: nr, col: nc }) =>
+          nr >= 0 && nr < playerBoard.length &&
           nc >= 0 && nc < playerBoard[0].length &&
           playerBoard[nr][nc].crossed
         );
       });
       
-      if (!hasAdjacency) return false;
+      if (!hasAdjacency) {
+        console.error("Invalid move: Squares are not adjacent to a crossed square");
+        return false;
+      }
     }
 
     return true;
   }, []);
 
   const makeMove = useCallback((squares: { row: number; col: number }[]) => {
-    const { selectedDice, currentPlayer, players, selectedFromJoker } = gameState;
-    if (!selectedDice.color || !selectedDice.number) return false;
-    if (gameState.phase !== 'active-selection' && gameState.phase !== 'passive-selection') return false;
-
-    const player = players[currentPlayer];
-    // If color is wild, determine actual color from first selected square
-    const colorValue = selectedDice.color.value === 'wild' ? 
-      (squares.length > 0 ? player.board[squares[0].row][squares[0].col].color : 'yellow') : 
-      selectedDice.color.value as GameColor;
-    const numberValue = selectedDice.number.value === 'wild' ? squares.length : selectedDice.number.value as number;
-
-    if (squares.length !== numberValue) return false;
-    if (!isValidMove(squares, colorValue, player.board)) return false;
-
     setGameState(prev => {
-      const newPlayers = [...prev.players];
-      const newBoard = newPlayers[currentPlayer].board.map(row => [...row]);
-      let starsCollected = newPlayers[currentPlayer].starsCollected;
+      const { selectedDice, currentPlayer, players, phase, selectedFromJoker } = prev;
 
-      // Cross off squares and collect stars
-      squares.forEach(({ row, col }) => {
-        newBoard[row][col].crossed = true;
-        if (newBoard[row][col].hasStar) {
-          starsCollected++;
+      if (!selectedDice.color || !selectedDice.number || (phase !== 'active-selection' && phase !== 'passive-selection')) {
+        return prev;
+      }
+
+      const player = players[currentPlayer];
+      const colorValue = selectedDice.color.value === 'wild' ? 
+        (squares.length > 0 ? player.board[squares[0].row][squares[0].col].color : 'yellow') : 
+        selectedDice.color.value as GameColor;
+      const numberValue = selectedDice.number.value === 'wild' ? squares.length : (selectedDice.number.value as number);
+
+      if (squares.length !== numberValue || !isValidMove(squares, colorValue, player.board)) {
+        return prev;
+      }
+
+      const jokersUsed = (selectedFromJoker.color ? 1 : 0) + (selectedFromJoker.number ? 1 : 0);
+
+      const newPlayers = players.map((p, index) => {
+        if (index === currentPlayer) {
+          const newBoard = p.board.map(row => row.map(cell => ({ ...cell })));
+          let starsCollected = p.starsCollected;
+
+          squares.forEach(({ row, col }) => {
+            newBoard[row][col].crossed = true;
+            if (newBoard[row][col].hasStar) {
+              starsCollected++;
+            }
+          });
+
+          const completedColors = colorValue && checkColorCompletion(newBoard, colorValue) ? 
+            [...p.completedColors, colorValue] : 
+            p.completedColors;
+
+          return {
+            ...p,
+            board: newBoard,
+            starsCollected,
+            completedColors,
+            jokersRemaining: p.jokersRemaining - jokersUsed,
+          };
         }
+        return p;
       });
 
-      // Deduct jokers if used
-      const jokersUsed = (selectedFromJoker.color ? 1 : 0) + (selectedFromJoker.number ? 1 : 0);
-      
-      newPlayers[currentPlayer] = {
-        ...newPlayers[currentPlayer],
-        board: newBoard,
-        starsCollected,
-        jokersRemaining: Math.max(0, newPlayers[currentPlayer].jokersRemaining - jokersUsed)
-      };
+      const updatedPlayer = newPlayers[currentPlayer];
+      const gameEnded = updatedPlayer.completedColors.length >= 2;
 
-      // Mark dice as selected
+      if (gameEnded) {
+        return {
+          ...prev,
+          players: newPlayers,
+          phase: 'game-over',
+          winner: updatedPlayer,
+        };
+      }
+
       const newDice = prev.dice.map(d => ({
         ...d,
-        selected: d.id === selectedDice.color!.id || d.id === selectedDice.number!.id
+        selected: d.selected || d.id === prev.selectedDice.color?.id || d.id === prev.selectedDice.number?.id
       }));
 
-      // Check for game end condition
-      const completedColors = colorValue && checkColorCompletion(newBoard, colorValue) ? 
-        [...newPlayers[currentPlayer].completedColors, colorValue] : 
-        newPlayers[currentPlayer].completedColors;
-      
-      newPlayers[currentPlayer].completedColors = completedColors;
+      let nextPhase: GameState['phase'] = phase;
+      let nextPlayer = currentPlayer;
+      let nextActivePlayer = prev.activePlayer;
 
-      const gameEnded = completedColors.length >= 2;
+      if (phase === 'active-selection') {
+        nextPhase = 'passive-selection';
+        nextPlayer = (currentPlayer + 1) % players.length;
+        if (nextPlayer === prev.activePlayer) {
+            nextPhase = 'rolling';
+        }
+      } else if (phase === 'passive-selection') {
+        nextPlayer = (currentPlayer + 1) % players.length;
+        if (nextPlayer === prev.activePlayer) {
+            nextPhase = 'rolling';
+            nextPlayer = (prev.activePlayer + 1) % players.length;
+            nextActivePlayer = nextPlayer;
+        }
+      }
 
       return {
         ...prev,
@@ -309,35 +335,35 @@ export const useEncoreGame = () => {
         dice: newDice,
         selectedDice: { color: null, number: null },
         selectedFromJoker: { color: false, number: false },
-        phase: gameEnded ? 'game-over' : prev.phase === 'active-selection' ? 'passive-selection' : 'rolling',
-        currentPlayer: prev.phase === 'passive-selection' ? (prev.currentPlayer + 1) % prev.players.length : currentPlayer,
-        winner: gameEnded ? newPlayers[currentPlayer] : null
+        phase: nextPhase,
+        currentPlayer: nextPlayer,
+        activePlayer: nextActivePlayer
       };
     });
-
-    return true;
-  }, [gameState, isValidMove]);
-
-  const checkColorCompletion = (board: Square[][], color: GameColor): boolean => {
-    return board.every(row => 
-      row.every(square => 
-        square.color !== color || square.crossed
-      )
-    );
-  };
+  }, [isValidMove]);
 
   const skipTurn = useCallback(() => {
     setGameState(prev => {
-      if (prev.phase === 'passive-selection') {
-        return {
-          ...prev,
-          phase: 'rolling',
-          currentPlayer: (prev.currentPlayer + 1) % prev.players.length,
-          selectedDice: { color: null, number: null },
-          selectedFromJoker: { color: false, number: false }
-        };
+      if (prev.phase !== 'passive-selection') return prev;
+
+      let nextPlayer = (prev.currentPlayer + 1) % prev.players.length;
+      let nextPhase: GameState['phase'] = prev.phase;
+      let nextActivePlayer = prev.activePlayer;
+
+      if (nextPlayer === prev.activePlayer) {
+        nextPhase = 'rolling';
+        nextPlayer = (prev.activePlayer + 1) % prev.players.length;
+        nextActivePlayer = nextPlayer;
       }
-      return prev;
+
+      return {
+        ...prev,
+        phase: nextPhase,
+        currentPlayer: nextPlayer,
+        activePlayer: nextActivePlayer,
+        selectedDice: { color: null, number: null },
+        selectedFromJoker: { color: false, number: false }
+      };
     });
   }, []);
 

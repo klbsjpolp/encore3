@@ -31,6 +31,7 @@ export interface Player {
 export interface GameState {
   players: Player[];
   currentPlayer: number;
+  activePlayer: number;
   phase: 'rolling' | 'active-selection' | 'passive-selection' | 'game-over';
   dice: DiceResult[];
   selectedDice: { color: DiceResult | null; number: DiceResult | null };
