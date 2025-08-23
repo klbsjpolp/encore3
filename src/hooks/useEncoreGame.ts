@@ -1,24 +1,49 @@
 import { useState, useCallback } from 'react';
-import { GameState, Player, DiceResult, GameColor, DiceColor, DiceNumber, Square } from '@/types/game';
+import {GameState, Player, DiceResult, GameColor, DiceColor, DiceNumber, Square } from '@/types/game';
 
-// Create initial game board based on typical Encore! layout
+// Create initial game board based on the standard Encore! layout
 const createInitialBoard = (): Square[][] => {
-  const colors: GameColor[] = ['yellow', 'green', 'blue', 'red', 'orange', 'purple'];
+  const colorLayout: GameColor[][] = [
+    ['green','green','green','yellow','yellow','yellow','yellow','green','blue','blue','blue','orange','yellow','yellow','yellow'],
+    ['orange','green','yellow','green','yellow','yellow','orange','orange','red','blue','blue','orange','orange','green','green'],
+    ['blue','green','red','green','green','green','green','red','red','red','yellow','yellow','orange','green','green'],
+    ['blue','red','red','green','orange','orange','blue','blue','green','green','yellow','yellow','orange','red','blue'],
+    ['red','orange','orange','orange','orange','red','blue','blue','orange','orange','orange','red','red','red','red'],
+    ['red','blue','blue','red','red','red','red','yellow','yellow','orange','red','blue','blue','blue','orange'],
+    ['yellow','yellow','blue','blue','blue','blue','red','yellow','yellow','yellow','green','green','green','orange','orange']
+  ];
+
+  // 0-indexed positions of the stars based on the official board
+  const starPositions = new Set([
+    '2,0',  // Col A
+    '5,1',  // Col B
+    '1,2',  // Col C
+    '5,3',  // Col D
+    '1,4',  // Col E
+    '3,5',  // Col F
+    '2,6',  // Col G
+    '0,7',  // Col H
+    '4,8',  // Col I
+    '1,9',  // Col J
+    '4,10', // Col K
+    '0,11', // Col L
+    '6,12', // Col M
+    '3,13', // Col N
+    '5,14', // Col O
+  ]);
+
+
   const board: Square[][] = [];
   
   // 9 rows, 15 columns (A-O)
-  for (let row = 0; row < 9; row++) {
+  for (let row = 0; row < colorLayout.length; row++) {
     const boardRow: Square[] = [];
-    for (let col = 0; col < 15; col++) {
-      // Assign colors in a pattern similar to actual Encore!
-      const colorIndex = (row + col) % colors.length;
-      const column = String.fromCharCode(65 + col); // A-O
-      
-      // Add stars to specific positions (simplified pattern)
-      const hasStar = (row + col) % 7 === 0 && row > 0 && row < 8;
+    for (let col = 0; col < colorLayout[0].length; col++) {
+      const column = String.fromCharCode(65 + col);
+      const hasStar = starPositions.has(`${row},${col}`);
       
       boardRow.push({
-        color: colors[colorIndex],
+        color: colorLayout[row][col],
         hasStar,
         crossed: false,
         column,
@@ -285,7 +310,7 @@ export const useEncoreGame = () => {
         selectedDice: { color: null, number: null },
         selectedFromJoker: { color: false, number: false },
         phase: gameEnded ? 'game-over' : prev.phase === 'active-selection' ? 'passive-selection' : 'rolling',
-        currentPlayer: prev.phase === 'passive-selection' ? (currentPlayer + 1) % prev.players.length : currentPlayer,
+        currentPlayer: prev.phase === 'passive-selection' ? (prev.currentPlayer + 1) % prev.players.length : currentPlayer,
         winner: gameEnded ? newPlayers[currentPlayer] : null
       };
     });

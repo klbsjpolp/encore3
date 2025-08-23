@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useEncoreGame } from '@/hooks/useEncoreGame';
-import { DiceResult } from '@/types/game';
+import {DiceResult, GameColor} from '@/types/game';
 import { GameBoard } from './GameBoard';
 import { DicePanel } from './DicePanel';
 import { ScorePanel } from './ScorePanel';
@@ -16,15 +16,15 @@ import { toast } from '@/hooks/use-toast';
 export const EncoreGame = () => {
   const { gameState, initializeGame, rollNewDice, selectDice, makeMove, skipTurn, isValidMove } = useEncoreGame();
   const [setupMode, setSetupMode] = useState(true);
-  const [playerNames, setPlayerNames] = useState(['Player 1', 'Player 2']);
+  const [playerNames, setPlayerNames] = useState(['Joueur 1', 'Joueur 2']);
   const [aiPlayers, setAIPlayers] = useState([false, true]);
   const [selectedSquares, setSelectedSquares] = useState<{ row: number; col: number }[]>([]);
 
   const handleGameSetup = () => {
     if (playerNames.some(name => !name.trim())) {
       toast({
-        title: "Invalid Setup",
-        description: "Please enter names for all players.",
+        title: "Configuration invalide",
+        description: "Veuillez entrer les noms de tous les joueurs.",
         variant: "destructive"
       });
       return;
@@ -33,8 +33,8 @@ export const EncoreGame = () => {
     initializeGame(playerNames, aiPlayers);
     setSetupMode(false);
     toast({
-      title: "Game Started!",
-      description: `${playerNames[0]} goes first.`
+      title: "Partie commencée !",
+      description: `${playerNames[0]} commence.`
     });
   };
 
@@ -56,13 +56,13 @@ export const EncoreGame = () => {
     if (success) {
       setSelectedSquares([]);
       toast({
-        title: "Move Completed",
-        description: `${gameState.players[gameState.currentPlayer].name} made their move.`
+        title: "Déplacement terminé",
+        description: `${gameState.players[gameState.currentPlayer].name} a joué son tour.`
       });
     } else {
       toast({
-        title: "Invalid Move",
-        description: "Please check the rules and try again.",
+        title: "Mouvement invalide",
+        description: "Veuillez vérifier les règles et réessayer.",
         variant: "destructive"
       });
     }
@@ -80,7 +80,7 @@ export const EncoreGame = () => {
     const numberValue = gameState.selectedDice.number.value === 'wild' ? selectedSquares.length : gameState.selectedDice.number.value;
     
     return selectedSquares.length === numberValue && 
-           isValidMove(selectedSquares, colorValue as any, player.board);
+           isValidMove(selectedSquares, colorValue as GameColor, player.board);
   };
 
   const handleUseJoker = (type: 'color' | 'number') => {
@@ -105,7 +105,7 @@ export const EncoreGame = () => {
           <CardHeader className="text-center">
             <CardTitle className="flex items-center justify-center gap-2 text-2xl">
               <Gamepad2 className="w-6 h-6" />
-              Encore! Setup
+              Configuration d'Encore !
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -113,7 +113,7 @@ export const EncoreGame = () => {
               {playerNames.map((name, index) => (
                 <div key={index} className="space-y-2">
                   <Label htmlFor={`player-${index}`}>
-                    Player {index + 1} {aiPlayers[index] && <Badge variant="secondary">AI</Badge>}
+                    Joueur {index + 1} {aiPlayers[index] && <Badge variant="secondary">IA</Badge>}
                   </Label>
                   <div className="flex gap-2">
                     <Input
@@ -124,7 +124,7 @@ export const EncoreGame = () => {
                         newNames[index] = e.target.value;
                         setPlayerNames(newNames);
                       }}
-                      placeholder={`Player ${index + 1} name`}
+                      placeholder={`Nom du joueur ${index + 1}`}
                     />
                     <Button
                       variant={aiPlayers[index] ? "default" : "outline"}
@@ -144,7 +144,7 @@ export const EncoreGame = () => {
 
             <Button onClick={handleGameSetup} className="w-full" variant="game" size="lg">
               <Play className="w-4 h-4 mr-2" />
-              Start Game
+              Commencer la partie
             </Button>
           </CardContent>
         </Card>
@@ -164,18 +164,18 @@ export const EncoreGame = () => {
           <div className="flex items-center gap-4">
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
               <Gamepad2 className="w-8 h-8" />
-              Encore!
+              Encore !
             </h1>
             <Badge variant="default" className="text-lg px-3 py-1">
-              {gameState.phase === 'rolling' && 'Roll Dice'}
-              {gameState.phase === 'active-selection' && 'Active Player Turn'}
-              {gameState.phase === 'passive-selection' && 'Passive Players Turn'}
-              {gameState.phase === 'game-over' && 'Game Over'}
+              {gameState.phase === 'rolling' && 'Lancer les dés'}
+              {gameState.phase === 'active-selection' && 'Tour du joueur actif'}
+              {gameState.phase === 'passive-selection' && 'Tour des joueurs passifs'}
+              {gameState.phase === 'game-over' && 'Partie terminée'}
             </Badge>
           </div>
           <Button onClick={resetGame} variant="outline">
             <RotateCcw className="w-4 h-4 mr-2" />
-            New Game
+            Nouvelle partie
           </Button>
         </div>
 
@@ -183,8 +183,8 @@ export const EncoreGame = () => {
         {gameState.phase !== 'game-over' && (
           <div className="bg-card rounded-lg p-4">
             <p className="text-lg font-semibold">
-              Current Turn: {currentPlayer?.name}
-              {gameState.phase === 'passive-selection' && ' (All other players can play)'}
+              Tour actuel : {currentPlayer?.name}
+              {gameState.phase === 'passive-selection' && ' (Tous les autres joueurs peuvent jouer)'}
             </p>
           </div>
         )}
@@ -208,20 +208,20 @@ export const EncoreGame = () => {
                   variant="game"
                   className="flex-1"
                 >
-                  Confirm Move ({selectedSquares.length} squares)
+                  Confirmer le déplacement ({selectedSquares.length} cases)
                 </Button>
                 <Button 
                   onClick={() => setSelectedSquares([])}
                   variant="outline"
                 >
-                  Clear
+                  Effacer
                 </Button>
                 {gameState.phase === 'passive-selection' && (
                   <Button 
                     onClick={skipTurn}
                     variant="secondary"
                   >
-                    Skip Turn
+                    Passer le tour
                   </Button>
                 )}
               </div>
@@ -261,17 +261,17 @@ export const EncoreGame = () => {
       <Dialog open={gameState.phase === 'game-over'}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-2xl text-center">Game Over!</DialogTitle>
+            <DialogTitle className="text-2xl text-center">Partie terminée !</DialogTitle>
           </DialogHeader>
           <div className="text-center space-y-4">
             <p className="text-xl">
-              🎉 {gameState.winner?.name} wins! 🎉
+              🎉 {gameState.winner?.name} gagne ! 🎉
             </p>
             <p className="text-muted-foreground">
-              Completed {gameState.winner?.completedColors.length} colors
+              A complété {gameState.winner?.completedColors.length} couleurs
             </p>
             <Button onClick={resetGame} className="w-full">
-              Play Again
+              Rejouer
             </Button>
           </div>
         </DialogContent>

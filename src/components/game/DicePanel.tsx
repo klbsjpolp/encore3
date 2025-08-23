@@ -1,4 +1,4 @@
-import { DiceResult, DiceColor, DiceNumber } from '@/types/game';
+import { DiceResult, DiceColor } from '@/types/game';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Shuffle, HelpCircle } from 'lucide-react';
@@ -82,7 +82,7 @@ export const DicePanel = ({
   return (
     <div className="bg-card rounded-xl p-6 shadow-square space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">Dice</h3>
+        <h3 className="text-lg font-semibold text-foreground">Dés</h3>
         {canRoll && (
           <Button 
             onClick={onRollDice}
@@ -91,7 +91,7 @@ export const DicePanel = ({
             className="gap-2"
           >
             <Shuffle className="w-4 h-4" />
-            Roll Dice
+            Lancer les dés
           </Button>
         )}
       </div>
@@ -99,7 +99,7 @@ export const DicePanel = ({
       <div className="space-y-4">
         {/* Color Dice */}
         <div>
-          <p className="text-sm font-medium text-muted-foreground mb-2">Color Dice</p>
+          <p className="text-sm font-medium text-muted-foreground mb-2">Dés de couleur</p>
           <div className="flex gap-2 flex-wrap">
             {colorDice.map(die => (
               <DiceDisplay
@@ -131,7 +131,7 @@ export const DicePanel = ({
 
         {/* Number Dice */}
         <div>
-          <p className="text-sm font-medium text-muted-foreground mb-2">Number Dice</p>
+          <p className="text-sm font-medium text-muted-foreground mb-2">Dés numériques</p>
           <div className="flex gap-2 flex-wrap">
             {numberDice.map(die => (
               <DiceDisplay
@@ -164,7 +164,7 @@ export const DicePanel = ({
 
       {selectedColorDice && selectedNumberDice && (
         <div className="bg-gradient-active text-primary-foreground rounded-lg p-3">
-          <p className="text-sm font-medium">Selected Combination:</p>
+          <p className="text-sm font-medium">Combinaison sélectionnée :</p>
           <p className="text-lg font-bold">
             {selectedColorDice.value} + {selectedNumberDice.value}
             {(selectedColorDice.id === 'joker-color' || selectedNumberDice.id === 'joker-number') && ' (Joker)'}
@@ -174,7 +174,7 @@ export const DicePanel = ({
 
       {jokersRemaining !== undefined && (
         <div className="bg-muted rounded-lg p-3">
-          <p className="text-sm font-medium text-muted-foreground mb-1">Jokers Remaining</p>
+          <p className="text-sm font-medium text-muted-foreground mb-1">Jokers restants</p>
           <p className="text-lg font-bold">{jokersRemaining} / 8</p>
         </div>
       )}

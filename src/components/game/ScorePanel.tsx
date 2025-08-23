@@ -1,4 +1,4 @@
-import { Player, GameColor } from '@/types/game';
+import { Player } from '@/types/game';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Star, Trophy } from 'lucide-react';
@@ -9,16 +9,6 @@ interface ScorePanelProps {
   isCurrentPlayer?: boolean;
   gameComplete?: boolean;
 }
-
-const COLOR_POINTS = {
-  yellow: { first: 20, later: 10 },
-  green: { first: 20, later: 10 },
-  blue: { first: 20, later: 10 },
-  red: { first: 20, later: 10 },
-  orange: { first: 20, later: 10 },
-  purple: { first: 20, later: 10 },
-};
-
 const COLUMN_POINTS = [4, 7, 1, 3, 8, 2, 5, 10, 5, 2, 8, 3, 1, 7, 4];
 const TOTAL_STARS = 15;
 
@@ -54,7 +44,7 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             {player.name}
-            {isCurrentPlayer && <Badge variant="default">Current</Badge>}
+            {isCurrentPlayer && <Badge variant="default">Actuel</Badge>}
           </span>
           {gameComplete && player.score === Math.max(...[player.score]) && (
             <Trophy className="w-5 h-5 text-yellow-500" />
@@ -64,7 +54,7 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
       <CardContent className="space-y-4">
         {/* Completed Colors */}
         <div>
-          <p className="text-sm font-medium mb-2">Completed Colors</p>
+          <p className="text-sm font-medium mb-2">Couleurs complétées</p>
           <div className="flex flex-wrap gap-1">
             {player.completedColors.map(color => (
               <div
@@ -85,7 +75,7 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
 
         {/* Stars Collected */}
         <div>
-          <p className="text-sm font-medium mb-2">Stars Collected</p>
+          <p className="text-sm font-medium mb-2">Étoiles collectées</p>
           <div className="flex items-center gap-2">
             <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
             <span className="font-bold">{player.starsCollected} / {TOTAL_STARS}</span>
@@ -115,19 +105,19 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         {gameComplete && (
           <div className="space-y-2 pt-2 border-t">
             <div className="flex justify-between text-sm">
-              <span>Columns:</span>
+              <span>Colonnes :</span>
               <span>+{calculateColumnScore()}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span>Colors:</span>
+              <span>Couleurs :</span>
               <span>+{calculateColorScore()}</span>
             </div>
             <div className="flex justify-between text-sm text-destructive">
-              <span>Star Penalty:</span>
+              <span>Pénalité d'étoile :</span>
               <span>-{calculateStarPenalty()}</span>
             </div>
             <div className="flex justify-between font-bold text-lg border-t pt-2">
-              <span>Total:</span>
+              <span>Total :</span>
               <span>{totalScore}</span>
             </div>
           </div>
@@ -137,7 +127,7 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         {!gameComplete && (
           <div className="bg-muted rounded-lg p-3">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Current Score</p>
+              <p className="text-sm text-muted-foreground">Score actuel</p>
               <p className="text-2xl font-bold">{player.score}</p>
             </div>
           </div>

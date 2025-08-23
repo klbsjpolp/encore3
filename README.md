@@ -1,73 +1,36 @@
-# Welcome to your Lovable project
+# Projet Vite + React + Shadcn/UI
 
-## Project info
+Ce projet est une application web construite avec Vite, React, TypeScript, et la bibliothèque de composants shadcn/ui.
 
-**URL**: https://lovable.dev/projects/051373ca-cc5a-4dfa-975b-baa519cfcf8f
+## Installation
 
-## How can I edit this code?
+Pour installer les dépendances du projet, exécutez la commande suivante :
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/051373ca-cc5a-4dfa-975b-baa519cfcf8f) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+pnpm install
 ```
 
-**Edit a file directly in GitHub**
+## Scripts disponibles
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Dans ce projet, vous pouvez exécuter les scripts suivants :
 
-**Use GitHub Codespaces**
+### `pnpm dev`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Lance l'application en mode développement.
+Ouvrez [http://localhost:5173](http://localhost:5173) pour la voir dans votre navigateur.
 
-## What technologies are used for this project?
+### `pnpm build`
 
-This project is built with:
+Compile l'application pour la production dans le dossier `dist`.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### `pnpm build:dev`
 
-## How can I deploy this project?
+Compile l'application pour le développement dans le dossier `dist`.
 
-Simply open [Lovable](https://lovable.dev/projects/051373ca-cc5a-4dfa-975b-baa519cfcf8f) and click on Share -> Publish.
+### `pnpm lint`
 
-## Can I connect a custom domain to my Lovable project?
+Exécute ESLint pour trouver et corriger les problèmes dans le code.
 
-Yes, you can!
+### `pnpm preview`
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Lance un serveur local pour prévisualiser la version de production.
