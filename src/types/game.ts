@@ -34,7 +34,8 @@ export interface GameState {
   players: Player[];
   currentPlayer: number;
   activePlayer: number;
-  phase: 'rolling' | 'active-selection' | 'passive-selection' | 'game-over';
+  phase: 'rolling' | 'active-selection' | 'passive-selection' | 'game-over' | 'player-switching';
+  lastPhase?: 'active-selection' | 'passive-selection';
   dice: DiceResult[];
   selectedDice: { color: DiceResult | null; number: DiceResult | null };
   selectedFromJoker: { color: boolean; number: boolean };

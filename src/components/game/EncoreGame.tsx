@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect, CSSProperties, useEffect } from 'react';
 import { useEncoreGame } from '@/hooks/useEncoreGame';
 import { GameColor } from '@/types/game';
 import { GameBoard } from './GameBoard';
@@ -14,11 +14,49 @@ import { Gamepad2, Users, Bot, Play, RotateCcw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export const EncoreGame = () => {
-  const { gameState, initializeGame, rollNewDice, selectDice, makeMove, skipTurn, isValidMove } = useEncoreGame();
+  const { gameState, initializeGame, rollNewDice, selectDice, makeMove, skipTurn, isValidMove, completePlayerSwitch } = useEncoreGame();
   const [setupMode, setSetupMode] = useState(true);
   const [playerNames, setPlayerNames] = useState(['Joueur 1', 'Joueur 2']);
   const [aiPlayers, setAIPlayers] = useState([false, true]);
   const [selectedSquares, setSelectedSquares] = useState<{ row: number; col: number }[]>([]);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const mainBoardContainerRef = useRef<HTMLDivElement>(null);
+  const otherBoardContainerRef = useRef<HTMLDivElement>(null);
+  const positionsRef = useRef<{ main: DOMRect | null; other: DOMRect | null }>({ main: null, other: null });
+
+  const isSwitching = gameState.phase === 'player-switching';
+
+  useLayoutEffect(() => {
+    // On every render, if we're not animating, measure the positions.
+    // This captures the correct "before" state for the animation.
+    if (!isAnimating && mainBoardContainerRef.current && otherBoardContainerRef.current) {
+      positionsRef.current = {
+        main: mainBoardContainerRef.current.getBoundingClientRect(),
+        other: otherBoardContainerRef.current.getBoundingClientRect(),
+      };
+    }
+  });
+
+  useEffect(() => {
+    if (isSwitching) {
+      // 1. Pause for 500ms
+      const pauseTimer = setTimeout(() => {
+        // 2. Start the animation
+        setIsAnimating(true);
+      }, 500);
+
+      return () => clearTimeout(pauseTimer);
+    }
+  }, [isSwitching]);
+
+  const handleTransitionEnd = () => {
+    // 3. When animation is over, complete the switch
+    if (isAnimating) {
+      completePlayerSwitch();
+      setIsAnimating(false);
+    }
+  };
 
   const handleGameSetup = () => {
     if (playerNames.some(name => !name.trim())) {
@@ -65,7 +103,6 @@ export const EncoreGame = () => {
     if (selectedSquares.length === 0) return false;
     
     const player = gameState.players[gameState.currentPlayer];
-    // If color is wild, determine actual color from first selected square
     const colorValue = gameState.selectedDice.color.value === 'wild' ? 
       (selectedSquares.length > 0 ? player.board[selectedSquares[0].row][selectedSquares[0].col].color : 'yellow') :
       gameState.selectedDice.color.value;
@@ -140,13 +177,43 @@ export const EncoreGame = () => {
   }
 
   const currentPlayer = gameState.players[gameState.currentPlayer];
-  const otherPlayer = gameState.players[(gameState.currentPlayer+1) % gameState.players.length];
+  const otherPlayer = gameState.players[(gameState.currentPlayer + 1) % gameState.players.length];
   const canRoll = gameState.phase === 'rolling';
   const canSelectDice = gameState.phase === 'active-selection' || gameState.phase === 'passive-selection';
   const firstBonusClaimed = gameState.players.flatMap(p => p.completedColumnsFirst);
 
+  let mainBoardStyle: CSSProperties = {};
+  let otherBoardStyle: CSSProperties = {};
+
+  if (isAnimating) {
+    const { main: mainPos, other: otherPos } = positionsRef.current;
+    if (mainPos && otherPos) {
+      const mainTx = otherPos.left - mainPos.left;
+      const mainTy = otherPos.top - mainPos.top;
+      const mainS = otherPos.width / mainPos.width;
+      mainBoardStyle = {
+        transformOrigin: 'left top',
+        transition: 'transform 0.5s ease-in-out',
+        transform: `translate(${mainTx}px, ${mainTy}px) scale(${mainS})`,
+        zIndex: 20,
+      };
+
+      const otherTx = mainPos.left - otherPos.left;
+      const otherTy = mainPos.top - otherPos.top;
+      const otherS = mainPos.width / otherPos.width;
+      otherBoardStyle = {
+        transformOrigin: 'left top',
+        transition: 'transform 0.5s ease-in-out',
+        transform: `translate(${otherTx}px, ${otherTy}px) scale(${otherS})`,
+        zIndex: 20,
+      };
+    }
+  }
+
+  const actionsDisable = isSwitching || !(gameState.phase === 'active-selection' || gameState.phase === 'passive-selection');
+
   return (
-    <div className="min-h-screen bg-gradient-board p-4">
+    <div className="min-h-screen bg-gradient-board p-4 overflow-hidden">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -156,6 +223,7 @@ export const EncoreGame = () => {
               Encore !
             </h1>
             <Badge variant="default" className="text-lg px-3 py-1">
+              {isSwitching && 'Changement de joueur...'}
               {gameState.phase === 'rolling' && 'Lancer les dés'}
               {gameState.phase === 'active-selection' && 'Tour du joueur actif'}
               {gameState.phase === 'passive-selection' && 'Tour des joueurs passifs'}
@@ -180,41 +248,43 @@ export const EncoreGame = () => {
                 </p>
               </div>
             )}
-            <GameBoard
-              board={currentPlayer?.board || []}
-              onSquareClick={handleSquareClick}
-              selectedSquares={selectedSquares}
-              disabled={gameState.phase === 'rolling' || gameState.phase === 'game-over'}
-              firstBonusClaimed={firstBonusClaimed}
-              iClaimedFirstBonus={currentPlayer.completedColumnsFirst}
-              iClaimedSecondBonus={currentPlayer.completedColumnsNotFirst}
-            />
+            <div className="@container" ref={mainBoardContainerRef} style={mainBoardStyle} onTransitionEnd={handleTransitionEnd}>
+              <GameBoard
+                board={currentPlayer?.board || []}
+                onSquareClick={handleSquareClick}
+                selectedSquares={selectedSquares}
+                disabled={isSwitching || gameState.phase === 'rolling' || gameState.phase === 'game-over'}
+                firstBonusClaimed={firstBonusClaimed}
+                iClaimedFirstBonus={currentPlayer.completedColumnsFirst}
+                iClaimedSecondBonus={currentPlayer.completedColumnsNotFirst}
+              />
+            </div>
             
             {/* Move Controls */}
-            {(gameState.phase === 'active-selection' || gameState.phase === 'passive-selection') && (
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleConfirmMove}
-                  disabled={!canMakeMove()}
-                  variant="game"
-                  className="flex-1"
-                >
-                  Confirmer le déplacement ({selectedSquares.length} cases)
-                </Button>
-                <Button 
-                  onClick={() => setSelectedSquares([])}
-                  variant="outline"
-                >
-                  Effacer
-                </Button>
-                <Button
-                  onClick={onSkipTurn}
-                  variant="secondary"
-                >
-                  Passer le tour
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-2">
+              <Button
+                onClick={handleConfirmMove}
+                disabled={!canMakeMove() || actionsDisable}
+                variant="game"
+                className="flex-1"
+              >
+                Confirmer le déplacement ({selectedSquares.length} cases)
+              </Button>
+              <Button
+                onClick={() => setSelectedSquares([])}
+                variant="outline"
+                disabled={actionsDisable}
+              >
+                Effacer
+              </Button>
+              <Button
+                onClick={onSkipTurn}
+                variant="secondary"
+                disabled={actionsDisable}
+              >
+                Passer le tour
+              </Button>
+            </div>
           </div>
 
           {/* Dice Panel */}
@@ -230,14 +300,16 @@ export const EncoreGame = () => {
             />
             <div className="flex flex-col gap-1">
               <p className="text-sm font-medium text-muted-foreground mb-2">Autre joueur ({otherPlayer.name}) :</p>
-              <GameBoard
-                board={otherPlayer?.board || []}
-                selectedSquares={[]}
-                disabled={true}
-                firstBonusClaimed={firstBonusClaimed}
-                iClaimedFirstBonus={otherPlayer.completedColumnsFirst}
-                iClaimedSecondBonus={otherPlayer.completedColumnsNotFirst}
-              />
+              <div className="@container" ref={otherBoardContainerRef} style={otherBoardStyle}>
+                <GameBoard
+                  board={otherPlayer?.board || []}
+                  selectedSquares={[]}
+                  disabled={true}
+                  firstBonusClaimed={firstBonusClaimed}
+                  iClaimedFirstBonus={otherPlayer.completedColumnsFirst}
+                  iClaimedSecondBonus={otherPlayer.completedColumnsNotFirst}
+                />
+              </div>
             </div>
           </div>
 

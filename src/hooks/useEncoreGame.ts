@@ -353,34 +353,14 @@ export const useEncoreGame = () => {
         selected: d.selected || d.id === prev.selectedDice.color?.id || d.id === prev.selectedDice.number?.id
       }));
 
-      let nextPhase: GameState['phase'] = phase;
-      let nextPlayer = currentPlayer;
-      let nextActivePlayer = prev.activePlayer;
-
-      if (phase === 'active-selection') {
-        nextPhase = 'passive-selection';
-        nextPlayer = (currentPlayer + 1) % players.length;
-        if (nextPlayer === prev.activePlayer) {
-            nextPhase = 'rolling';
-        }
-      } else if (phase === 'passive-selection') {
-        nextPlayer = (currentPlayer + 1) % players.length;
-        if (nextPlayer === prev.activePlayer) {
-            nextPhase = 'rolling';
-            nextPlayer = (prev.activePlayer + 1) % players.length;
-            nextActivePlayer = nextPlayer;
-        }
-      }
-
       return {
         ...prev,
         players: newPlayers,
         dice: newDice,
         selectedDice: { color: null, number: null },
         selectedFromJoker: { color: false, number: false },
-        phase: nextPhase,
-        currentPlayer: nextPlayer,
-        activePlayer: nextActivePlayer,
+        phase: 'player-switching',
+        lastPhase: phase,
         claimedFirstColumnBonus: newClaimedFirstColumnBonus,
       };
     });
@@ -388,35 +368,46 @@ export const useEncoreGame = () => {
 
   const skipTurn = useCallback(() => {
     setGameState(prev => {
-      const { phase, currentPlayer, players, activePlayer } = prev;
+      const { phase } = prev;
 
       if (phase !== 'active-selection' && phase !== 'passive-selection') {
         return prev;
       }
 
-      let nextPhase: GameState['phase'] = phase;
+      return {
+        ...prev,
+        phase: 'player-switching',
+        lastPhase: phase,
+        selectedDice: { color: null, number: null },
+        selectedFromJoker: { color: false, number: false },
+      };
+    });
+  }, []);
+
+  const completePlayerSwitch = useCallback(() => {
+    setGameState(prev => {
+      if (prev.phase !== 'player-switching') return prev;
+
+      const { players, currentPlayer, activePlayer, lastPhase } = prev;
+      let nextPhase: GameState['phase'] = 'rolling';
       let nextPlayer = currentPlayer;
       let nextActivePlayer = activePlayer;
 
-      if (phase === 'active-selection') {
-        // Active player skips, move to passive selection for other players
+      if (lastPhase === 'active-selection') {
         nextPhase = 'passive-selection';
         nextPlayer = (currentPlayer + 1) % players.length;
-        
-        // If we've cycled through all players (only one player), roll again
         if (nextPlayer === activePlayer) {
-            nextPhase = 'rolling';
+          nextPhase = 'rolling';
         }
-      } else if (phase === 'passive-selection') {
-        // Passive player skips, move to next passive player
+      } else if (lastPhase === 'passive-selection') {
         nextPlayer = (currentPlayer + 1) % players.length;
-
-        // If we've cycled back to the active player, start a new turn for the next player
         if (nextPlayer === activePlayer) {
-            nextPhase = 'rolling';
-            const newActivePlayer = (activePlayer + 1) % players.length;
-            nextPlayer = newActivePlayer;
-            nextActivePlayer = newActivePlayer;
+          nextPhase = 'rolling';
+          const newActivePlayer = (activePlayer + 1) % players.length;
+          nextPlayer = newActivePlayer;
+          nextActivePlayer = newActivePlayer;
+        } else {
+          nextPhase = 'passive-selection';
         }
       }
 
@@ -425,8 +416,7 @@ export const useEncoreGame = () => {
         phase: nextPhase,
         currentPlayer: nextPlayer,
         activePlayer: nextActivePlayer,
-        selectedDice: { color: null, number: null },
-        selectedFromJoker: { color: false, number: false },
+        lastPhase: undefined,
       };
     });
   }, []);
@@ -438,6 +428,7 @@ export const useEncoreGame = () => {
     selectDice,
     makeMove,
     skipTurn,
-    isValidMove
+    isValidMove,
+    completePlayerSwitch,
   };
 };
