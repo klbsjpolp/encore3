@@ -1,10 +1,11 @@
-import {DiceResult, DiceColor, GameColor} from '@/types/game';
+import { DiceResult, DiceColor, GameColor, GameState } from '@/types/game';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Shuffle, HelpCircle } from 'lucide-react';
 
 interface DicePanelProps {
   dice: DiceResult[];
+  phase: GameState['phase'];
   onDiceSelect?: (dice: DiceResult) => void;
   onRollDice?: () => void;
   canRoll?: boolean;
@@ -87,6 +88,7 @@ const DiceDisplay = ({
 
 export const DicePanel = ({
   dice,
+  phase,
   onDiceSelect,
   onRollDice,
   canRoll = false,
@@ -97,8 +99,12 @@ export const DicePanel = ({
   const colorDice = dice.filter(d => d.type === 'color');
   const numberDice = dice.filter(d => d.type === 'number');
 
+  const disabled = phase.includes('-ai');
+  const finalCanRoll = canRoll && !disabled;
+  const finalCanSelect = canSelect && !disabled;
+
   return (
-    <div className="bg-card rounded-xl p-6 shadow-square space-y-6">
+    <div className={cn("bg-card rounded-xl p-6 shadow-square space-y-6 transition-opacity", disabled && "opacity-50 pointer-events-none")}>
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground">Dés</h3>
         <Button
@@ -106,7 +112,7 @@ export const DicePanel = ({
           size="sm"
           variant="game"
           className="gap-2"
-          disabled={!canRoll}
+          disabled={!finalCanRoll}
         >
           <Shuffle className="w-4 h-4" />
           Lancer les dés
@@ -123,7 +129,7 @@ export const DicePanel = ({
                 key={die.id}
                 dice={die}
                 onSelect={onDiceSelect}
-                canSelect={canSelect}
+                canSelect={finalCanSelect}
                 isSelected={selectedColorDice?.id === die.id}
               />
             ))}
@@ -139,7 +145,7 @@ export const DicePanel = ({
                 key={die.id}
                 dice={die}
                 onSelect={onDiceSelect}
-                canSelect={canSelect}
+                canSelect={finalCanSelect}
                 isSelected={selectedNumberDice?.id === die.id}
               />
             ))}

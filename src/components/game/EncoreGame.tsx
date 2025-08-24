@@ -246,6 +246,9 @@ export const EncoreGame = () => {
                   Tour actuel : {currentPlayer?.name}
                   {gameState.phase === 'passive-selection' && ' (Tous les autres joueurs peuvent jouer)'}
                 </p>
+                <p>phase: {gameState.phase}</p>
+                <p>current: {gameState.players[gameState.currentPlayer].name}</p>
+                <p>active: {gameState.players[gameState.activePlayer].name}</p>
               </div>
             )}
             <div className="@container" ref={mainBoardContainerRef} style={mainBoardStyle} onTransitionEnd={handleTransitionEnd}>
@@ -290,6 +293,7 @@ export const EncoreGame = () => {
           {/* Dice Panel */}
           <div className="flex flex-col gap-2">
             <DicePanel
+              phase={gameState.phase}
               dice={gameState.dice}
               onDiceSelect={selectDice}
               onRollDice={rollNewDice}

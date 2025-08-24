@@ -30,12 +30,24 @@ export interface Player {
   jokersRemaining: number;
 }
 
+export type GamePhase =
+  | 'rolling'
+  | 'active-selection'
+  | 'passive-selection'
+  | 'player-switching'
+  | 'game-over';
+
+export type AIPhase =
+  | 'rolling-ai'
+  | 'active-selection-ai'
+  | 'passive-selection-ai';
+
 export interface GameState {
   players: Player[];
   currentPlayer: number;
   activePlayer: number;
-  phase: 'rolling' | 'active-selection' | 'passive-selection' | 'game-over' | 'player-switching';
-  lastPhase?: 'active-selection' | 'passive-selection';
+  phase: GamePhase | AIPhase;
+  lastPhase?: GamePhase | AIPhase;
   dice: DiceResult[];
   selectedDice: { color: DiceResult | null; number: DiceResult | null };
   selectedFromJoker: { color: boolean; number: boolean };
