@@ -45,30 +45,18 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         {/* Completed Columns */}
         <div>
           <p className="text-sm font-medium mb-2">Colonnes</p>
-          <div className="grid grid-cols-8 gap-1">
-            {COLUMN_FIRST_PLAYER_POINTS.map((points, index) => {
-              const column = String.fromCharCode(65 + index);
-              const isCompletedByPlayer = player.completedColumnsFirst.includes(column) || player.completedColumnsNotFirst.includes(column);
-              const firstBonusClaimedBy = claimedFirstColumnBonus[column];
-              const didPlayerClaimFirstBonus = isCompletedByPlayer && firstBonusClaimedBy === player.id;
+          <div className="flex flex-wrap gap-1">
+            {[...player.completedColumnsFirst.map(c => ({col: c, first: true})), ...player.completedColumnsNotFirst.map(c => ({col: c, first: false}))]
+              .sort((a, b) => a.col.localeCompare(b.col))
+              .map(col => {
+                const column = col.col;
+                const points = col.first ? COLUMN_FIRST_PLAYER_POINTS[column.charCodeAt(0) - 65] : COLUMN_SECOND_PLAYER_POINTS[column.charCodeAt(0) - 65];
 
-              return (
-                <div key={column} className={cn(
-                  "text-center border rounded-md p-1",
-                  isCompletedByPlayer ? 'bg-primary/20' : 'bg-muted/50'
-                )}>
-                  <div className="font-bold text-xs">{column}</div>
-                  <div className={cn(
-                    "text-xs",
-                    !!firstBonusClaimedBy && !didPlayerClaimFirstBonus && "line-through text-muted-foreground",
-                    didPlayerClaimFirstBonus && "font-bold text-primary"
-                  )}>{points}</div>
-                  <div className={cn(
-                    "text-xs",
-                    isCompletedByPlayer && !didPlayerClaimFirstBonus && "font-bold text-primary"
-                  )}>{COLUMN_SECOND_PLAYER_POINTS[index]}</div>
-                </div>
-              );
+                return (
+                  <Badge key={column} variant="outline">
+                    {`${column} : ${points}`}
+                  </Badge>
+                );
             })}
           </div>
         </div>

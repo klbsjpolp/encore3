@@ -156,20 +156,43 @@ export const useEncoreGame = () => {
     });
   }, []);
 
-  const makeMove = useCallback((squares: { row: number; col: number }[]) => {
+  const makeMove = useCallback((squares?: { row: number; col: number }[]) => {
     setGameState(prev => {
-      const { selectedDice, currentPlayer, players, phase, selectedFromJoker, claimedFirstColumnBonus, activePlayer } = prev;
-      if (!selectedDice.color || !selectedDice.number || !['active-selection', 'passive-selection', 'active-selection-ai', 'passive-selection-ai'].includes(phase)) return prev;
+      const { currentPlayer, players, phase, claimedFirstColumnBonus } = prev;
+      const isAI = phase.includes('-ai');
+
+      let moveSquares = squares;
+      let selectedDice = prev.selectedDice;
+      let selectedFromJoker = prev.selectedFromJoker;
+
+      if (isAI) {
+        const aiDecision = makeAIMove(prev, isValidMove);
+        if (aiDecision) {
+          moveSquares = aiDecision.squares;
+          selectedDice = { color: aiDecision.color, number: aiDecision.number };
+          selectedFromJoker = { color: aiDecision.color.value === 'wild', number: aiDecision.number.value === 'wild' };
+        } else {
+          // AI chooses to skip
+          return {
+            ...prev,
+            phase: 'player-switching',
+            lastPhase: phase,
+            selectedDice: { color: null, number: null },
+            selectedFromJoker: { color: false, number: false },
+          };
+        }
+      }
+
+      if (!moveSquares || !selectedDice.color || !selectedDice.number || !['active-selection', 'passive-selection', 'active-selection-ai', 'passive-selection-ai'].includes(phase)) {
+        return prev;
+      }
 
       const player = players[currentPlayer];
-      const colorValue = selectedDice.color.value === 'wild' ? (squares.length > 0 ? player.board[squares[0].row][squares[0].col].color : 'yellow') : selectedDice.color.value as GameColor;
-      const numberValue = selectedDice.number.value === 'wild' ? squares.length : (selectedDice.number.value as number);
+      const colorValue = selectedDice.color.value === 'wild' ? (moveSquares.length > 0 ? player.board[moveSquares[0].row][moveSquares[0].col].color : 'yellow') : selectedDice.color.value as GameColor;
+      const numberValue = selectedDice.number.value === 'wild' ? moveSquares.length : (selectedDice.number.value as number);
 
-      if (squares.length !== numberValue || !isValidMove(squares, colorValue, player.board)) {
-        if (player.isAI) {
-            return { ...prev, phase: 'player-switching', lastPhase: phase };
-        }
-        return prev;
+      if (moveSquares.length !== numberValue || !isValidMove(moveSquares, colorValue, player.board)) {
+        return prev; // Invalid move for human, do nothing
       }
 
       const jokersUsed = (selectedFromJoker.color ? 1 : 0) + (selectedFromJoker.number ? 1 : 0);
@@ -182,7 +205,7 @@ export const useEncoreGame = () => {
         const newCompletedColumnsFirst = [...p.completedColumnsFirst];
         const newCompletedColumnsNotFirst = [...p.completedColumnsNotFirst];
 
-        squares.forEach(({ row, col }) => {
+        moveSquares.forEach(({ row, col }) => {
           if (!newBoard[row][col].crossed) {
             newBoard[row][col].crossed = true;
             if (newBoard[row][col].hasStar) starsCollected++;
@@ -214,47 +237,32 @@ export const useEncoreGame = () => {
         return { ...prev, players: newPlayers, phase: 'game-over', winner: updatedPlayer, claimedFirstColumnBonus: newClaimedFirstColumnBonus };
       }
 
-      const newDice = prev.dice.map(d => ({ ...d, selected: d.selected || d.id === prev.selectedDice.color?.id || d.id === prev.selectedDice.number?.id }));
-      const newState = (newPhase: GameState['phase'], switchActivePlayer: boolean): GameState => {
-        const newActivePlayer = switchActivePlayer ? (activePlayer + 1) % players.length : activePlayer;
-        return {
-          ...prev,
-          phase: newPhase,
-          lastPhase: phase,
-          activePlayer: newActivePlayer,
-          selectedDice: {color: null, number: null},
-          selectedFromJoker: {color: false, number: false}
-        };
-      };if (phase === 'passive-selection')
-        return newState('rolling', true);
-      if (phase === 'passive-selection-ai')
-        return newState('rolling-ai', true);
-      if (phase === 'active-selection' || phase === 'active-selection-ai')
-        return newState('player-switching', false);
-      return prev;
+      const newDice = prev.dice.map(d => ({ ...d, selected: d.selected || d.id === selectedDice.color?.id || d.id === selectedDice.number?.id }));
+      return {
+        ...prev,
+        players: newPlayers,
+        claimedFirstColumnBonus: newClaimedFirstColumnBonus,
+        dice: newDice,
+        phase: 'player-switching',
+        lastPhase: phase,
+        selectedDice: { color: null, number: null },
+        selectedFromJoker: { color: false, number: false },
+      };
     });
-  }, [isValidMove]);
+  }, [isValidMove, makeAIMove]);
 
   const skipTurn = useCallback(() => {
     setGameState(prev => {
-      const { phase, activePlayer, players } = prev;
-      const newState = (newPhase: GameState['phase'], switchActivePlayer: boolean): GameState => {
-        const newActivePlayer = switchActivePlayer ? (activePlayer + 1) % players.length : activePlayer;
+      const { phase } = prev;
+      if (phase.includes('active-selection') || phase.includes('passive-selection')) {
         return {
           ...prev,
-          phase: newPhase,
+          phase: 'player-switching',
           lastPhase: phase,
-          activePlayer: newActivePlayer,
-          selectedDice: {color: null, number: null},
-          selectedFromJoker: {color: false, number: false}
+          selectedDice: { color: null, number: null },
+          selectedFromJoker: { color: false, number: false },
         };
-      };
-      if (phase === 'passive-selection')
-        return newState('rolling', true);
-      if (phase === 'passive-selection-ai')
-        return newState('rolling-ai', true);
-      if (phase === 'active-selection' || phase === 'active-selection-ai')
-        return newState('player-switching', false);
+      }
       return prev;
     });
   }, []);
@@ -266,6 +274,29 @@ export const useEncoreGame = () => {
 
       if (lastPhase === 'active-selection' || lastPhase === 'active-selection-ai') {
         const nextPlayerIndex = (activePlayer + 1) % players.length;
+
+        if (nextPlayerIndex === activePlayer) {
+            const newActivePlayer = activePlayer;
+            const nextPlayer = players[newActivePlayer];
+            const nextPhase = nextPlayer.isAI ? 'rolling-ai' : 'rolling';
+            return { ...prev, phase: nextPhase, currentPlayer: newActivePlayer, activePlayer: newActivePlayer, dice: rollDice() };
+        }
+
+        const nextPlayer = players[nextPlayerIndex];
+        const nextPhase = nextPlayer.isAI ? 'passive-selection-ai' : 'passive-selection';
+        return { ...prev, phase: nextPhase, currentPlayer: nextPlayerIndex };
+      }
+
+      if (lastPhase === 'passive-selection' || lastPhase === 'passive-selection-ai') {
+        const nextPlayerIndex = (currentPlayer + 1) % players.length;
+
+        if (nextPlayerIndex === activePlayer) {
+          const newActivePlayer = (activePlayer + 1) % players.length;
+          const nextPlayer = players[newActivePlayer];
+          const nextPhase = nextPlayer.isAI ? 'rolling-ai' : 'rolling';
+          return { ...prev, phase: nextPhase, currentPlayer: newActivePlayer, activePlayer: newActivePlayer, dice: rollDice() };
+        }
+
         const nextPlayer = players[nextPlayerIndex];
         const nextPhase = nextPlayer.isAI ? 'passive-selection-ai' : 'passive-selection';
         return { ...prev, phase: nextPhase, currentPlayer: nextPlayerIndex };
@@ -277,26 +308,25 @@ export const useEncoreGame = () => {
 
   useEffect(() => {
     const { phase } = gameState;
+
+    if (phase === 'player-switching') {
+      const timer = setTimeout(() => completePlayerSwitch(), 200);
+      return () => clearTimeout(timer);
+    }
+
     if (!phase.includes('-ai')) return;
 
+    let timerId;
     if (phase === 'rolling-ai') {
-      setTimeout(() => rollNewDice(), 1000);
+      timerId = setTimeout(() => rollNewDice(), 1000);
     } else if (phase === 'active-selection-ai' || phase === 'passive-selection-ai') {
-      setTimeout(() => {
-        const move = makeAIMove(gameState, isValidMove);
-        if (move) {
-          setGameState(prev => ({
-            ...prev,
-            selectedDice: { color: move.color, number: move.number },
-            selectedFromJoker: { color: move.color.value === 'wild', number: move.number.value === 'wild' },
-          }));
-          setTimeout(() => makeMove(move.squares), 500);
-        } else {
-          skipTurn();
-        }
-      }, 1000);
+      timerId = setTimeout(() => makeMove(), 1000);
     }
-  }, [gameState, rollNewDice, makeAIMove, isValidMove, makeMove, skipTurn]);
+
+    return () => {
+      if (timerId) clearTimeout(timerId);
+    };
+  }, [gameState.phase, completePlayerSwitch, rollNewDice, makeMove, gameState]);
 
   return { gameState, initializeGame, rollNewDice, selectDice, makeMove, skipTurn, isValidMove, completePlayerSwitch };
 };

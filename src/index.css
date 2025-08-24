@@ -238,3 +238,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+@utility grid-cols-fit {
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+}
