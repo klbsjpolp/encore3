@@ -299,7 +299,7 @@ export const EncoreGame = () => {
               selectedNumberDice={gameState.selectedDice.number}
             />
             <div className="flex flex-col gap-1">
-              <p className="text-sm font-medium text-muted-foreground mb-2">Autre joueur ({otherPlayer.name}) :</p>
+              <p className="text-sm font-medium text-muted-foreground">Autre joueur ({otherPlayer.name}) :</p>
               <div className="@container" ref={otherBoardContainerRef} style={otherBoardStyle}>
                 <GameBoard
                   board={otherPlayer?.board || []}

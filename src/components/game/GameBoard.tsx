@@ -49,11 +49,11 @@ export const GameBoard = ({
     previewSquares.some(s => s.row === row && s.col === col);
 
   return (
-    <div className="bg-gradient-board rounded-xl p-6 shadow-square">
+    <div className="bg-gradient-board rounded-sm @lg:rounded-xl p-2 @lg:p-6 shadow-square">
       {/* Column Headers */}
-      <div className="grid grid-cols-15 gap-1 mb-3">
+      <div className="grid grid-cols-15 gap-1">
         {COLUMNS.map((col, colIndex) => (
-          <div key={col} className="aspect-square rounded-md bg-secondary flex items-center justify-center">
+          <div key={col} className="aspect-square rounded-xs @lg:rounded-md bg-secondary flex items-center justify-center">
             <span className={cn(
               "text-xs font-semibold text-primary",
               isStartingColumn(colIndex) && "text-destructive font-black",
@@ -65,22 +65,22 @@ export const GameBoard = ({
       </div>
 
       {/* Game Grid */}
-      <div className="space-y-1">
+      <div className="space-y-1 mt-1 @lg:mt-3 mb-1 @lg:mb-3">
         {board.map((row, rowIndex) => (
-          <div key={rowIndex} className="grid grid-cols-15 gap-1">
+          <div key={rowIndex} className="grid grid-cols-15 gap-0.5 @lg:gap-1">
             {row.map((square, colIndex) => (
               <button
                 key={`${rowIndex}-${colIndex}`}
                 onClick={() => !disabled && onSquareClick?.(rowIndex, colIndex)}
                 disabled={disabled || square.crossed}
                 className={cn(
-                  "aspect-square rounded-md relative transition-all duration-200 border-2",
+                  "aspect-square rounded-xs @lg:rounded-md relative transition-all duration-200 border-1 @lg:border-2",
                   !disabled && "hover:scale-105 hover:shadow-md active:scale-95",
                   getColorClass(square.color),
                   square.crossed && "opacity-30 cursor-not-allowed",
                   isSquareSelected(rowIndex, colIndex) && "ring-4 ring-ring shadow-glow scale-110",
                   isSquarePreview(rowIndex, colIndex) && "ring-2 ring-primary/50 scale-105",
-                  isStartingColumn(colIndex) ? 'outline outline-2 outline-border' : '',
+                  isStartingColumn(colIndex) ? 'outline-solid outline-2 outline-border' : '',
                   !disabled && !square.crossed && "cursor-pointer"
                 )}
               >
@@ -105,13 +105,13 @@ export const GameBoard = ({
       </div>
 
       {/* Column Point Values */}
-      <div className="grid grid-cols-15 gap-1 mt-3">
+      <div className="grid grid-cols-15 gap-1">
         {COLUMN_FIRST_PLAYER_POINTS.map((points, index) => {
           const isClaimedByMe = iClaimedFirstBonus.includes(COLUMNS[index]);
           const isClaimedByOther = firstBonusClaimed.includes(COLUMNS[index]) && !isClaimedByMe;
           return (
             <div key={index} className={cn(
-              "aspect-square rounded-md bg-secondary flex items-center justify-center",
+              "aspect-square rounded-xs @lg:rounded-md bg-secondary flex items-center justify-center",
               isClaimedByMe && "ring-2 ring-yellow-400",
             )}>
               <span className={cn(

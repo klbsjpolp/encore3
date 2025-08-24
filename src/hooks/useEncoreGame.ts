@@ -359,7 +359,7 @@ export const useEncoreGame = () => {
         dice: newDice,
         selectedDice: { color: null, number: null },
         selectedFromJoker: { color: false, number: false },
-        phase: 'player-switching',
+        phase: phase === 'active-selection' ? 'player-switching' : 'rolling',
         lastPhase: phase,
         claimedFirstColumnBonus: newClaimedFirstColumnBonus,
       };
