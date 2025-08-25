@@ -45,18 +45,13 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         {/* Completed Columns */}
         <div>
           <p className="text-sm font-medium mb-2">Colonnes</p>
-          <div className="flex flex-wrap gap-1">
-            {[...player.completedColumnsFirst.map(c => ({col: c, first: true})), ...player.completedColumnsNotFirst.map(c => ({col: c, first: false}))]
-              .sort((a, b) => a.col.localeCompare(b.col))
-              .map(col => {
-                const column = col.col;
-                const points = col.first ? COLUMN_FIRST_PLAYER_POINTS[column.charCodeAt(0) - 65] : COLUMN_SECOND_PLAYER_POINTS[column.charCodeAt(0) - 65];
-
-                return (
-                  <Badge key={column} variant="outline">
-                    {`${column} : ${points}`}
-                  </Badge>
-                );
+          <div className="grid grid-cols-5 gap-0.5">
+            {Array.from('ABCDEFGHIJKLMNO').map((c,i) => {
+              const firstPoints = player.completedColumnsFirst.includes(c) ? COLUMN_FIRST_PLAYER_POINTS[i] : null;
+              const secondPoints = firstPoints == null && player.completedColumnsNotFirst.includes(c) ? COLUMN_SECOND_PLAYER_POINTS[i] : null;
+              return <Badge key={c} variant={firstPoints == null ? secondPoints == null ? 'outline' : 'secondary' : 'default'}>
+                {`${c}: ${firstPoints ?? secondPoints ?? '-'}`}
+              </Badge>
             })}
           </div>
         </div>
@@ -79,6 +74,12 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
                 )}
               />
             ))}
+            {Array.from({ length: 2-player.completedColors.length }, (_, i) =>
+              <div
+                key={i}
+                className="w-6 h-6 rounded border-2 bg-muted"
+              />
+            )}
           </div>
         </div>
 

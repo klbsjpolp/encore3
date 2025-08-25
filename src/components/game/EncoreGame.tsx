@@ -1,5 +1,5 @@
-import { useState, useRef, useLayoutEffect, CSSProperties, useEffect } from 'react';
-import { useEncoreGame } from '@/hooks/useEncoreGame';
+import {useState, useRef, useLayoutEffect, CSSProperties, useEffect, useCallback} from 'react';
+import { useEncoreGame, findConnectedGroup } from '@/hooks/useEncoreGame';
 import { GameColor } from '@/types/game';
 import { GameBoard } from './GameBoard';
 import { DicePanel } from './DicePanel';
@@ -18,7 +18,17 @@ export const EncoreGame = () => {
   const [setupMode, setSetupMode] = useState(true);
   const [playerNames, setPlayerNames] = useState(['Joueur 1', 'Joueur 2']);
   const [aiPlayers, setAIPlayers] = useState([false, true]);
-  const [selectedSquares, setSelectedSquares] = useState<{ row: number; col: number }[]>([]);
+  const [selectedSquares, _setSelectedSquares] = useState<{ row: number; col: number }[]>([]);
+  const setSelectedSquares = useCallback((squares: { row: number; col: number }[]) => {
+    //remove duplicate
+    const newSquares: { row: number; col: number }[] = [];
+    squares.forEach(s => {
+      if (!newSquares.some(ns => ns.row === s.row && ns.col === s.col)) newSquares.push(s);
+    });
+    console.log('setSelectedSquares', 'after', newSquares, 'before', squares);
+    _setSelectedSquares(squares);
+  }, []);
+  const [hoveredSquares, setHoveredSquares] = useState<{ row: number; col: number }[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
 
   const mainBoardContainerRef = useRef<HTMLDivElement>(null);
@@ -50,15 +60,15 @@ export const EncoreGame = () => {
     }
   }, [isSwitching]);
 
-  const handleTransitionEnd = () => {
+  const handleTransitionEnd = useCallback(() => {
     // 3. When animation is over, complete the switch
     if (isAnimating) {
       completePlayerSwitch();
       setIsAnimating(false);
     }
-  };
+  }, [completePlayerSwitch, isAnimating]);
 
-  const handleGameSetup = () => {
+  const handleGameSetup = useCallback(() => {
     if (playerNames.some(name => !name.trim())) {
       toast({
         title: "Configuration invalide",
@@ -74,31 +84,93 @@ export const EncoreGame = () => {
       title: "Partie commencée !",
       description: `${playerNames[0]} commence.`
     });
-  };
+  }, [aiPlayers, initializeGame, playerNames]);
 
-  const handleSquareClick = (row: number, col: number) => {
+  const handleSquareClick = useCallback((row: number, col: number) => {
     if (gameState.phase !== 'active-selection' && gameState.phase !== 'passive-selection') return;
-    
-    const square = { row, col };
-    const isSelected = selectedSquares.some(s => s.row === row && s.col === col);
-    
-    if (isSelected) {
-      setSelectedSquares(prev => prev.filter(s => !(s.row === row && s.col === col)));
-    } else {
-      setSelectedSquares(prev => [...prev, square]);
-    }
-  };
 
-  const handleConfirmMove = () => {
+    const player = gameState.players[gameState.currentPlayer];
+    const color = player.board[row][col].color;
+    const group = findConnectedGroup(row, col, color, player.board);
+    const isGroupAlreadySelected =
+      selectedSquares.length === group.length &&
+      group.every(hs => selectedSquares.some(ss => ss.row === hs.row && ss.col === hs.col));
+
+    if (isGroupAlreadySelected) {
+      console.log('handleSquareClick','isGroupAlreadySelected', 'group', group, 'selectedSquares', selectedSquares)
+
+      setSelectedSquares([]);
+    } else {
+      const square = { row, col };
+      const isSelected = selectedSquares.some(s => s.row === row && s.col === col);
+
+      if (isSelected) {
+        setSelectedSquares(selectedSquares.filter(s => !(s.row === row && s.col === col)));
+      } else {
+        const isClickOnHoveredGroup = hoveredSquares.length > 0 && hoveredSquares.some(s => s.row === row && s.col === col);
+        console.log('handleSquareClick','isClickOnHoveredGroup',isClickOnHoveredGroup, 'group', group, 'selectedSquares', selectedSquares)
+
+        if (isClickOnHoveredGroup) {
+          setSelectedSquares([...hoveredSquares]);
+        } else {
+          setSelectedSquares([...selectedSquares, square]);
+        }
+      }
+    }
+  }, [gameState.currentPlayer, gameState.phase, gameState.players, hoveredSquares, selectedSquares, setSelectedSquares]);
+
+  const handleSquareHover = useCallback((row: number, col: number) => {
+    if (gameState.phase !== 'active-selection' && gameState.phase !== 'passive-selection') return;
+    if (!gameState.selectedDice.color || !gameState.selectedDice.number) return;
+
+    const player = gameState.players[gameState.currentPlayer];
+    const color = player.board[row][col].color;
+    const selectedColor = gameState.selectedDice.color.value;
+
+    if (selectedColor !== 'wild' && selectedColor !== color) {
+      setHoveredSquares([]);
+      return;
+    }
+
+    const group = findConnectedGroup(row, col, color, player.board);
+    const numberValue = gameState.selectedDice.number.value as (number | 'wild');
+
+    if (numberValue === 'wild' || group.length === numberValue) { //If it fits the whole group, select it all
+      if(isValidMove(group, color, player.board)) {
+        setHoveredSquares(group);
+      } else {
+        setHoveredSquares([]);
+      }
+    } else {
+      const selectedFromGroup = selectedSquares.filter(s => group.some(c => s.row === c.row && s.col === c.col));
+      if (selectedFromGroup.length > 0) { //If we already started to select from this group, select the cell
+        setHoveredSquares([...selectedFromGroup, {row, col}]);
+      } else if (group.length > numberValue) { //If the group is larger, select the cell
+        if (isValidMove([{row, col}], color, player.board)) {
+          setHoveredSquares([{row, col}]);
+        } else {
+          setHoveredSquares([]);
+        }
+      } else {
+        setHoveredSquares([]);
+      }
+    }
+  }, [gameState.currentPlayer, gameState.phase, gameState.players, gameState.selectedDice.color, gameState.selectedDice.number, isValidMove, selectedSquares]);
+
+  const handleSquareLeave = useCallback(() => {
+    setHoveredSquares([]);
+  }, []);
+
+  const handleConfirmMove = useCallback(() => {
     makeMove(selectedSquares);
     setSelectedSquares([]);
     toast({
       title: "Déplacement terminé",
       description: `${gameState.players[gameState.currentPlayer].name} a joué son tour.`
     });
-  };
+  }, [gameState.currentPlayer, gameState.players, makeMove, selectedSquares, setSelectedSquares]);
 
-  const canMakeMove = () => {
+  const canMakeMove = useCallback(() => {
     if (!gameState.selectedDice.color || !gameState.selectedDice.number) return false;
     if (selectedSquares.length === 0) return false;
     
@@ -110,17 +182,17 @@ export const EncoreGame = () => {
     
     return selectedSquares.length === numberValue && 
            isValidMove(selectedSquares, colorValue as GameColor, player.board);
-  };
+  }, [gameState.currentPlayer, gameState.players, gameState.selectedDice.color, gameState.selectedDice.number, isValidMove, selectedSquares]);
 
-  const resetGame = () => {
+  const resetGame = useCallback(() => {
     setSetupMode(true);
     setSelectedSquares([]);
-  };
+  }, [setSelectedSquares]);
 
-  const onSkipTurn = () => {
+  const onSkipTurn = useCallback(() => {
     setSelectedSquares([]);
     skipTurn();
-  }
+  }, [setSelectedSquares, skipTurn]);
 
   if (setupMode) {
     return (
@@ -255,7 +327,10 @@ export const EncoreGame = () => {
               <GameBoard
                 board={currentPlayer?.board || []}
                 onSquareClick={handleSquareClick}
+                onSquareHover={handleSquareHover}
+                onSquareLeave={handleSquareLeave}
                 selectedSquares={selectedSquares}
+                hoveredSquares={hoveredSquares}
                 disabled={isSwitching || gameState.phase === 'rolling' || gameState.phase === 'game-over'}
                 firstBonusClaimed={firstBonusClaimed}
                 iClaimedFirstBonus={currentPlayer.completedColumnsFirst}
