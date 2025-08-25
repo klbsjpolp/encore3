@@ -296,6 +296,7 @@ export const EncoreGame = () => {
             </h1>
             <Badge variant="default" className="text-lg px-3 py-1">
               {isSwitching && 'Changement de joueur...'}
+              {gameState.phase === 'game-over' && `🎉 ${gameState.winner?.name} gagne ! 🎉`}
               {gameState.phase === 'rolling' && 'Lancer les dés'}
               {gameState.phase === 'active-selection' && 'Tour du joueur actif'}
               {gameState.phase === 'passive-selection' && 'Tour des joueurs passifs'}
@@ -406,26 +407,6 @@ export const EncoreGame = () => {
           </div>
         </div>
       </div>
-
-      {/* Game Over Dialog */}
-      <Dialog open={gameState.phase === 'game-over'}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-center">Partie terminée !</DialogTitle>
-          </DialogHeader>
-          <div className="text-center space-y-4">
-            <p className="text-xl">
-              🎉 {gameState.winner?.name} gagne ! 🎉
-            </p>
-            <p className="text-muted-foreground">
-              A complété {gameState.winner?.completedColors.length} couleurs
-            </p>
-            <Button onClick={resetGame} className="w-full">
-              Rejouer
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
