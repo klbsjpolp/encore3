@@ -162,7 +162,7 @@ export const DicePanel = ({
                   onSelect={onDiceSelect}
                   canSelect={finalCanSelect}
                   isSelected={selectedColorDice?.id === die.id}
-                  hideUsedMarks={phase.includes('passive-selection')}
+                  hideUsedMarks={false}
                 />
               ))
             )}
@@ -193,7 +193,7 @@ export const DicePanel = ({
                   onSelect={onDiceSelect}
                   canSelect={finalCanSelect}
                   isSelected={selectedNumberDice?.id === die.id}
-                  hideUsedMarks={phase.includes('passive-selection')}
+                  hideUsedMarks={false}
                 />
               ))
             )}

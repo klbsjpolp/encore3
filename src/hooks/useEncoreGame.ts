@@ -224,8 +224,8 @@ export const useEncoreGame = () => {
       if (prev.phase.includes('-ai') || !inActiveOrPassive) {
         return prev;
       }
-      // Allow selecting dice that were marked as used by the active player during passive-selection
-      if (dice.selected && !isPassivePhase) {
+      // Prevent selecting dice already used by the active player during passive-selection
+      if (dice.selected && isPassivePhase) {
         return prev;
       }
       const newSelectedDice = { ...prev.selectedDice };
