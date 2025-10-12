@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Star, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS, TOTAL_STARS} from "@/hooks/useEncoreGame.ts";
+import {COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS, TOTAL_STARS, calculateColumnScore, calculateFinalScore} from "@/hooks/useEncoreGame.ts";
 import {ReactNode} from "react";
 
 interface ScorePanelProps {
@@ -11,55 +11,30 @@ interface ScorePanelProps {
   isCurrentPlayer?: boolean;
   gameComplete?: boolean;
   claimedFirstColumnBonus: Record<string, string>;
+  allPlayers?: Player[];
 }
 
-export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = false, claimedFirstColumnBonus = {} }: ScorePanelProps) => {
-  const columnsScore = Array.from('ABCDEFGHIJKLMNO').map((c,i) => {
-      const firstPoints = player.completedColumnsFirst.includes(c) ? COLUMN_FIRST_PLAYER_POINTS[i] : null;
-      const secondPoints = firstPoints == null && player.completedColumnsNotFirst.includes(c) ? COLUMN_SECOND_PLAYER_POINTS[i] : null;
-      return firstPoints ?? secondPoints ?? 0;
-    }).reduce((a, b) => a + b, 0);
+export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = false, claimedFirstColumnBonus = {}, allPlayers = [] }: ScorePanelProps) => {
+  const columnsScore = calculateColumnScore(player);
 
-  let scorePanel: ReactNode;
+  let scorePanel: ReactNode | null = null;
   if (gameComplete) {
-    const jokersRemaining = player.jokersRemaining;
-    // This would need to be calculated based on first completion logic
-    const colorScore = player.completedColors.length * 5; // Simplified for now
-    const starPenalty = TOTAL_STARS - player.starsCollected;
-    const finalScore = columnsScore + jokersRemaining + colorScore - starPenalty;
+    const { columnsScore, jokersScore, colorsScore, starPenalty, totalScore } = calculateFinalScore(player);
     scorePanel = (
-      <div className="space-y-2 pt-2 border-t">
-        <div className="flex justify-between text-sm">
-          <span>Colonnes :</span>
+        <div className="flex font-bold text-lg border-t pt-2 gap-1">
+          <span>Total :</span><span className="grow" />
           <span>{columnsScore}</span>
+          <span>+</span>
+          <span>{colorsScore}</span>
+          <span className="text-destructive">-</span>
+          <span className="text-destructive">{starPenalty}</span>
+          <span>+</span>
+          <span>{jokersScore}</span>
+          <span>=</span>
+          <span>{totalScore}</span>
         </div>
-        <div className="flex justify-between text-sm">
-          <span>Joker :</span>
-          <span>+{jokersRemaining}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span>Couleurs :</span>
-          <span>+{colorScore}</span>
-        </div>
-        <div className="flex justify-between text-sm text-destructive">
-          <span>Pénalité d'étoile :</span>
-          <span>-{starPenalty}</span>
-        </div>
-        <div className="flex justify-between font-bold text-lg border-t pt-2">
-          <span>Total :</span>
-          <span>{finalScore}</span>
-        </div>
-      </div>
     );
-  } else
-    scorePanel = (
-      <div className="bg-muted rounded-lg p-3">
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">Score des colonnes</p>
-          <p className="text-2xl font-bold">{columnsScore}</p>
-        </div>
-      </div>
-    );
+  }
 
   return (
     <Card className={cn(
@@ -72,15 +47,20 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
             {player.name}
             {isCurrentPlayer && <Badge variant="default">Actuel</Badge>}
           </span>
-          {gameComplete && player.score === Math.max(...[player.score]) && (
-            <Trophy className="w-5 h-5 text-yellow-500" />
-          )}
+          {gameComplete && allPlayers.length > 0 && (() => {
+            const playerScores = allPlayers.map(p => calculateFinalScore(p).totalScore);
+            const maxScore = Math.max(...playerScores);
+            const currentScore = calculateFinalScore(player).totalScore;
+            return currentScore === maxScore && (
+              <Trophy className="w-5 h-5 text-yellow-500" />
+            );
+          })()}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Completed Columns */}
         <div>
-          <p className="text-sm font-medium mb-2">Colonnes</p>
+          <p className="text-sm font-medium mb-2">Colonnes (total: {columnsScore} points)</p>
           <div className="grid grid-cols-5 gap-0.5">
             {Array.from('ABCDEFGHIJKLMNO').map((c,i) => {
               const firstPoints = player.completedColumnsFirst.includes(c) ? COLUMN_FIRST_PLAYER_POINTS[i] : null;
@@ -96,22 +76,25 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         <div>
           <p className="text-sm font-medium mb-2">Couleurs complétées</p>
           <div className="flex flex-wrap gap-1">
-            {player.completedColors.map(color => (
-              <div
-                key={color}
-                className={cn(
-                  "w-6 h-6 rounded border-2 flex items-center justify-center text-[10px] font-bold",
-                  color === 'yellow' && "bg-game-yellow border-yellow-600 text-black",
-                  color === 'green' && "bg-game-green border-green-700 text-white",
-                  color === 'blue' && "bg-game-blue border-blue-700 text-white",
-                  color === 'red' && "bg-game-red border-red-700 text-white",
-                  color === 'orange' && "bg-game-orange border-orange-700 text-black",
-                  color === 'purple' && "bg-game-purple border-purple-700 text-white"
-                )}
-              >
-                +5
-              </div>
-            ))}
+            {player.completedColors.map(color => {
+              const points = player.completedColorsFirst.includes(color) ? 5 : (player.completedColorsNotFirst.includes(color) ? 3 : 0);
+              return (
+                <div
+                  key={color}
+                  className={cn(
+                    "w-6 h-6 rounded border-2 flex items-center justify-center text-[10px] font-bold",
+                    color === 'yellow' && "bg-game-yellow border-yellow-600 text-black",
+                    color === 'green' && "bg-game-green border-green-700 text-white",
+                    color === 'blue' && "bg-game-blue border-blue-700 text-white",
+                    color === 'red' && "bg-game-red border-red-700 text-white",
+                    color === 'orange' && "bg-game-orange border-orange-700 text-black",
+                    color === 'purple' && "bg-game-purple border-purple-700 text-white"
+                  )}
+                >
+                  {points > 0 ? `+${points}` : '0'}
+                </div>
+              );
+            })}
             {Array.from({ length: 2-player.completedColors.length }, (_, i) =>
               <div
                 key={i}
@@ -123,7 +106,7 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
 
         {/* Stars Collected */}
         <div>
-          <p className="text-sm font-medium mb-2">Étoiles collectées</p>
+          <p className="text-sm font-medium mb-2">Étoiles collectées ({player.starsCollected}/{TOTAL_STARS})</p>
           <div className="flex items-center gap-1">
             {Array.from({ length: TOTAL_STARS }, (_, i) => (
               <Star
@@ -140,7 +123,7 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
 
         {/* Jokers */}
         <div>
-          <p className="text-sm font-medium mb-2">Jokers</p>
+          <p className="text-sm font-medium mb-2">Jokers ({player.jokersRemaining}/{8})</p>
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
               {Array.from({ length: 8 }, (_, i) => (

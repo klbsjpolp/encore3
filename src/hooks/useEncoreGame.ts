@@ -7,6 +7,30 @@ export const COLUMN_SECOND_PLAYER_POINTS = [3, 2, 2, 2, 1, 1, 1, 0, 1, 1, 1, 2, 
 
 export const TOTAL_STARS = 15;
 
+export const calculateColumnScore = (player: Player): number => {
+  return Array.from('ABCDEFGHIJKLMNO').map((c, i) => {
+    const firstPoints = player.completedColumnsFirst.includes(c) ? COLUMN_FIRST_PLAYER_POINTS[i] : null;
+    const secondPoints = firstPoints == null && player.completedColumnsNotFirst.includes(c) ? COLUMN_SECOND_PLAYER_POINTS[i] : null;
+    return firstPoints ?? secondPoints ?? 0;
+  }).reduce((a, b) => a + b, 0);
+};
+
+export const calculateFinalScore = (player: Player): {
+  columnsScore: number;
+  jokersScore: number;
+  colorsScore: number;
+  starPenalty: number;
+  totalScore: number;
+} => {
+  const columnsScore = calculateColumnScore(player);
+  const jokersScore = player.jokersRemaining;
+  const colorsScore = player.completedColorsFirst.length * 5 + player.completedColorsNotFirst.length * 3;
+  const starPenalty = TOTAL_STARS - player.starsCollected;
+  const totalScore = columnsScore + jokersScore + colorsScore - starPenalty;
+
+  return { columnsScore, jokersScore, colorsScore, starPenalty, totalScore };
+};
+
 const createInitialBoard = (): Square[][] => {
   const colorLayout: GameColor[][] = [
     ['green','green','green','yellow','yellow','yellow','yellow','green','blue','blue','blue','orange','yellow','yellow','yellow'],
@@ -112,6 +136,8 @@ export const useEncoreGame = () => {
     gameStarted: false,
     winner: null,
     claimedFirstColumnBonus: {},
+    claimedFirstColorBonus: {},
+    claimedSecondColorBonus: {},
   });
   const { makeAIMove } = useAIPlayer();
 
@@ -160,9 +186,10 @@ export const useEncoreGame = () => {
       board: createInitialBoard(),
       starsCollected: 0,
       completedColors: [],
+      completedColorsFirst: [],
+      completedColorsNotFirst: [],
       completedColumnsFirst: [],
       completedColumnsNotFirst: [],
-      score: 0,
       jokersRemaining: 8
     }));
     setGameState({
@@ -175,7 +202,9 @@ export const useEncoreGame = () => {
       selectedFromJoker: { color: false, number: false },
       gameStarted: true,
       winner: null,
-      claimedFirstColumnBonus: {}
+      claimedFirstColumnBonus: {},
+      claimedFirstColorBonus: {},
+      claimedSecondColorBonus: {},
     });
   }, []);
 
@@ -206,7 +235,7 @@ export const useEncoreGame = () => {
 
   const makeMove = useCallback((squares?: { row: number; col: number }[]) => {
     setGameState(prev => {
-      const { currentPlayer, players, phase, claimedFirstColumnBonus } = prev;
+      const { currentPlayer, players, phase, claimedFirstColumnBonus, claimedFirstColorBonus, claimedSecondColorBonus } = prev;
       const isAI = phase.includes('-ai');
 
       let moveSquares = squares;
@@ -245,11 +274,12 @@ export const useEncoreGame = () => {
 
       const jokersUsed = (selectedFromJoker.color ? 1 : 0) + (selectedFromJoker.number ? 1 : 0);
       const newClaimedFirstColumnBonus = { ...claimedFirstColumnBonus };
+            const newClaimedFirstColorBonus = { ...claimedFirstColorBonus };
+            const newClaimedSecondColorBonus = { ...claimedSecondColorBonus };
       const newPlayers = players.map((p, index) => {
         if (index !== currentPlayer) return p;
         const newBoard = p.board.map(row => row.map(cell => ({ ...cell })));
         let starsCollected = p.starsCollected;
-        let newScore = p.score;
         const newCompletedColumnsFirst = [...p.completedColumnsFirst];
         const newCompletedColumnsNotFirst = [...p.completedColumnsNotFirst];
 
@@ -265,24 +295,44 @@ export const useEncoreGame = () => {
           if (!newCompletedColumnsFirst.includes(column) && !newCompletedColumnsNotFirst.includes(column)) {
             if (newBoard.every(row => row[col].crossed)) {
               if (!newClaimedFirstColumnBonus[column]) {
-                newScore += COLUMN_FIRST_PLAYER_POINTS[col];
                 newClaimedFirstColumnBonus[column] = p.id;
                 newCompletedColumnsFirst.push(column);
               } else {
-                newScore += COLUMN_SECOND_PLAYER_POINTS[col];
                 newCompletedColumnsNotFirst.push(column);
               }
             }
           }
         }
 
-        const completedColors = colorValue && checkColorCompletion(newBoard, colorValue) ? [...p.completedColors, colorValue] : p.completedColors;
-        return { ...p, board: newBoard, starsCollected, completedColors, completedColumnsFirst: newCompletedColumnsFirst, completedColumnsNotFirst: newCompletedColumnsNotFirst, score: newScore, jokersRemaining: p.jokersRemaining - jokersUsed };
+        const newCompletedColorsFirst = [...p.completedColorsFirst];
+        const newCompletedColorsNotFirst = [...p.completedColorsNotFirst];
+        const completedColors = [...p.completedColors];
+        if (colorValue && checkColorCompletion(newBoard, colorValue) && !completedColors.includes(colorValue)) {
+          completedColors.push(colorValue);
+          if (!newClaimedFirstColorBonus[colorValue]) {
+            newClaimedFirstColorBonus[colorValue] = p.id;
+            newCompletedColorsFirst.push(colorValue);
+          } else if (!newClaimedSecondColorBonus[colorValue] && newClaimedFirstColorBonus[colorValue] !== p.id) {
+            newClaimedSecondColorBonus[colorValue] = p.id;
+            newCompletedColorsNotFirst.push(colorValue);
+          }
+        }
+
+        return { ...p, board: newBoard, starsCollected, completedColors, completedColorsFirst: newCompletedColorsFirst, completedColorsNotFirst: newCompletedColorsNotFirst, completedColumnsFirst: newCompletedColumnsFirst, completedColumnsNotFirst: newCompletedColumnsNotFirst, jokersRemaining: p.jokersRemaining - jokersUsed };
       });
 
       const updatedPlayer = newPlayers[currentPlayer];
       if (updatedPlayer.completedColors.length >= 2) {
-        return { ...prev, players: newPlayers, phase: 'game-over', winner: updatedPlayer, claimedFirstColumnBonus: newClaimedFirstColumnBonus };
+        // Calculate final scores for all players to determine the winner
+        const playerScores = newPlayers.map(p => ({
+          player: p,
+          finalScore: calculateFinalScore(p).totalScore
+        }));
+        const winner = playerScores.reduce((max, current) =>
+          current.finalScore > max.finalScore ? current : max
+        ).player;
+
+        return { ...prev, players: newPlayers, phase: 'game-over', winner, claimedFirstColumnBonus: newClaimedFirstColumnBonus, claimedFirstColorBonus: newClaimedFirstColorBonus, claimedSecondColorBonus: newClaimedSecondColorBonus };
       }
 
       const newDice = prev.dice.map(d => ({ ...d, selected: d.selected || d.id === selectedDice.color?.id || d.id === selectedDice.number?.id }));
@@ -290,6 +340,8 @@ export const useEncoreGame = () => {
         ...prev,
         players: newPlayers,
         claimedFirstColumnBonus: newClaimedFirstColumnBonus,
+        claimedFirstColorBonus: newClaimedFirstColorBonus,
+        claimedSecondColorBonus: newClaimedSecondColorBonus,
         dice: newDice,
         phase: 'player-switching',
         lastPhase: phase,
@@ -364,7 +416,7 @@ export const useEncoreGame = () => {
 
     if (!phase.includes('-ai')) return;
 
-    let timerId;
+    let timerId: ReturnType<typeof setTimeout> | undefined;
     if (phase === 'rolling-ai') {
       timerId = setTimeout(() => rollNewDice(), 1000);
     } else if (phase === 'active-selection-ai' || phase === 'passive-selection-ai') {

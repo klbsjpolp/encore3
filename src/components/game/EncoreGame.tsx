@@ -402,6 +402,7 @@ export const EncoreGame = () => {
                 isCurrentPlayer={index === gameState.currentPlayer}
                 gameComplete={gameState.phase === 'game-over'}
                 claimedFirstColumnBonus={gameState.claimedFirstColumnBonus}
+                allPlayers={gameState.players}
               />
             ))}
           </div>

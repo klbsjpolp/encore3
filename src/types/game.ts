@@ -24,9 +24,10 @@ export interface Player {
   board: Square[][];
   starsCollected: number;
   completedColors: GameColor[];
+  completedColorsFirst: GameColor[];
+  completedColorsNotFirst: GameColor[];
   completedColumnsFirst: string[];
   completedColumnsNotFirst: string[];
-  score: number;
   jokersRemaining: number;
 }
 
@@ -54,6 +55,8 @@ export interface GameState {
   gameStarted: boolean;
   winner: Player | null;
   claimedFirstColumnBonus: Record<string, string>; // Maps column char to player ID
+  claimedFirstColorBonus: Partial<Record<GameColor, string>>; // Maps color to first finisher player ID
+  claimedSecondColorBonus: Partial<Record<GameColor, string>>; // Maps color to second finisher player ID
 }
 
 export interface GameMove {
