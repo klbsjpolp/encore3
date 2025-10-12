@@ -1,7 +1,8 @@
-import {useState, useRef, useLayoutEffect, CSSProperties, useEffect, useCallback} from 'react';
+import {useState, useRef, useLayoutEffect, CSSProperties, useEffect, useCallback, useMemo} from 'react';
 import { useEncoreGame, findConnectedGroup } from '@/hooks/useEncoreGame';
-import { GameColor } from '@/types/game';
+import { GameColor, Square } from '@/types/game';
 import { GameBoard } from './GameBoard';
+import { BoardPreview } from './BoardPreview';
 import { DicePanel } from './DicePanel';
 import { ScorePanel } from './ScorePanel';
 import { Button } from '@/components/ui/button';
@@ -9,15 +10,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Gamepad2, Users, Bot, Play, RotateCcw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { BOARD_CONFIGURATIONS } from '@/data/boardConfigurations';
 
 export const EncoreGame = () => {
   const { gameState, initializeGame, rollNewDice, selectDice, makeMove, skipTurn, isValidMove, completePlayerSwitch } = useEncoreGame();
   const [setupMode, setSetupMode] = useState(true);
   const [playerNames, setPlayerNames] = useState(['Joueur 1', 'Joueur 2']);
   const [aiPlayers, setAIPlayers] = useState([false, true]);
+  const [selectedBoards, setSelectedBoards] = useState([BOARD_CONFIGURATIONS[0].id, BOARD_CONFIGURATIONS[0].id]);
   const [selectedSquares, _setSelectedSquares] = useState<{ row: number; col: number }[]>([]);
   const setSelectedSquares = useCallback((squares: { row: number; col: number }[]) => {
     //remove duplicate
@@ -78,13 +81,13 @@ export const EncoreGame = () => {
       return;
     }
 
-    initializeGame(playerNames, aiPlayers);
+    initializeGame(playerNames, aiPlayers, selectedBoards);
     setSetupMode(false);
     toast({
       title: "Partie commencée !",
       description: `${playerNames[0]} commence.`
     });
-  }, [aiPlayers, initializeGame, playerNames]);
+  }, [aiPlayers, initializeGame, playerNames, selectedBoards]);
 
   const handleSquareClick = useCallback((row: number, col: number) => {
     if (gameState.phase !== 'active-selection' && gameState.phase !== 'passive-selection') return;
@@ -221,6 +224,7 @@ export const EncoreGame = () => {
                         setPlayerNames(newNames);
                       }}
                       placeholder={`Nom du joueur ${index + 1}`}
+                      className="flex-1"
                     />
                     <Button
                       variant={aiPlayers[index] ? "default" : "outline"}
@@ -233,6 +237,27 @@ export const EncoreGame = () => {
                     >
                       {aiPlayers[index] ? <Bot className="w-4 h-4" /> : <Users className="w-4 h-4" />}
                     </Button>
+                    <Select
+                      value={selectedBoards[index]}
+                      onValueChange={(value) => {
+                        const newBoards = [...selectedBoards];
+                        newBoards[index] = value;
+                        setSelectedBoards(newBoards);
+                      }}
+                    >
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BOARD_CONFIGURATIONS.map((preview) => (
+                          <SelectItem key={preview.id} value={preview.id}>
+                            <div className="flex items-center">
+                              <BoardPreview board={preview} />
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               ))}
@@ -327,6 +352,7 @@ export const EncoreGame = () => {
             <div className="@container" ref={mainBoardContainerRef} style={mainBoardStyle} onTransitionEnd={handleTransitionEnd}>
               <GameBoard
                 board={currentPlayer?.board || []}
+                boardConfiguration={currentPlayer?.boardConfiguration}
                 onSquareClick={handleSquareClick}
                 onSquareHover={handleSquareHover}
                 onSquareLeave={handleSquareLeave}
@@ -383,6 +409,7 @@ export const EncoreGame = () => {
               <div className="@container" ref={otherBoardContainerRef} style={otherBoardStyle}>
                 <GameBoard
                   board={otherPlayer?.board || []}
+                  boardConfiguration={otherPlayer?.boardConfiguration}
                   selectedSquares={[]}
                   disabled={true}
                   firstBonusClaimed={firstBonusClaimed}

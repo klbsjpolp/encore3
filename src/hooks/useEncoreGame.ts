@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { GameState, Player, DiceResult, GameColor, DiceColor, DiceNumber, Square, GamePhase, AIPhase } from '@/types/game';
+import { GameState, Player, DiceResult, GameColor, DiceColor, DiceNumber, Square } from '@/types/game';
 import { useAIPlayer } from './useAIPlayer';
+import {BoardConfiguration, getBoardConfiguration, getDefaultBoardId} from '@/data/boardConfigurations';
 
 export const COLUMN_FIRST_PLAYER_POINTS = [5, 3, 3, 3, 2, 2, 2, 1, 2, 2, 2, 3, 3, 3, 5];
 export const COLUMN_SECOND_PLAYER_POINTS = [3, 2, 2, 2, 1, 1, 1, 0, 1, 1, 1, 2, 2, 2, 3];
@@ -32,19 +33,12 @@ export const calculateFinalScore = (player: Player): {
   return { columnsScore, jokersScore, colorsScore, starPenalty, totalScore };
 };
 
-const createInitialBoard = (): Square[][] => {
-  const colorLayout: GameColor[][] = [
-    ['green','green','green','yellow','yellow','yellow','yellow','green','blue','blue','blue','orange','yellow','yellow','yellow'],
-    ['orange','green','yellow','green','yellow','yellow','orange','orange','red','blue','blue','orange','orange','green','green'],
-    ['blue','green','red','green','green','green','green','red','red','red','yellow','yellow','orange','green','green'],
-    ['blue','red','red','green','orange','orange','blue','blue','green','green','yellow','yellow','orange','red','blue'],
-    ['red','orange','orange','orange','orange','red','blue','blue','orange','orange','orange','red','red','red','red'],
-    ['red','blue','blue','red','red','red','red','yellow','yellow','orange','red','blue','blue','blue','orange'],
-    ['yellow','yellow','blue','blue','blue','blue','red','yellow','yellow','yellow','green','green','green','orange','orange']
-  ];
-  const starPositions = new Set([
-    '2,0', '5,1', '1,2', '5,3', '1,4', '3,5', '2,6', '0,7', '5,8', '1,9', '5,10', '0,11', '6,12', '3,13', '5,14',
-  ]);
+const createInitialBoard = (boardConfiguration?: BoardConfiguration): Square[][] => {
+  if (!boardConfiguration) {
+    throw new Error(`Board configuration not found`);
+  }
+
+  const { colorLayout, starPositions } = boardConfiguration;
   const board: Square[][] = [];
   for (let row = 0; row < colorLayout.length; row++) {
     const boardRow: Square[] = [];
@@ -179,20 +173,27 @@ export const useEncoreGame = () => {
     return true;
   }, []);
 
-  const initializeGame = useCallback((playerNames: string[], aiPlayers: boolean[] = []) => {
-    const players: Player[] = playerNames.map((name, index) => ({
-      id: `player-${index}`,
-      name,
-      isAI: aiPlayers[index] || false,
-      board: createInitialBoard(),
-      starsCollected: 0,
-      completedColors: [],
-      completedColorsFirst: [],
-      completedColorsNotFirst: [],
-      completedColumnsFirst: [],
-      completedColumnsNotFirst: [],
-      jokersRemaining: MAX_JOKERS
-    }));
+  const initializeGame = useCallback((playerNames: string[], aiPlayers: boolean[] = [], boardIds: string[] = []) => {
+    const players: Player[] = playerNames.map((name, index) => {
+      const boardId = boardIds[index] || getDefaultBoardId();
+      const boardConfiguration = getBoardConfiguration(boardId);
+      const board = createInitialBoard(boardConfiguration);
+      return ({
+        id: `player-${index}`,
+        name,
+        isAI: aiPlayers[index] || false,
+        boardId,
+        board,
+        boardConfiguration,
+        starsCollected: 0,
+        completedColors: [],
+        completedColorsFirst: [],
+        completedColorsNotFirst: [],
+        completedColumnsFirst: [],
+        completedColumnsNotFirst: [],
+        jokersRemaining: MAX_JOKERS
+      });
+    });
     setGameState({
       players,
       currentPlayer: 0,

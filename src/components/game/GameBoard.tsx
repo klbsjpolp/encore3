@@ -1,20 +1,22 @@
-import { Square, GameColor } from '@/types/game';
-import { cn } from '@/lib/utils';
-import { Star } from 'lucide-react';
+import {Square, GameColor} from '@/types/game';
+import {cn} from '@/lib/utils';
+import {Star} from 'lucide-react';
 import {COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS} from "@/hooks/useEncoreGame.ts";
+import {BoardConfiguration} from "@/data/boardConfigurations.ts";
 
 interface GameBoardProps {
-  board: Square[][];
-  onSquareClick?: (row: number, col: number) => void;
-  onSquareHover?: (row: number, col: number) => void;
-  onSquareLeave?: () => void;
-  selectedSquares?: { row: number; col: number }[];
-  hoveredSquares?: { row: number; col: number }[];
-  previewSquares?: { row: number; col: number }[];
-  disabled?: boolean;
-  firstBonusClaimed: string[];
-  iClaimedFirstBonus: string[];
-  iClaimedSecondBonus: string[];
+  board: Square[][],
+  onSquareClick?: (row: number, col: number) => void,
+  onSquareHover?: (row: number, col: number) => void,
+  onSquareLeave?: () => void,
+  selectedSquares?: { row: number; col: number }[],
+  hoveredSquares?: { row: number; col: number }[],
+  previewSquares?: { row: number; col: number }[],
+  disabled?: boolean,
+  firstBonusClaimed: string[],
+  iClaimedFirstBonus: string[],
+  iClaimedSecondBonus: string[],
+  boardConfiguration?: BoardConfiguration | undefined,
 }
 
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
@@ -35,22 +37,23 @@ function isStartingColumn(colIndex: number) {
   return colIndex === 7;
 }
 
-export const GameBoard = ({ 
-  board, 
-  onSquareClick, 
-  onSquareHover,
-  onSquareLeave,
-  selectedSquares = [], 
-  hoveredSquares = [],
-  previewSquares = [], 
-  disabled = false,
-  firstBonusClaimed,
-  iClaimedFirstBonus,
-  iClaimedSecondBonus,
-}: GameBoardProps) => {
+export const GameBoard = ({
+                            board,
+                            onSquareClick,
+                            onSquareHover,
+                            onSquareLeave,
+                            selectedSquares = [],
+                            hoveredSquares = [],
+                            previewSquares = [],
+                            disabled = false,
+                            firstBonusClaimed,
+                            iClaimedFirstBonus,
+                            iClaimedSecondBonus,
+                            boardConfiguration
+                          }: GameBoardProps) => {
   const isSquareSelected = (row: number, col: number) =>
     selectedSquares.some(s => s.row === row && s.col === col);
-  
+
   const isSquareHovered = (row: number, col: number) =>
     hoveredSquares.some(s => s.row === row && s.col === col);
 
@@ -58,11 +61,13 @@ export const GameBoard = ({
     previewSquares.some(s => s.row === row && s.col === col);
 
   return (
-    <div className="bg-gradient-board rounded-sm @lg:rounded-xl p-2 @lg:p-6 shadow-square" onMouseLeave={() => !disabled && onSquareLeave?.()}>
+    <div className={cn("rounded-sm @lg:rounded-xl p-2 @lg:p-4 shadow-square", boardConfiguration?.fillClass)}
+         onMouseLeave={() => !disabled && onSquareLeave?.()}>
       {/* Column Headers */}
       <div className="grid grid-cols-15 gap-1">
         {COLUMNS.map((col, colIndex) => (
-          <div key={col} className="aspect-square rounded-xs @lg:rounded-md bg-secondary flex items-center justify-center">
+          <div key={col}
+               className="aspect-square rounded-xs @lg:rounded-md bg-secondary flex items-center justify-center">
             <span className={cn(
               "text-xs font-semibold text-primary",
               isStartingColumn(colIndex) && "text-destructive font-black",
@@ -104,8 +109,8 @@ export const GameBoard = ({
                 )}
                 {square.crossed && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full h-0.5 bg-foreground transform rotate-45" />
-                    <div className="w-full h-0.5 bg-foreground transform -rotate-45 absolute" />
+                    <div className="w-full h-0.5 bg-foreground transform rotate-45"/>
+                    <div className="w-full h-0.5 bg-foreground transform -rotate-45 absolute"/>
                   </div>
                 )}
               </button>
