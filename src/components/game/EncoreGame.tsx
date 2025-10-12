@@ -283,7 +283,12 @@ export const EncoreGame = () => {
   }
 
   const actionsDisable = isSwitching || !(gameState.phase === 'active-selection' || gameState.phase === 'passive-selection');
-
+  const state = isSwitching ? 'Changement de joueur...' :
+    gameState.phase === 'game-over' ? `🎉 ${gameState.winner?.name} gagne ! 🎉` :
+      gameState.phase === 'rolling' ? 'Lancer les dés' :
+        gameState.phase === 'active-selection' ? 'Tour du joueur actif' :
+          gameState.phase === 'passive-selection' ? 'Tour des joueurs passifs' :
+              null;
   return (
     <div className="min-h-screen bg-gradient-board p-4 overflow-hidden">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -294,14 +299,9 @@ export const EncoreGame = () => {
               <Gamepad2 className="w-8 h-8" />
               Encore !
             </h1>
-            <Badge variant="default" className="text-lg px-3 py-1">
-              {isSwitching && 'Changement de joueur...'}
-              {gameState.phase === 'game-over' && `🎉 ${gameState.winner?.name} gagne ! 🎉`}
-              {gameState.phase === 'rolling' && 'Lancer les dés'}
-              {gameState.phase === 'active-selection' && 'Tour du joueur actif'}
-              {gameState.phase === 'passive-selection' && 'Tour des joueurs passifs'}
-              {gameState.phase === 'game-over' && 'Partie terminée'}
-            </Badge>
+            {state && <Badge variant="default" className="text-lg px-3 py-1">
+              {state}
+            </Badge>}
           </div>
           <Button onClick={resetGame} variant="outline">
             <RotateCcw className="w-4 h-4 mr-2" />

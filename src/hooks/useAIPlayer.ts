@@ -94,6 +94,10 @@ export const useAIPlayer = () => {
       for (const numberDice of availableNumberDice) {
         if (numberDice.value === 'wild') continue; // AI doesn't use wild number dice for now.
 
+        // Respect joker limit: skip combos requiring more jokers than available
+        const jokersNeededForCombo = (colorDice.value === 'wild' ? 1 : 0) + (numberDice.value === 'wild' ? 1 : 0);
+        if (jokersNeededForCombo > currentPlayer.jokersRemaining) continue;
+
         const number = numberDice.value as number;
         const colorsToConsider: GameColor[] = colorDice.value === 'wild' 
             ? ['red', 'yellow', 'green', 'blue'] 

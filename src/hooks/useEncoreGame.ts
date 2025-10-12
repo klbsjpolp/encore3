@@ -6,6 +6,7 @@ export const COLUMN_FIRST_PLAYER_POINTS = [5, 3, 3, 3, 2, 2, 2, 1, 2, 2, 2, 3, 3
 export const COLUMN_SECOND_PLAYER_POINTS = [3, 2, 2, 2, 1, 1, 1, 0, 1, 1, 1, 2, 2, 2, 3];
 
 export const TOTAL_STARS = 15;
+export const MAX_JOKERS = 8;
 
 export const calculateColumnScore = (player: Player): number => {
   return Array.from('ABCDEFGHIJKLMNO').map((c, i) => {
@@ -190,7 +191,7 @@ export const useEncoreGame = () => {
       completedColorsNotFirst: [],
       completedColumnsFirst: [],
       completedColumnsNotFirst: [],
-      jokersRemaining: 8
+      jokersRemaining: MAX_JOKERS
     }));
     setGameState({
       players,
@@ -279,6 +280,10 @@ export const useEncoreGame = () => {
       }
 
       const jokersUsed = (selectedFromJoker.color ? 1 : 0) + (selectedFromJoker.number ? 1 : 0);
+      // Guard: cannot use more jokers than remaining
+      if (jokersUsed > player.jokersRemaining) {
+        return prev;
+      }
       const newClaimedFirstColumnBonus = { ...claimedFirstColumnBonus };
             const newClaimedFirstColorBonus = { ...claimedFirstColorBonus };
             const newClaimedSecondColorBonus = { ...claimedSecondColorBonus };

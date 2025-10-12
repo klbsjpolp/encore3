@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Star, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS, TOTAL_STARS, calculateColumnScore, calculateFinalScore} from "@/hooks/useEncoreGame.ts";
+import {COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS, TOTAL_STARS, MAX_JOKERS, calculateColumnScore, calculateFinalScore} from "@/hooks/useEncoreGame.ts";
 import {ReactNode} from "react";
 
 interface ScorePanelProps {
@@ -123,15 +123,15 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
 
         {/* Jokers */}
         <div>
-          <p className="text-sm font-medium mb-2">Jokers ({player.jokersRemaining}/{8})</p>
+          <p className="text-sm font-medium mb-2">Jokers ({player.jokersRemaining}/{MAX_JOKERS})</p>
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
-              {Array.from({ length: 8 }, (_, i) => (
+              {Array.from({ length: MAX_JOKERS }, (_, i) => (
                 <span
                   key={i}
                   className={cn(
                     "w-2 h-2 rounded-full",
-                    i >= (8-player.jokersRemaining) ? "bg-primary" : "bg-muted"
+                    i >= (MAX_JOKERS - player.jokersRemaining) ? "bg-primary" : "bg-muted"
                   )}
                 />
               ))}
