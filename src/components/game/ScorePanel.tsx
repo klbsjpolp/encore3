@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Star, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS, TOTAL_STARS} from "@/hooks/useEncoreGame.ts";
+import {ReactNode} from "react";
 
 interface ScorePanelProps {
   player: Player;
@@ -13,17 +14,52 @@ interface ScorePanelProps {
 }
 
 export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = false, claimedFirstColumnBonus = {} }: ScorePanelProps) => {
+  const columnsScore = Array.from('ABCDEFGHIJKLMNO').map((c,i) => {
+      const firstPoints = player.completedColumnsFirst.includes(c) ? COLUMN_FIRST_PLAYER_POINTS[i] : null;
+      const secondPoints = firstPoints == null && player.completedColumnsNotFirst.includes(c) ? COLUMN_SECOND_PLAYER_POINTS[i] : null;
+      return firstPoints ?? secondPoints ?? 0;
+    }).reduce((a, b) => a + b, 0);
 
-  const calculateColorScore = () => {
+  let scorePanel: ReactNode;
+  if (gameComplete) {
+    const jokersRemaining = player.jokersRemaining;
     // This would need to be calculated based on first completion logic
-    return player.completedColors.length * 5; // Simplified for now
-  };
-
-  const calculateStarPenalty = () => {
-    return (TOTAL_STARS - player.starsCollected) * -1;
-  };
-
-  const finalScore = player.score + calculateStarPenalty();
+    const colorScore = player.completedColors.length * 5; // Simplified for now
+    const starPenalty = TOTAL_STARS - player.starsCollected;
+    const finalScore = columnsScore + jokersRemaining + colorScore - starPenalty;
+    scorePanel = (
+      <div className="space-y-2 pt-2 border-t">
+        <div className="flex justify-between text-sm">
+          <span>Colonnes :</span>
+          <span>{columnsScore}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span>Joker :</span>
+          <span>+{jokersRemaining}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span>Couleurs :</span>
+          <span>+{colorScore}</span>
+        </div>
+        <div className="flex justify-between text-sm text-destructive">
+          <span>Pénalité d'étoile :</span>
+          <span>-{starPenalty}</span>
+        </div>
+        <div className="flex justify-between font-bold text-lg border-t pt-2">
+          <span>Total :</span>
+          <span>{finalScore}</span>
+        </div>
+      </div>
+    );
+  } else
+    scorePanel = (
+      <div className="bg-muted rounded-lg p-3">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">Score des colonnes</p>
+          <p className="text-2xl font-bold">{columnsScore}</p>
+        </div>
+      </div>
+    );
 
   return (
     <Card className={cn(
@@ -64,15 +100,17 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
               <div
                 key={color}
                 className={cn(
-                  "w-6 h-6 rounded border-2",
-                  color === 'yellow' && "bg-game-yellow border-yellow-600",
-                  color === 'green' && "bg-game-green border-green-700",
-                  color === 'blue' && "bg-game-blue border-blue-700",
-                  color === 'red' && "bg-game-red border-red-700",
-                  color === 'orange' && "bg-game-orange border-orange-700",
-                  color === 'purple' && "bg-game-purple border-purple-700"
+                  "w-6 h-6 rounded border-2 flex items-center justify-center text-[10px] font-bold",
+                  color === 'yellow' && "bg-game-yellow border-yellow-600 text-black",
+                  color === 'green' && "bg-game-green border-green-700 text-white",
+                  color === 'blue' && "bg-game-blue border-blue-700 text-white",
+                  color === 'red' && "bg-game-red border-red-700 text-white",
+                  color === 'orange' && "bg-game-orange border-orange-700 text-black",
+                  color === 'purple' && "bg-game-purple border-purple-700 text-white"
                 )}
-              />
+              >
+                +5
+              </div>
             ))}
             {Array.from({ length: 2-player.completedColors.length }, (_, i) =>
               <div
@@ -117,34 +155,7 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
             </div>
           </div>
         </div>
-
-        {/* Score Breakdown */}
-        {gameComplete && (
-          <div className="space-y-2 pt-2 border-t">
-            <div className="flex justify-between text-sm">
-              <span>Couleurs :</span>
-              <span>+{calculateColorScore()}</span>
-            </div>
-            <div className="flex justify-between text-sm text-destructive">
-              <span>Pénalité d'étoile :</span>
-              <span>{calculateStarPenalty()}</span>
-            </div>
-            <div className="flex justify-between font-bold text-lg border-t pt-2">
-              <span>Total :</span>
-              <span>{finalScore}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Current Score (during game) */}
-        {!gameComplete && (
-          <div className="bg-muted rounded-lg p-3">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Score actuel</p>
-              <p className="text-2xl font-bold">{player.score}</p>
-            </div>
-          </div>
-        )}
+        {scorePanel}
       </CardContent>
     </Card>
   );
