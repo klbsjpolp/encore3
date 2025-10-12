@@ -218,7 +218,13 @@ export const useEncoreGame = () => {
 
   const selectDice = useCallback((dice: DiceResult) => {
     setGameState(prev => {
-      if (prev.phase.includes('-ai') || (prev.phase !== 'active-selection' && prev.phase !== 'passive-selection') || dice.selected) {
+      const inActiveOrPassive = prev.phase === 'active-selection' || prev.phase === 'passive-selection';
+      const isPassivePhase = prev.phase === 'passive-selection';
+      if (prev.phase.includes('-ai') || !inActiveOrPassive) {
+        return prev;
+      }
+      // Allow selecting dice that were marked as used by the active player during passive-selection
+      if (dice.selected && !isPassivePhase) {
         return prev;
       }
       const newSelectedDice = { ...prev.selectedDice };

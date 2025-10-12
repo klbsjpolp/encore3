@@ -54,26 +54,37 @@ const DiceDisplay = ({
   dice, 
   onSelect, 
   canSelect, 
-  isSelected 
+  isSelected,
+  hideUsedMarks = false,
 }: { 
   dice: DiceResult; 
   onSelect?: (dice: DiceResult) => void; 
   canSelect?: boolean;
   isSelected?: boolean;
+  hideUsedMarks?: boolean;
 }) => {
   const isColorDice = dice.type === 'color';
   const value = dice.value;
 
+  const isUsed = dice.selected && !hideUsedMarks;
+  const ariaState = isUsed
+    ? 'used'
+    : canSelect
+      ? 'available'
+      : 'unavailable';
+
   return (
     <button
       onClick={() => canSelect && onSelect?.(dice)}
-      disabled={!canSelect || dice.selected}
+      disabled={!canSelect || isUsed}
+      aria-label={`dice-${ariaState}-${isColorDice ? 'color' : 'number'}-${value}`}
+      title={isUsed ? 'Dé déjà utilisé' : canSelect ? 'Sélectionner ce dé' : "En attente du tour de l'autre joueur"}
       className={cn(
-        "w-16 h-16 rounded-xl shadow-dice transition-all duration-300",
+        "relative overflow-hidden w-16 h-16 rounded-xl shadow-dice transition-all duration-300",
         "flex items-center justify-center font-bold text-lg",
         isColorDice ? getDiceColorClass(value as DiceColor) : "bg-gradient-dice text-foreground",
         isSelected && "ring-4 ring-ring shadow-glow scale-110",
-        dice.selected && "opacity-50 cursor-not-allowed",
+        isUsed && "opacity-50 cursor-not-allowed",
         canSelect ? "hover:scale-105 active:scale-95" : "cursor-not-allowed opacity-30"
       )}
     >
@@ -81,6 +92,13 @@ const DiceDisplay = ({
         <HelpCircle className="w-6 h-6" />
       ) : (
         <span>{getDiceShortDisplayValue(value)}</span>
+      )}
+
+      {isUsed && (
+        <>
+          <span className="pointer-events-none absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-1 bg-foreground/60 rotate-45" />
+          <span className="pointer-events-none absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-1 bg-foreground/60 -rotate-45" />
+        </>
       )}
     </button>
   );
@@ -144,6 +162,7 @@ export const DicePanel = ({
                   onSelect={onDiceSelect}
                   canSelect={finalCanSelect}
                   isSelected={selectedColorDice?.id === die.id}
+                  hideUsedMarks={phase.includes('passive-selection')}
                 />
               ))
             )}
@@ -174,6 +193,7 @@ export const DicePanel = ({
                   onSelect={onDiceSelect}
                   canSelect={finalCanSelect}
                   isSelected={selectedNumberDice?.id === die.id}
+                  hideUsedMarks={phase.includes('passive-selection')}
                 />
               ))
             )}
