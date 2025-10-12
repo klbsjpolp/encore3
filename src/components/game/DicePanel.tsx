@@ -124,15 +124,29 @@ export const DicePanel = ({
         <div>
           <p className="text-sm font-medium text-muted-foreground mb-2">Dés de couleur</p>
           <div className="flex gap-2 flex-wrap">
-            {colorDice.map(die => (
-              <DiceDisplay
-                key={die.id}
-                dice={die}
-                onSelect={onDiceSelect}
-                canSelect={finalCanSelect}
-                isSelected={selectedColorDice?.id === die.id}
-              />
-            ))}
+            {colorDice.length === 0 ? (
+              <>
+                <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
+                  <img src="/placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                </div>
+                <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
+                  <img src="/placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                </div>
+                <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
+                  <img src="/placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                </div>
+              </>
+            ) : (
+              colorDice.map(die => (
+                <DiceDisplay
+                  key={die.id}
+                  dice={die}
+                  onSelect={onDiceSelect}
+                  canSelect={finalCanSelect}
+                  isSelected={selectedColorDice?.id === die.id}
+                />
+              ))
+            )}
           </div>
         </div>
 
@@ -140,15 +154,29 @@ export const DicePanel = ({
         <div>
           <p className="text-sm font-medium text-muted-foreground mb-2">Dés numériques</p>
           <div className="flex gap-2 flex-wrap">
-            {numberDice.map(die => (
-              <DiceDisplay
-                key={die.id}
-                dice={die}
-                onSelect={onDiceSelect}
-                canSelect={finalCanSelect}
-                isSelected={selectedNumberDice?.id === die.id}
-              />
-            ))}
+            {numberDice.length === 0 ? (
+              <>
+                <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
+                  <img src="/placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                </div>
+                <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
+                  <img src="/placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                </div>
+                <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
+                  <img src="/placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                </div>
+              </>
+            ) : (
+              numberDice.map(die => (
+                <DiceDisplay
+                  key={die.id}
+                  dice={die}
+                  onSelect={onDiceSelect}
+                  canSelect={finalCanSelect}
+                  isSelected={selectedNumberDice?.id === die.id}
+                />
+              ))
+            )}
           </div>
         </div>
       </div>

@@ -170,7 +170,7 @@ export const useEncoreGame = () => {
       currentPlayer: 0,
       activePlayer: 0,
       phase: players[0].isAI ? 'rolling-ai' : 'rolling',
-      dice: rollDice(),
+      dice: [],
       selectedDice: { color: null, number: null },
       selectedFromJoker: { color: false, number: false },
       gameStarted: true,
@@ -327,7 +327,7 @@ export const useEncoreGame = () => {
             const newActivePlayer = activePlayer;
             const nextPlayer = players[newActivePlayer];
             const nextPhase = nextPlayer.isAI ? 'rolling-ai' : 'rolling';
-            return { ...prev, phase: nextPhase, currentPlayer: newActivePlayer, activePlayer: newActivePlayer, dice: rollDice() };
+            return { ...prev, phase: nextPhase, currentPlayer: newActivePlayer, activePlayer: newActivePlayer };
         }
 
         const nextPlayer = players[nextPlayerIndex];
@@ -342,7 +342,7 @@ export const useEncoreGame = () => {
           const newActivePlayer = (activePlayer + 1) % players.length;
           const nextPlayer = players[newActivePlayer];
           const nextPhase = nextPlayer.isAI ? 'rolling-ai' : 'rolling';
-          return { ...prev, phase: nextPhase, currentPlayer: newActivePlayer, activePlayer: newActivePlayer, dice: rollDice() };
+          return { ...prev, phase: nextPhase, currentPlayer: newActivePlayer, activePlayer: newActivePlayer };
         }
 
         const nextPlayer = players[nextPlayerIndex];
