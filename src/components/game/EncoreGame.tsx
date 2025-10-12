@@ -256,6 +256,11 @@ export const EncoreGame = () => {
                             </div>
                           </SelectItem>
                         ))}
+                        <SelectItem key="random" value="random">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">🎲 Aléatoire</span>
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -344,9 +349,6 @@ export const EncoreGame = () => {
                   Tour actuel : {currentPlayer?.name}
                   {gameState.phase === 'passive-selection' && ' (Tous les autres joueurs peuvent jouer)'}
                 </p>
-                <p>phase: {gameState.phase}</p>
-                <p>current: {gameState.players[gameState.currentPlayer].name}</p>
-                <p>active: {gameState.players[gameState.activePlayer].name}</p>
               </div>
             )}
             <div className="@container" ref={mainBoardContainerRef} style={mainBoardStyle} onTransitionEnd={handleTransitionEnd}>

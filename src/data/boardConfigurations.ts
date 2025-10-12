@@ -1,4 +1,5 @@
 import { GameColor } from '@/types/game';
+import { generateRandomBoard } from './randomBoardGenerator';
 
 export interface BoardConfiguration {
   id: string;
@@ -78,6 +79,9 @@ const BOARD_4: BoardConfiguration = {
 export const BOARD_CONFIGURATIONS: BoardConfiguration[] = [BOARD_1, BOARD_2, BOARD_3, BOARD_4];
 
 export const getBoardConfiguration = (id: string): BoardConfiguration | undefined => {
+  if (id === 'random') {
+    return generateRandomBoard();
+  }
   return BOARD_CONFIGURATIONS.find(config => config.id === id);
 };
 
