@@ -47,30 +47,26 @@ export const BoardPreview = ({ size, board }: BoardPreviewProps) => {
 
   return (
     <div className={cn(size === 'small' ? "p-1" : 'p-2', board.fillClass)}>
-      {board.id === 'random' ?
-        <span className="text-white p-1">🎲 Généré</span>
-        :
-        <div className={cn("flex flex-col", gap)}>
-          {previewBoard.map((row, rowIndex) => (
-            <div key={rowIndex} className={cn("flex", gap)}>
-              {row.map((square, colIndex) => (
-                <div
-                  key={`${rowIndex}-${colIndex}`}
-                  className={cn(
-                    "border relative",
-                    squareSize,
-                    getColorClass(square.color)
-                  )}
-                >
-                  {square.hasStar && (
-                    <Star fill="white" className={cn("absolute inset-0 m-auto text-white", starSize)} />
-                  )}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      }
+      <div className={cn("flex flex-col", gap)}>
+        {previewBoard.map((row, rowIndex) => (
+          <div key={rowIndex} className={cn("flex", gap)}>
+            {row.map((square, colIndex) => (
+              <div
+                key={`${rowIndex}-${colIndex}`}
+                className={cn(
+                  "border relative",
+                  squareSize,
+                  getColorClass(square.color)
+                )}
+              >
+                {square.hasStar && (
+                  <Star fill="white" className={cn("absolute inset-0 m-auto text-white", starSize)} />
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

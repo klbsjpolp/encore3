@@ -1,8 +1,10 @@
 import { GameColor } from '@/types/game';
 import { generateRandomBoard } from './randomBoardGenerator';
 
+export const BoardId = ['classic', 'blue', 'green', 'red', 'orange', 'random'] as const;
+export type BoardId = (typeof BoardId)[number];
 export interface BoardConfiguration {
-  id: string;
+  id: BoardId;
   fillClass: string;
   colorLayout: GameColor[][];
   starPositions: Set<string>;
@@ -93,20 +95,27 @@ const BOARD_5: BoardConfiguration = {
   ])
 };
 
-export const baseRandomBoardConfiguration: BoardConfiguration = {
+const BOARD_RANDOM: BoardConfiguration = {
   id: 'random',
   fillClass: 'bg-gradient-to-br from-purple-600 to-indigo-600',
-  colorLayout: [],
-  starPositions: new Set()
+  colorLayout: [
+    ['yellow','green','red','blue','orange','yellow','green','red','blue','orange','yellow','green','red','blue','orange'],
+    ['green','red','blue','orange','yellow','green','red','blue','orange','yellow','green','red','blue','orange','yellow'],
+    ['red','blue','orange','yellow','green','red','blue','orange','yellow','green','red','blue','orange','yellow','green'],
+    ['blue','orange','yellow','green','red','blue','orange','yellow','green','red','blue','orange','yellow','green','red'],
+    ['orange','yellow','green','red','blue','orange','yellow','green','red','blue','orange','yellow','green','red','blue'],
+    ['yellow','green','red','blue','orange','yellow','green','red','blue','orange','yellow','green','red','blue','orange'],
+    ['green','red','blue','orange','yellow','green','red','blue','orange','yellow','green','red','blue','orange','yellow'],
+  ],
+  starPositions: new Set([
+    '3,0', '3,1', '3,2', '3,3', '3,4', '3,5', '3,6', '3,7', '3,8', '3,9', '3,10', '3,11', '3,12', '3,13', '3,14',
+  ])
 }
 
-export const BOARD_CONFIGURATIONS: BoardConfiguration[] = [BOARD_1, BOARD_2, BOARD_3, BOARD_4, BOARD_5, baseRandomBoardConfiguration];
+export const BOARD_CONFIGURATIONS: BoardConfiguration[] = [BOARD_1, BOARD_2, BOARD_3, BOARD_4, BOARD_5, BOARD_RANDOM];
 
-export const getBoardConfiguration = (id: string): BoardConfiguration | undefined => {
-  if (id === 'random') {
-    return generateRandomBoard();
-  }
+export const getBoardConfiguration = (id: BoardId): BoardConfiguration | undefined => {
   return BOARD_CONFIGURATIONS.find(config => config.id === id);
 };
 
-export const getDefaultBoardId = (): string => BOARD_1.id;
+export const getDefaultBoardId = (): BoardId => BOARD_1.id;

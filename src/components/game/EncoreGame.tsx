@@ -1,6 +1,6 @@
-import {useState, useRef, useLayoutEffect, CSSProperties, useEffect, useCallback, useMemo} from 'react';
-import { useEncoreGame, findConnectedGroup } from '@/hooks/useEncoreGame';
-import { GameColor, Square } from '@/types/game';
+import {useState, useRef, useLayoutEffect, CSSProperties, useEffect, useCallback} from 'react';
+import { useEncoreGame, findConnectedGroup, MAX_MARKS_PER_TURN } from '@/hooks/useEncoreGame';
+import { GameColor } from '@/types/game';
 import { GameBoard } from './GameBoard';
 import { BoardPreview } from './BoardPreview';
 import { DicePanel } from './DicePanel';
@@ -13,23 +13,29 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Gamepad2, Users, Bot, Play, RotateCcw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import {baseRandomBoardConfiguration, BOARD_CONFIGURATIONS, getBoardConfiguration} from '@/data/boardConfigurations';
+import {
+  BOARD_CONFIGURATIONS,
+  BoardId, getBoardConfiguration,
+  getDefaultBoardId
+} from '@/data/boardConfigurations';
 
 export const EncoreGame = () => {
   const { gameState, initializeGame, rollNewDice, selectDice, makeMove, skipTurn, isValidMove, completePlayerSwitch } = useEncoreGame();
   const [setupMode, setSetupMode] = useState(true);
   const [playerNames, setPlayerNames] = useState(['Joueur 1', 'Joueur 2']);
   const [aiPlayers, setAIPlayers] = useState([false, true]);
-  const [selectedBoards, setSelectedBoards] = useState([BOARD_CONFIGURATIONS[0].id, BOARD_CONFIGURATIONS[0].id]);
+  const [selectedBoards, setSelectedBoards] = useState<[BoardId,BoardId]>([getDefaultBoardId(), getDefaultBoardId()]);
   const [selectedSquares, _setSelectedSquares] = useState<{ row: number; col: number }[]>([]);
   const setSelectedSquares = useCallback((squares: { row: number; col: number }[]) => {
-    //remove duplicate
-    const newSquares: { row: number; col: number }[] = [];
-    squares.forEach(s => {
-      if (!newSquares.some(ns => ns.row === s.row && ns.col === s.col)) newSquares.push(s);
-    });
-    console.log('setSelectedSquares', 'after', newSquares, 'before', squares);
-    _setSelectedSquares(squares);
+    // remove duplicates and clamp to MAX_MARKS_PER_TURN
+    const deduped: { row: number; col: number }[] = [];
+    for (const s of squares) {
+      if (!deduped.some(ns => ns.row === s.row && ns.col === s.col)) {
+        deduped.push(s);
+        if (deduped.length >= MAX_MARKS_PER_TURN) break;
+      }
+    }
+    _setSelectedSquares(deduped);
   }, []);
   const [hoveredSquares, setHoveredSquares] = useState<{ row: number; col: number }[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -241,8 +247,8 @@ export const EncoreGame = () => {
                       value={selectedBoards[index]}
                       onValueChange={(value) => {
                         const newBoards = [...selectedBoards];
-                        newBoards[index] = value;
-                        setSelectedBoards(newBoards);
+                        newBoards[index] = value as BoardId;
+                        setSelectedBoards(newBoards as [BoardId, BoardId]);
                       }}
                     >
                       <SelectTrigger className="w-[140px]">
@@ -400,6 +406,7 @@ export const EncoreGame = () => {
               canSelect={canSelectDice}
               selectedColorDice={gameState.selectedDice.color}
               selectedNumberDice={gameState.selectedDice.number}
+              flashRoll={gameState.phase === 'rolling'}
             />
             <div className="flex flex-col gap-1">
               <p className="text-sm font-medium text-muted-foreground">Autre joueur ({otherPlayer.name}) :</p>

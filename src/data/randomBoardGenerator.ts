@@ -1,5 +1,5 @@
 import { GameColor } from '@/types/game';
-import {BoardConfiguration, BOARD_CONFIGURATIONS, baseRandomBoardConfiguration} from './boardConfigurations';
+import {BoardConfiguration, BOARD_CONFIGURATIONS} from './boardConfigurations';
 
 /**
  * Generates a random board by transforming one of the official boards.
@@ -8,7 +8,7 @@ import {BoardConfiguration, BOARD_CONFIGURATIONS, baseRandomBoardConfiguration} 
  * - Random mirroring (horizontal and/or vertical)
  * - Random color mapping
  */
-export function generateRandomBoard(): BoardConfiguration {
+export function generateRandomBoard(): Omit<BoardConfiguration, 'id' | 'fillClass'> {
   // Pick a random official board as template
   const template = BOARD_CONFIGURATIONS[Math.floor(Math.random() * BOARD_CONFIGURATIONS.length)];
 
@@ -45,7 +45,6 @@ export function generateRandomBoard(): BoardConfiguration {
   board = remapColors(board);
 
   return {
-    ...baseRandomBoardConfiguration,
     colorLayout: board,
     starPositions: new Set(stars)
   };

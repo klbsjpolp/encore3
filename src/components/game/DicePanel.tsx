@@ -12,6 +12,7 @@ interface DicePanelProps {
   canSelect?: boolean;
   selectedColorDice?: DiceResult | null;
   selectedNumberDice?: DiceResult | null;
+  flashRoll?: boolean;
 }
 
 const colorMap = {
@@ -113,6 +114,7 @@ export const DicePanel = ({
   canSelect = false,
   selectedColorDice,
   selectedNumberDice,
+  flashRoll = false,
 }: DicePanelProps) => {
   const colorDice = dice.filter(d => d.type === 'color');
   const numberDice = dice.filter(d => d.type === 'number');
@@ -129,7 +131,8 @@ export const DicePanel = ({
           onClick={onRollDice}
           size="sm"
           variant="game"
-          className="gap-2"
+          glow={flashRoll}
+          className="gap-2 transition-all"
           disabled={!finalCanRoll}
         >
           <Shuffle className="w-4 h-4" />

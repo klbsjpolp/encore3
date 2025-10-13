@@ -38,14 +38,16 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  glow?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
+  ({ className, variant, size, asChild = false, glow = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
+    const glowClass = glow ? "relative z-1 before:absolute before:z-[-1] before:inset-0 before:rounded-md before:ring-8 before:ring-yellow-400 before:animate-pulse" : null;
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(buttonVariants({ variant, size, className }), glowClass)}
         ref={ref}
         {...props}
       />

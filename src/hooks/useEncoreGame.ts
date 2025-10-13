@@ -1,13 +1,15 @@
 import { useState, useCallback, useEffect } from 'react';
 import { GameState, Player, DiceResult, GameColor, DiceColor, DiceNumber, Square } from '@/types/game';
 import { useAIPlayer } from './useAIPlayer';
-import {BoardConfiguration, getBoardConfiguration, getDefaultBoardId} from '@/data/boardConfigurations';
+import {BoardConfiguration, BoardId, getBoardConfiguration, getDefaultBoardId} from '@/data/boardConfigurations';
+import {generateRandomBoard} from "@/data/randomBoardGenerator.ts";
 
 export const COLUMN_FIRST_PLAYER_POINTS = [5, 3, 3, 3, 2, 2, 2, 1, 2, 2, 2, 3, 3, 3, 5];
 export const COLUMN_SECOND_PLAYER_POINTS = [3, 2, 2, 2, 1, 1, 1, 0, 1, 1, 1, 2, 2, 2, 3];
 
 export const TOTAL_STARS = 15;
 export const MAX_JOKERS = 8;
+export const MAX_MARKS_PER_TURN = 5;
 
 export const calculateColumnScore = (player: Player): number => {
   return Array.from('ABCDEFGHIJKLMNO').map((c, i) => {
@@ -33,12 +35,8 @@ export const calculateFinalScore = (player: Player): {
   return { columnsScore, jokersScore, colorsScore, starPenalty, totalScore };
 };
 
-const createInitialBoard = (boardConfiguration?: BoardConfiguration): Square[][] => {
-  if (!boardConfiguration) {
-    throw new Error(`Board configuration not found`);
-  }
-
-  const { colorLayout, starPositions } = boardConfiguration;
+const createInitialBoard = (boardConfiguration: BoardConfiguration): Square[][] => {
+  const { colorLayout, starPositions } = boardConfiguration.id === 'random' ? generateRandomBoard() : boardConfiguration;
   const board: Square[][] = [];
   for (let row = 0; row < colorLayout.length; row++) {
     const boardRow: Square[] = [];
@@ -142,6 +140,7 @@ export const useEncoreGame = () => {
     playerBoard: Square[][]
   ): boolean => {
     if (squares.length === 0) return false;
+    if (squares.length > MAX_MARKS_PER_TURN) return false;
     if (!squares.every(({ row, col }) => playerBoard[row][col].color === color && !playerBoard[row][col].crossed)) return false;
 
     if (squares.length > 1) {
@@ -173,7 +172,7 @@ export const useEncoreGame = () => {
     return true;
   }, []);
 
-  const initializeGame = useCallback((playerNames: string[], aiPlayers: boolean[] = [], boardIds: string[] = []) => {
+  const initializeGame = useCallback((playerNames: string[], aiPlayers: boolean[] = [], boardIds: BoardId[] = []) => {
     const players: Player[] = playerNames.map((name, index) => {
       const boardId = boardIds[index] || getDefaultBoardId();
       const boardConfiguration = getBoardConfiguration(boardId);
@@ -347,7 +346,14 @@ export const useEncoreGame = () => {
         return { ...prev, players: newPlayers, phase: 'game-over', winner, claimedFirstColumnBonus: newClaimedFirstColumnBonus, claimedFirstColorBonus: newClaimedFirstColorBonus, claimedSecondColorBonus: newClaimedSecondColorBonus };
       }
 
-      const newDice = prev.dice.map(d => ({ ...d, selected: d.selected || d.id === selectedDice.color?.id || d.id === selectedDice.number?.id }));
+      // Only mark dice as used (selected) when the active player makes their selection.
+      const isActiveSelectionPhase = phase === 'active-selection' || phase === 'active-selection-ai';
+      const newDice = isActiveSelectionPhase
+        ? prev.dice.map(d => ({
+            ...d,
+            selected: d.selected || d.id === selectedDice.color?.id || d.id === selectedDice.number?.id,
+          }))
+        : prev.dice;
       return {
         ...prev,
         players: newPlayers,
