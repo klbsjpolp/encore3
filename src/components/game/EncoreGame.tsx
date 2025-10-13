@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Gamepad2, Users, Bot, Play, RotateCcw } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 import {
   BOARD_CONFIGURATIONS,
   BoardId, getBoardConfiguration,
@@ -79,20 +78,11 @@ export const EncoreGame = () => {
 
   const handleGameSetup = useCallback(() => {
     if (playerNames.some(name => !name.trim())) {
-      toast({
-        title: "Configuration invalide",
-        description: "Veuillez entrer les noms de tous les joueurs.",
-        variant: "destructive"
-      });
       return;
     }
 
     initializeGame(playerNames, aiPlayers, selectedBoards);
     setSetupMode(false);
-    toast({
-      title: "Partie commencée !",
-      description: `${playerNames[0]} commence.`
-    });
   }, [aiPlayers, initializeGame, playerNames, selectedBoards]);
 
   const handleSquareClick = useCallback((row: number, col: number) => {
@@ -106,8 +96,6 @@ export const EncoreGame = () => {
       group.every(hs => selectedSquares.some(ss => ss.row === hs.row && ss.col === hs.col));
 
     if (isGroupAlreadySelected) {
-      console.log('handleSquareClick','isGroupAlreadySelected', 'group', group, 'selectedSquares', selectedSquares)
-
       setSelectedSquares([]);
     } else {
       const square = { row, col };
@@ -117,7 +105,6 @@ export const EncoreGame = () => {
         setSelectedSquares(selectedSquares.filter(s => !(s.row === row && s.col === col)));
       } else {
         const isClickOnHoveredGroup = hoveredSquares.length > 0 && hoveredSquares.some(s => s.row === row && s.col === col);
-        console.log('handleSquareClick','isClickOnHoveredGroup',isClickOnHoveredGroup, 'group', group, 'selectedSquares', selectedSquares)
 
         if (isClickOnHoveredGroup) {
           setSelectedSquares([...hoveredSquares]);
@@ -173,11 +160,7 @@ export const EncoreGame = () => {
   const handleConfirmMove = useCallback(() => {
     makeMove(selectedSquares);
     setSelectedSquares([]);
-    toast({
-      title: "Déplacement terminé",
-      description: `${gameState.players[gameState.currentPlayer].name} a joué son tour.`
-    });
-  }, [gameState.currentPlayer, gameState.players, makeMove, selectedSquares, setSelectedSquares]);
+  }, [makeMove, selectedSquares, setSelectedSquares]);
 
   const canMakeMove = useCallback(() => {
     if (!gameState.selectedDice.color || !gameState.selectedDice.number) return false;
