@@ -5,6 +5,7 @@ import {BOARD_CONFIGURATIONS, BoardConfiguration} from "@/data/boardConfiguratio
 import {useMemo} from "react";
 
 interface BoardPreviewProps {
+  size: 'small' | 'large';
   board: BoardConfiguration;
 }
 
@@ -20,7 +21,7 @@ const getColorClass = (color: GameColor): string => {
   return colorMap[color];
 };
 
-export const BoardPreview = ({ board }: BoardPreviewProps) => {
+export const BoardPreview = ({ size, board }: BoardPreviewProps) => {
   // Generate preview boards for setup
   const previewBoard = useMemo(() => {
       const previewBoard: Square[][] = [];
@@ -40,33 +41,36 @@ export const BoardPreview = ({ board }: BoardPreviewProps) => {
       return previewBoard;
   }, [board]);
 
-  const squareSize = 'w-1 h-1';
+  const squareSize = size === 'small' ? 'w-1 h-1' : 'w-2 h-2';
   const gap = 'gap-0';
-  const padding = 'p-0';
-  const starSize = 'w-0.75 h-0.75';
+  const starSize = size === 'small' ? 'w-0.75 h-0.75' : 'w-1 h-1';
 
   return (
-    <div className={cn("p-0.75", board.fillClass)}>
-      <div className={cn("flex flex-col", gap)}>
-        {previewBoard.map((row, rowIndex) => (
-          <div key={rowIndex} className={cn("flex", gap)}>
-            {row.map((square, colIndex) => (
-              <div
-                key={`${rowIndex}-${colIndex}`}
-                className={cn(
-                  "border relative",
-                  squareSize,
-                  getColorClass(square.color)
-                )}
-              >
-                {square.hasStar && (
-                  <Star fill="white" className={cn("absolute inset-0 m-auto text-white", starSize)} />
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+    <div className={cn(size === 'small' ? "p-1" : 'p-2', board.fillClass)}>
+      {board.id === 'random' ?
+        <span className="text-white p-1">🎲 Généré</span>
+        :
+        <div className={cn("flex flex-col", gap)}>
+          {previewBoard.map((row, rowIndex) => (
+            <div key={rowIndex} className={cn("flex", gap)}>
+              {row.map((square, colIndex) => (
+                <div
+                  key={`${rowIndex}-${colIndex}`}
+                  className={cn(
+                    "border relative",
+                    squareSize,
+                    getColorClass(square.color)
+                  )}
+                >
+                  {square.hasStar && (
+                    <Star fill="white" className={cn("absolute inset-0 m-auto text-white", starSize)} />
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      }
     </div>
   );
 };

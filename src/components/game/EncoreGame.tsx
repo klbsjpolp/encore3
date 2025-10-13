@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Gamepad2, Users, Bot, Play, RotateCcw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { BOARD_CONFIGURATIONS } from '@/data/boardConfigurations';
+import {baseRandomBoardConfiguration, BOARD_CONFIGURATIONS, getBoardConfiguration} from '@/data/boardConfigurations';
 
 export const EncoreGame = () => {
   const { gameState, initializeGame, rollNewDice, selectDice, makeMove, skipTurn, isValidMove, completePlayerSwitch } = useEncoreGame();
@@ -246,21 +246,16 @@ export const EncoreGame = () => {
                       }}
                     >
                       <SelectTrigger className="w-[140px]">
-                        <SelectValue />
+                        <SelectValue>
+                          <BoardPreview size="small" board={getBoardConfiguration(selectedBoards[index])}/>
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {BOARD_CONFIGURATIONS.map((preview) => (
                           <SelectItem key={preview.id} value={preview.id}>
-                            <div className="flex items-center">
-                              <BoardPreview board={preview} />
-                            </div>
+                            <BoardPreview size="large" board={preview} />
                           </SelectItem>
                         ))}
-                        <SelectItem key="random" value="random">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">🎲 Aléatoire</span>
-                          </div>
-                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -375,7 +370,7 @@ export const EncoreGame = () => {
                 variant="game"
                 className="flex-1"
               >
-                Confirmer le déplacement ({selectedSquares.length} cases)
+                Confirmer le placement ({selectedSquares.length} cases)
               </Button>
               <Button
                 onClick={() => setSelectedSquares([])}

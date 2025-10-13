@@ -23,18 +23,38 @@ const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'
 
 const getColorClass = (color: GameColor): string => {
   const colorMap = {
-    yellow: 'bg-game-yellow border-yellow-600',
-    green: 'bg-game-green border-green-700',
-    blue: 'bg-game-blue border-blue-700',
-    red: 'bg-game-red border-red-700',
-    orange: 'bg-game-orange border-orange-700',
-    purple: 'bg-game-purple border-purple-700',
+    yellow: 'bg-game-yellow border-yellow-800',
+    green: 'bg-game-green border-green-900',
+    blue: 'bg-game-blue border-blue-900',
+    red: 'bg-game-red border-red-900',
+    orange: 'bg-game-orange border-orange-900',
+    purple: 'bg-game-purple border-purple-900',
   };
   return colorMap[color];
 };
 
 function isStartingColumn(colIndex: number) {
   return colIndex === 7;
+}
+
+interface ColumnPointProps {
+  index: number;
+  isClaimedByMe: boolean;
+  isClaimedByOther: boolean;
+  display: string | number;
+}
+function ColumnPoint({index, isClaimedByMe, isClaimedByOther, display}: ColumnPointProps) {
+  return (
+    <div className={cn(
+      "aspect-square rounded-xs @lg:rounded-md bg-secondary flex items-center justify-center",
+      isClaimedByMe && "ring-2 @lg:ring-3 ring-yellow-400",
+      "text-xs @lg:text-lg font-semibold",
+      isStartingColumn(index) && "text-destructive font-black",
+      isClaimedByOther && "line-through text-muted-foreground bg-secondary/80",
+    )}>
+      {display}
+    </div>
+  );
 }
 
 export const GameBoard = ({
@@ -66,15 +86,7 @@ export const GameBoard = ({
       {/* Column Headers */}
       <div className="grid grid-cols-15 gap-1">
         {COLUMNS.map((col, colIndex) => (
-          <div key={col}
-               className="aspect-square rounded-xs @lg:rounded-md bg-secondary flex items-center justify-center">
-            <span className={cn(
-              "text-xs font-semibold text-primary",
-              isStartingColumn(colIndex) && "text-destructive font-black",
-            )}>
-              {col}
-            </span>
-          </div>
+          <ColumnPoint key={col} index={colIndex} isClaimedByMe={false} isClaimedByOther={false} display={col} />
         ))}
       </div>
 
@@ -124,36 +136,11 @@ export const GameBoard = ({
         {COLUMN_FIRST_PLAYER_POINTS.map((points, index) => {
           const isClaimedByMe = iClaimedFirstBonus.includes(COLUMNS[index]);
           const isClaimedByOther = firstBonusClaimed.includes(COLUMNS[index]) && !isClaimedByMe;
-          return (
-            <div key={index} className={cn(
-              "aspect-square rounded-xs @lg:rounded-md bg-secondary flex items-center justify-center",
-              isClaimedByMe && "ring-2 ring-yellow-400",
-            )}>
-              <span className={cn(
-                "text-xs font-semibold text-primary",
-                isStartingColumn(index) && "text-destructive font-black",
-                isClaimedByOther && "line-through text-muted-foreground",
-              )}>
-                {points}
-              </span>
-            </div>
-          )
+          return <ColumnPoint index={index} key={index} isClaimedByMe={isClaimedByMe} isClaimedByOther={isClaimedByOther} display={points} />
         })}
         {COLUMN_SECOND_PLAYER_POINTS.map((points, index) => {
           const isClaimedByMe = iClaimedSecondBonus.includes(COLUMNS[index]);
-          return (
-            <div key={index} className={cn(
-              "aspect-square rounded-md bg-secondary flex items-center justify-center",
-              isClaimedByMe && "ring-2 ring-yellow-400",
-            )}>
-              <span className={cn(
-                "text-xs font-semibold text-primary",
-                isStartingColumn(index) && "text-destructive font-black",
-              )}>
-                {points}
-              </span>
-            </div>
-          )
+          return <ColumnPoint index={index} key={index} isClaimedByMe={isClaimedByMe} isClaimedByOther={false} display={points} />
         })}
       </div>
     </div>

@@ -96,6 +96,17 @@ export function validateBoard(board: BoardConfiguration): { valid: boolean; erro
     }
   }
 
+  // Check: no two stars in the same color group
+  for (const color of Object.keys(colorCounts) as GameColor[]) {
+    const starCounts = countStarsInGroups(board.colorLayout, board.starPositions, color);
+    for (const k of starCounts) {
+      if (k > 1) {
+        errors.push(`Color ${color} must not have more than 1 star in a single group, found ${k} stars in one group`);
+        break;
+      }
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors
@@ -136,4 +147,38 @@ function findColorGroups(board: GameColor[][], targetColor: GameColor): number[]
   }
 
   return groups;
+}
+
+/**
+ * Counts stars per connected group for a given color
+ */
+function countStarsInGroups(board: GameColor[][], starPositions: Set<string>, targetColor: GameColor): number[] {
+  const visited = Array(7).fill(null).map(() => Array(15).fill(false));
+  const counts: number[] = [];
+
+  function floodFillCount(row: number, col: number): number {
+    if (row < 0 || row >= 7 || col < 0 || col >= 15) return 0;
+    if (visited[row][col] || board[row][col] !== targetColor) return 0;
+
+    visited[row][col] = true;
+    let starCount = starPositions.has(`${row},${col}`) ? 1 : 0;
+
+    starCount += floodFillCount(row - 1, col);
+    starCount += floodFillCount(row + 1, col);
+    starCount += floodFillCount(row, col - 1);
+    starCount += floodFillCount(row, col + 1);
+
+    return starCount;
+  }
+
+  for (let row = 0; row < 7; row++) {
+    for (let col = 0; col < 15; col++) {
+      if (!visited[row][col] && board[row][col] === targetColor) {
+        const k = floodFillCount(row, col);
+        counts.push(k);
+      }
+    }
+  }
+
+  return counts;
 }

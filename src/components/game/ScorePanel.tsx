@@ -45,7 +45,7 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             {player.name}
-            {isCurrentPlayer && <Badge variant="default">Actuel</Badge>}
+            <Badge variant="default" className={cn('transition-all duration-300', !isCurrentPlayer && 'invisible')}>Actuel</Badge>
           </span>
           {gameComplete && allPlayers.length > 0 && (() => {
             const playerScores = allPlayers.map(p => calculateFinalScore(p).totalScore);
@@ -60,7 +60,7 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
       <CardContent className="space-y-4">
         {/* Completed Columns */}
         <div>
-          <p className="text-sm font-medium mb-2">Colonnes (total: {columnsScore} points)</p>
+          <p className="text-sm font-medium mb-2">Colonnes (total: {columnsScore} points) : </p>
           <div className="grid grid-cols-5 gap-0.5">
             {Array.from('ABCDEFGHIJKLMNO').map((c,i) => {
               const firstPoints = player.completedColumnsFirst.includes(c) ? COLUMN_FIRST_PLAYER_POINTS[i] : null;
@@ -73,40 +73,37 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         </div>
 
         {/* Completed Colors */}
-        <div>
-          <p className="text-sm font-medium mb-2">Couleurs complétées</p>
-          <div className="flex flex-wrap gap-1">
-            {player.completedColors.map(color => {
-              const points = player.completedColorsFirst.includes(color) ? 5 : (player.completedColorsNotFirst.includes(color) ? 3 : 0);
-              return (
-                <div
-                  key={color}
-                  className={cn(
-                    "w-6 h-6 rounded border-2 flex items-center justify-center text-[10px] font-bold",
-                    color === 'yellow' && "bg-game-yellow border-yellow-600 text-black",
-                    color === 'green' && "bg-game-green border-green-700 text-white",
-                    color === 'blue' && "bg-game-blue border-blue-700 text-white",
-                    color === 'red' && "bg-game-red border-red-700 text-white",
-                    color === 'orange' && "bg-game-orange border-orange-700 text-black",
-                    color === 'purple' && "bg-game-purple border-purple-700 text-white"
-                  )}
-                >
-                  {points > 0 ? `+${points}` : '0'}
-                </div>
-              );
-            })}
-            {Array.from({ length: 2-player.completedColors.length }, (_, i) =>
+        <div className="flex flex-row gap-2 items-center mb-2">
+          <span className="text-sm font-medium">Couleurs complétées : </span>
+          {player.completedColors.map(color => {
+            const points = player.completedColorsFirst.includes(color) ? 5 : (player.completedColorsNotFirst.includes(color) ? 3 : 0);
+            return (
               <div
-                key={i}
-                className="w-6 h-6 rounded border-2 bg-muted"
-              />
-            )}
-          </div>
+                key={color}
+                className={cn(
+                  "w-6 h-6 rounded border-2 flex items-center justify-center text-[10px] font-bold",
+                  color === 'yellow' && "bg-game-yellow border-yellow-600 text-black",
+                  color === 'green' && "bg-game-green border-green-700 text-white",
+                  color === 'blue' && "bg-game-blue border-blue-700 text-white",
+                  color === 'red' && "bg-game-red border-red-700 text-white",
+                  color === 'orange' && "bg-game-orange border-orange-700 text-black"
+                )}
+              >
+                {points > 0 ? `+${points}` : '0'}
+              </div>
+            );
+          })}
+          {Array.from({ length: 2-player.completedColors.length }, (_, i) =>
+            <div
+              key={i}
+              className="w-6 h-6 rounded border-2 bg-muted"
+            />
+          )}
         </div>
 
         {/* Stars Collected */}
         <div>
-          <p className="text-sm font-medium mb-2">Étoiles collectées ({player.starsCollected}/{TOTAL_STARS})</p>
+          <p className="text-sm font-medium mb-2">Étoiles collectées ({player.starsCollected}/{TOTAL_STARS}) : </p>
           <div className="flex items-center gap-1">
             {Array.from({ length: TOTAL_STARS }, (_, i) => (
               <Star
@@ -122,21 +119,19 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         </div>
 
         {/* Jokers */}
-        <div>
-          <p className="text-sm font-medium mb-2">Jokers ({player.jokersRemaining}/{MAX_JOKERS})</p>
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              {Array.from({ length: MAX_JOKERS }, (_, i) => (
-                <span
-                  key={i}
-                  className={cn(
-                    "w-2 h-2 rounded-full",
-                    i >= (MAX_JOKERS - player.jokersRemaining) ? "bg-primary" : "bg-muted"
-                  )}
-                />
-              ))}
-            </div>
-          </div>
+        <div className="flex flex-row gap-2 items-center mb-2">
+          <span className="text-sm font-medium">Jokers ({player.jokersRemaining}/{MAX_JOKERS})</span>
+          <span className="flex gap-1">
+            {Array.from({ length: MAX_JOKERS }, (_, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "w-2 h-2 rounded-full",
+                  i >= (MAX_JOKERS - player.jokersRemaining) ? "bg-primary" : "bg-muted"
+                )}
+              />
+            ))}
+          </span>
         </div>
         {scorePanel}
       </CardContent>

@@ -58,6 +58,7 @@ This constraint ensures:
 - **Exactly 15 stars** must be placed on the board
 - **One star per column** (columns 0-14)
 - Stars can be on any row (0-6) within their column
+- ⚠️ Must not have two stars in the same color group (at most 1 star per group)
 
 ### Star Position Format
 Stars are stored as a `Set<string>` with format `"row,column"`:
@@ -108,7 +109,7 @@ interface BoardConfiguration {
 ```
 
 ### Example Structure
-```typescript
+```
 const NEW_BOARD: BoardConfiguration = {
   id: 'unique-name',
   fillClass: 'bg-purple-600', // Theme color (not a game color)
@@ -158,6 +159,7 @@ Before finalizing a board configuration, verify:
 - [ ] Blue: 3 stars
 - [ ] Red: 3 stars
 - [ ] Orange: 3 stars
+- [ ] No two stars are in the same color group (max 1 per group)
 - [ ] All star positions use valid coordinates (row: 0-6, col: 0-14)
 - [ ] No duplicate star positions
 
@@ -242,7 +244,7 @@ Run validation to ensure:
 - **Grid**: 7 rows × 15 columns = 105 cells
 - **Colors**: 5 colors × 21 cells = 105 cells
 - **Groups**: Each color has groups of [1, 2, 3, 4, 5, 6] = 21 cells
-- **Stars**: 15 stars total = 3 per color, 1 per column
+- **Stars**: 15 stars total = 3 per color, 1 per column, max 1 per color group
 
 ### ✨ Design Freedom (creates variety):
 - Spatial placement of groups on the grid

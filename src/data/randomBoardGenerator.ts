@@ -1,5 +1,5 @@
 import { GameColor } from '@/types/game';
-import { BoardConfiguration, BOARD_CONFIGURATIONS } from './boardConfigurations';
+import {BoardConfiguration, BOARD_CONFIGURATIONS, baseRandomBoardConfiguration} from './boardConfigurations';
 
 /**
  * Generates a random board by transforming one of the official boards.
@@ -45,8 +45,7 @@ export function generateRandomBoard(): BoardConfiguration {
   board = remapColors(board);
 
   return {
-    id: 'random',
-    fillClass: 'bg-gradient-to-br from-purple-600 to-indigo-600',
+    ...baseRandomBoardConfiguration,
     colorLayout: board,
     starPositions: new Set(stars)
   };
