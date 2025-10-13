@@ -1,7 +1,8 @@
-import { DiceResult, DiceColor, GameColor, GameState } from '@/types/game';
+import { DiceResult, DiceColor, GameState } from '@/types/game';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Shuffle, HelpCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 interface DicePanelProps {
   dice: DiceResult[];
@@ -51,18 +52,20 @@ function getDiceShortDisplayValue(value: DiceColor | 'wild' | number): string {
   return display[0];
 }
 
-const DiceDisplay = ({ 
-  dice, 
-  onSelect, 
-  canSelect, 
+const DiceDisplay = ({
+  dice,
+  onSelect,
+  canSelect,
   isSelected,
   hideUsedMarks = false,
-}: { 
-  dice: DiceResult; 
-  onSelect?: (dice: DiceResult) => void; 
+  isRolling = false,
+}: {
+  dice: DiceResult;
+  onSelect?: (dice: DiceResult) => void;
   canSelect?: boolean;
   isSelected?: boolean;
   hideUsedMarks?: boolean;
+  isRolling?: boolean;
 }) => {
   const isColorDice = dice.type === 'color';
   const value = dice.value;
@@ -86,8 +89,12 @@ const DiceDisplay = ({
         isColorDice ? getDiceColorClass(value as DiceColor) : "bg-gradient-dice text-foreground",
         isSelected && "ring-4 ring-ring shadow-glow scale-110",
         isUsed && "opacity-50 cursor-not-allowed",
-        canSelect ? "hover:scale-105 active:scale-95" : "cursor-not-allowed opacity-30"
+        canSelect ? "hover:scale-105 active:scale-95" : "cursor-not-allowed opacity-30",
+        isRolling && "animate-spin duration-500 blur-xs opacity-30"
       )}
+      style={{
+        animationDelay: isRolling ? `${Math.random() * 0.1}s` : undefined,
+      }}
     >
       {value === 'wild' ? (
         <HelpCircle className="w-6 h-6" />
@@ -116,8 +123,30 @@ export const DicePanel = ({
   selectedNumberDice,
   flashRoll = false,
 }: DicePanelProps) => {
+  const [isRolling, setIsRolling] = useState(false);
+  const [prevDiceIds, setPrevDiceIds] = useState<string>('');
+  const [prevPhase, setPrevPhase] = useState<string>(phase);
+
   const colorDice = dice.filter(d => d.type === 'color');
   const numberDice = dice.filter(d => d.type === 'number');
+
+  // Track when dice are rolled (phase transitions from rolling to selection)
+  useEffect(() => {
+    const currentDiceIds = dice.map(d => d.id).join(',');
+    const wasRolling = prevPhase === 'rolling' || prevPhase === 'rolling-ai';
+    const isNowSelecting = phase === 'active-selection' || phase === 'active-selection-ai' ||
+                          phase === 'passive-selection' || phase === 'passive-selection-ai';
+    const diceChanged = currentDiceIds !== prevDiceIds && prevDiceIds !== '';
+
+    // Animate if we just rolled (rolling -> selection phase) OR if dice changed during same player's turn
+    if (dice.length > 0 && diceChanged && (wasRolling && isNowSelecting || phase === prevPhase)) {
+      setIsRolling(true);
+      const timer = setTimeout(() => setIsRolling(false), 600);
+      return () => clearTimeout(timer);
+    }
+    setPrevDiceIds(currentDiceIds);
+    setPrevPhase(phase);
+  }, [dice, prevDiceIds, phase, prevPhase]);
 
   const disabled = phase.includes('-ai');
   const finalCanRoll = canRoll && !disabled;
@@ -166,6 +195,7 @@ export const DicePanel = ({
                   canSelect={finalCanSelect}
                   isSelected={selectedColorDice?.id === die.id}
                   hideUsedMarks={false}
+                  isRolling={isRolling}
                 />
               ))
             )}
@@ -197,6 +227,7 @@ export const DicePanel = ({
                   canSelect={finalCanSelect}
                   isSelected={selectedNumberDice?.id === die.id}
                   hideUsedMarks={false}
+                  isRolling={isRolling}
                 />
               ))
             )}

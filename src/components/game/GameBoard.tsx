@@ -107,7 +107,7 @@ export const GameBoard = ({
                   isSquareSelected(rowIndex, colIndex) && "ring-4 ring-ring shadow-glow scale-110",
                   isSquareHovered(rowIndex, colIndex) && "scale-105 shadow-md",
                   isSquarePreview(rowIndex, colIndex) && "ring-2 ring-primary/50 scale-105",
-                  isStartingColumn(colIndex) ? 'outline-solid outline-2 outline-border' : '',
+                  isStartingColumn(colIndex) ? 'outline-solid outline-1 @lg:outline-2 outline-border' : '',
                   !disabled && !square.crossed && "cursor-pointer"
                 )}
               >
