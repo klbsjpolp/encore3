@@ -101,7 +101,7 @@ export const GameBoard = ({
                 onMouseEnter={() => !disabled && onSquareHover?.(rowIndex, colIndex)}
                 disabled={disabled || square.crossed}
                 className={cn(
-                  "aspect-square rounded-xs @lg:rounded-md relative transition-all duration-200 border-1 @lg:border-2",
+                  "aspect-square rounded-[3px] @lg:rounded-md relative transition-all duration-200 border-1 @lg:border-2",
                   getColorClass(square.color),
                   square.crossed && "opacity-30 cursor-not-allowed",
                   isSquareSelected(rowIndex, colIndex) && "ring-4 ring-ring shadow-glow scale-110",
@@ -111,13 +111,16 @@ export const GameBoard = ({
                   !disabled && !square.crossed && "cursor-pointer"
                 )}
               >
-                {square.hasStar && (
+                {square.hasStar ? (
                   <Star
+                    fill="white"
                     className={cn(
                       "absolute inset-0 m-auto w-full h-full max-h-6 max-w-6",
-                      square.crossed ? "text-muted-foreground" : "text-white drop-shadow-md"
+                      square.crossed ? "text-muted-foreground" : "text-black drop-shadow-md"
                     )}
                   />
+                ) : (
+                  <div className="absolute inset-[0.5px] @lg:inset-0.25 opacity-25 bg-white rounded-full w-11/12 h-11/12"></div>
                 )}
                 {square.crossed && (
                   <div className="absolute inset-0 flex items-center justify-center">

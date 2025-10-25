@@ -5,6 +5,7 @@ import { Star, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS, TOTAL_STARS, MAX_JOKERS, calculateColumnScore, calculateFinalScore} from "@/hooks/useEncoreGame.ts";
 import {ReactNode} from "react";
+import colors from 'tailwindcss/colors';
 
 interface ScorePanelProps {
   player: Player;
@@ -109,27 +110,24 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
               <Star
                 key={i}
                 className={cn(
-                  "w-4 h-4",
-                  i < player.starsCollected ? "text-yellow-500" : "text-muted"
+                  "w-4 h-4", i < player.starsCollected ? "text-yellow-800" : "text-black"
                 )}
-                fill="currentColor"
+                fill={i < player.starsCollected ? colors.yellow[500] : "var(--color-muted)"}
               />
             ))}
           </div>
         </div>
 
         {/* Jokers */}
-        <div className="flex flex-row gap-2 items-center mb-2">
+        <div className="flex flex-row gap-2 items-baseline mb-2">
           <span className="text-sm font-medium">Jokers ({player.jokersRemaining}/{MAX_JOKERS})</span>
-          <span className="flex gap-1">
+          <span className="flex font-mono">
             {Array.from({ length: MAX_JOKERS }, (_, i) => (
               <span
                 key={i}
-                className={cn(
-                  "w-2 h-2 rounded-full",
-                  i >= (MAX_JOKERS - player.jokersRemaining) ? "bg-primary" : "bg-muted"
-                )}
-              />
+                className={cn("text-xs border rounded-full",
+                  i >= MAX_JOKERS - player.jokersRemaining && 'border-primary')}
+              >{i >= (MAX_JOKERS - player.jokersRemaining) ? "❗" : "❕"}</span>
             ))}
           </span>
         </div>

@@ -46,7 +46,7 @@ export const BoardPreview = ({ size, board }: BoardPreviewProps) => {
   const starSize = size === 'small' ? 'w-0.75 h-0.75' : 'w-1 h-1';
 
   return (
-    <div className={cn(size === 'small' ? "p-1" : 'p-2', board.fillClass)}>
+    <div className={cn('relative h-full', size === 'small' ? "p-1" : 'p-2', board.fillClass)}>
       <div className={cn("flex flex-col", gap)}>
         {previewBoard.map((row, rowIndex) => (
           <div key={rowIndex} className={cn("flex", gap)}>
@@ -67,6 +67,13 @@ export const BoardPreview = ({ size, board }: BoardPreviewProps) => {
           </div>
         ))}
       </div>
+      {board.id === 'random' &&
+        <span className={cn(
+          "absolute inset-0 text-shadow-black text-shadow-md text-white font-bold flex w-full items-center justify-center",
+          size === 'small' ? 'text-[0.5rem]' : 'text-[1rem]'
+        )}>
+          Différent à chaque fois!
+        </span>}
     </div>
   );
 };
