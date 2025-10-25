@@ -177,13 +177,13 @@ export const DicePanel = ({
             {colorDice.length === 0 ? (
               <>
                 <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src="/placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                  <img src="placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
                 </div>
                 <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src="/placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                  <img src="placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
                 </div>
                 <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src="/placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                  <img src="placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
                 </div>
               </>
             ) : (
