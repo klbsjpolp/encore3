@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="150" height="100" viewBox="0 0 150 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Encore! game board miniature</title>
+  <desc id="desc">A 150 by 100 image with a small colored grid and star icons representing the Encore! roll-and-write board.</desc>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="150" height="100" rx="8" ry="8" fill="#0b1020"/>
+  <rect x="2" y="2" width="146" height="96" rx="7" ry="7" fill="#0f172a"/>
+
+  <!-- Title badge -->
+  <g aria-hidden="true">
+    <rect x="10" y="8" width="60" height="14" rx="7" ry="7" fill="#111827" stroke="#1f2937"/>
+    <text x="40" y="17" text-anchor="middle" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="8" font-weight="700" fill="#e5e7eb">ENCORE!</text>
+  </g>
+
+  <!-- Mini board grid (6 x 4) -->
+  <!-- Grid parameters: origin (27,18), cell 16, rows 4, cols 6 -->
+  <g transform="translate(27,18)">
+    <!-- Row 0 -->
+    <rect x="0" y="0" width="16" height="16" fill="#FCD34D" stroke="#B45309"/>
+    <rect x="16" y="0" width="16" height="16" fill="#FCD34D" stroke="#B45309"/>
+    <rect x="32" y="0" width="16" height="16" fill="#34D399" stroke="#065F46"/>
+    <rect x="48" y="0" width="16" height="16" fill="#34D399" stroke="#065F46"/>
+    <rect x="64" y="0" width="16" height="16" fill="#60A5FA" stroke="#1E3A8A"/>
+    <rect x="80" y="0" width="16" height="16" fill="#60A5FA" stroke="#1E3A8A"/>
+
+    <!-- Row 1 -->
+    <rect x="0"  y="16" width="16" height="16" fill="#FCD34D" stroke="#B45309"/>
+    <rect x="16" y="16" width="16" height="16" fill="#FB923C" stroke="#9A3412"/>
+    <rect x="32" y="16" width="16" height="16" fill="#FB923C" stroke="#9A3412"/>
+    <rect x="48" y="16" width="16" height="16" fill="#34D399" stroke="#065F46"/>
+    <rect x="64" y="16" width="16" height="16" fill="#60A5FA" stroke="#1E3A8A"/>
+    <rect x="80" y="16" width="16" height="16" fill="#A78BFA" stroke="#4C1D95"/>
+
+    <!-- Row 2 -->
+    <rect x="0"  y="32" width="16" height="16" fill="#F87171" stroke="#7F1D1D"/>
+    <rect x="16" y="32" width="16" height="16" fill="#FB923C" stroke="#9A3412"/>
+    <rect x="32" y="32" width="16" height="16" fill="#F87171" stroke="#7F1D1D"/>
+    <rect x="48" y="32" width="16" height="16" fill="#34D399" stroke="#065F46"/>
+    <rect x="64" y="32" width="16" height="16" fill="#A78BFA" stroke="#4C1D95"/>
+    <rect x="80" y="32" width="16" height="16" fill="#A78BFA" stroke="#4C1D95"/>
+
+    <!-- Row 3 -->
+    <rect x="0"  y="48" width="16" height="16" fill="#F87171" stroke="#7F1D1D"/>
+    <rect x="16" y="48" width="16" height="16" fill="#F87171" stroke="#7F1D1D"/>
+    <rect x="32" y="48" width="16" height="16" fill="#FB923C" stroke="#9A3412"/>
+    <rect x="48" y="48" width="16" height="16" fill="#60A5FA" stroke="#1E3A8A"/>
+    <rect x="64" y="48" width="16" height="16" fill="#60A5FA" stroke="#1E3A8A"/>
+    <rect x="80" y="48" width="16" height="16" fill="#A78BFA" stroke="#4C1D95"/>
+
+    <!-- Stars (use text glyph for simplicity) -->
+    <g fill="#ffffff" font-size="10" font-weight="700" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif">
+      <!-- row 0, col 2 -->
+      <text x="40" y="8">★</text>
+      <!-- row 1, col 5 -->
+      <text x="88" y="24">★</text>
+      <!-- row 2, col 0 -->
+      <text x="8" y="40">★</text>
+      <!-- row 3, col 3 -->
+      <text x="56" y="56">★</text>
+    </g>
+  </g>
+
+  <!-- Accent dice-like pips to suggest dice play -->
+  <g transform="translate(116,10)" aria-hidden="true">
+    <rect x="0" y="0" width="24" height="24" rx="5" ry="5" fill="#111827" stroke="#1f2937"/>
+    <circle cx="12" cy="12" r="2.2" fill="#e5e7eb"/>
+  </g>
+  <g transform="translate(116,38)" aria-hidden="true">
+    <rect x="0" y="0" width="24" height="24" rx="5" ry="5" fill="#111827" stroke="#1f2937"/>
+    <circle cx="7.5" cy="7.5" r="2.2" fill="#e5e7eb"/>
+    <circle cx="16.5" cy="16.5" r="2.2" fill="#e5e7eb"/>
+  </g>
+</svg>
