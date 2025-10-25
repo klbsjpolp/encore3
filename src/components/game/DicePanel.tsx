@@ -152,6 +152,8 @@ export const DicePanel = ({
   const finalCanRoll = canRoll && !disabled;
   const finalCanSelect = canSelect && !disabled;
 
+  const placeholderSrc = `${import.meta.env.BASE_URL}placeholder.svg`;
+
   return (
     <div className={cn("bg-card rounded-xl p-6 shadow-square space-y-6 transition-opacity", disabled && "opacity-50 pointer-events-none")}>
       <div className="flex items-center justify-between">
@@ -177,13 +179,13 @@ export const DicePanel = ({
             {colorDice.length === 0 ? (
               <>
                 <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src="placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                  <img src={placeholderSrc} alt="Dé en attente" className="w-6 h-6 opacity-60" />
                 </div>
                 <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src="placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                  <img src={placeholderSrc} alt="Dé en attente" className="w-6 h-6 opacity-60" />
                 </div>
                 <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src="placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                  <img src={placeholderSrc} alt="Dé en attente" className="w-6 h-6 opacity-60" />
                 </div>
               </>
             ) : (
@@ -209,13 +211,13 @@ export const DicePanel = ({
             {numberDice.length === 0 ? (
               <>
                 <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src="/placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                  <img src={placeholderSrc} alt="Dé en attente" className="w-6 h-6 opacity-60" />
                 </div>
                 <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src="/placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                  <img src={placeholderSrc} alt="Dé en attente" className="w-6 h-6 opacity-60" />
                 </div>
                 <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src="/placeholder.svg" alt="Dé en attente" className="w-6 h-6 opacity-60" />
+                  <img src={placeholderSrc} alt="Dé en attente" className="w-6 h-6 opacity-60" />
                 </div>
               </>
             ) : (
