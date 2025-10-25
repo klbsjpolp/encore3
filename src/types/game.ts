@@ -1,4 +1,4 @@
-import {BoardConfiguration} from "@/data/boardConfigurations.ts";
+import {BoardConfiguration, BoardId} from "@/data/boardConfigurations.ts";
 
 export type GameColor = 'yellow' | 'green' | 'blue' | 'red' | 'orange';
 export type DiceColor = GameColor | 'wild';
@@ -25,6 +25,7 @@ export interface Player {
   isAI: boolean;
   board: Square[][];
   boardConfiguration: BoardConfiguration;
+  boardId?: BoardId;
   starsCollected: number;
   completedColors: GameColor[];
   completedColorsFirst: GameColor[];
