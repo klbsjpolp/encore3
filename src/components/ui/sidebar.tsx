@@ -648,10 +648,16 @@ const SidebarMenuSkeleton = React.forwardRef<
     showIcon?: boolean
   }
 >(({ className, showIcon = false, ...props }, ref) => {
-  // Random width between 50 to 90%.
+  // Deterministic width between 50% and 90% to satisfy hook purity rules.
   const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
-  }, [])
+    const key = `${Boolean(showIcon)}|${className ?? ""}`
+    let hash = 5381
+    for (let i = 0; i < key.length; i++) {
+      hash = ((hash << 5) + hash) + key.charCodeAt(i)
+    }
+    const n = Math.abs(hash % 41) + 50 // 50..90
+    return `${n}%`
+  }, [showIcon, className])
 
   return (
     <div

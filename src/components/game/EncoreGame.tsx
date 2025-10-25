@@ -41,7 +41,7 @@ export const EncoreGame = () => {
 
   const mainBoardContainerRef = useRef<HTMLDivElement>(null);
   const otherBoardContainerRef = useRef<HTMLDivElement>(null);
-  const positionsRef = useRef<{ main: DOMRect | null; other: DOMRect | null }>({ main: null, other: null });
+  const [positions, setPositions] = useState<{ main: DOMRect | null; other: DOMRect | null }>({ main: null, other: null });
 
   const isSwitching = gameState.phase === 'player-switching';
 
@@ -49,12 +49,12 @@ export const EncoreGame = () => {
     // On every render, if we're not animating, measure the positions.
     // This captures the correct "before" state for the animation.
     if (!isAnimating && mainBoardContainerRef.current && otherBoardContainerRef.current) {
-      positionsRef.current = {
+      setPositions({
         main: mainBoardContainerRef.current.getBoundingClientRect(),
         other: otherBoardContainerRef.current.getBoundingClientRect(),
-      };
+      });
     }
-  });
+  }, [isAnimating]);
 
   useEffect(() => {
     if (isSwitching) {
@@ -272,7 +272,7 @@ export const EncoreGame = () => {
   let otherBoardStyle: CSSProperties = {};
 
   if (isAnimating) {
-    const { main: mainPos, other: otherPos } = positionsRef.current;
+    const { main: mainPos, other: otherPos } = positions;
     if (mainPos && otherPos) {
       const mainTx = otherPos.left - mainPos.left;
       const mainTy = otherPos.top - mainPos.top;
