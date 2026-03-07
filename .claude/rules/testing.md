@@ -1,0 +1,2 @@
+- toute modification de logique doit avoir un test
+- préférer des tests de logique plutôt que des tests UI lourds

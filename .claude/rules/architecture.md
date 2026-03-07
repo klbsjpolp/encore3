@@ -1,0 +1,3 @@
+- ne pas mélanger logique métier et UI
+- les règles du jeu doivent rester pures
+- préférer des fonctions pures pour la logique

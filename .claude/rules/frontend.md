@@ -1,0 +1,3 @@
+- privilégier des composants simples
+- éviter la logique métier dans les composants
+- utiliser les hooks pour la logique partagée
