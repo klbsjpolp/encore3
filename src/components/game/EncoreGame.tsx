@@ -478,7 +478,7 @@ export const EncoreGame = () => {
               <Gamepad2 className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" />
               Encore !
             </h1>
-            {!isMobile && state && <Badge variant="default" className="text-sm sm:text-base lg:text-lg px-2 py-0.5 sm:px-3 sm:py-1">
+            {!isMobile && state && <Badge variant="default" className="text-sm sm:text-base lg:text-lg px-2 sm:px-3">
               {state}
             </Badge>}
           </div>
