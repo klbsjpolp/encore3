@@ -20,8 +20,6 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
   const columnsScore = calculateColumnScore(player);
   const winners = allPlayers.length > 0 ? determineWinners(allPlayers) : [];
   const isWinner = winners.some(winner => winner.id === player.id);
-  const runtimeScore = (player as Player & { score?: number }).score;
-  const currentScore = typeof runtimeScore === 'number' ? runtimeScore : columnsScore;
   const completedColumns = [...player.completedColumnsFirst, ...player.completedColumnsNotFirst];
 
   let scorePanel: ReactNode | null = null;
@@ -66,10 +64,12 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
             <span>Étoiles: {player.starsCollected}/{TOTAL_STARS}</span>
             <span>Jokers: {player.jokersRemaining}/{MAX_JOKERS}</span>
           </div>
-          <div className="flex items-center justify-between rounded-md bg-muted/70 px-2.5 py-2">
-            <span className="text-xs text-muted-foreground">{gameComplete ? 'Score final' : 'Score'}</span>
-            <span className="text-base font-bold">{gameComplete ? finalScore : currentScore}</span>
-          </div>
+          {gameComplete && (
+            <div className="flex items-center justify-between rounded-md bg-muted/70 px-2.5 py-2">
+              <span className="text-xs text-muted-foreground">Score final</span>
+              <span className="text-base font-bold">{finalScore}</span>
+            </div>
+          )}
           <div className="flex flex-wrap gap-1">
             {completedColumns.length > 0 ? completedColumns.map(column => (
               <Badge key={column} variant="outline" className="px-1.5 py-0 text-[0.65rem]">
@@ -186,15 +186,6 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         </div>
 
         {scorePanel}
-
-        {!gameComplete && (
-          <div className="bg-muted rounded-lg p-3">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Score actuel</p>
-              <p className="text-2xl font-bold">{currentScore}</p>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
