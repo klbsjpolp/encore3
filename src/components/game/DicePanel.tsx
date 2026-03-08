@@ -1,4 +1,4 @@
-import { DiceResult, DiceColor, GameState } from '@/types/game';
+import { ColorDiceResult, DiceResult, DiceColor, DiceNumber, GameState, NumberDiceResult } from '@/types/game';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Shuffle, HelpCircle } from 'lucide-react';
@@ -11,8 +11,8 @@ interface DicePanelProps {
   onRollDice?: () => void;
   canRoll?: boolean;
   canSelect?: boolean;
-  selectedColorDice?: DiceResult | null;
-  selectedNumberDice?: DiceResult | null;
+  selectedColorDice?: ColorDiceResult | null;
+  selectedNumberDice?: NumberDiceResult | null;
   flashRoll?: boolean;
 }
 
@@ -39,18 +39,21 @@ const displayMap = {
   purple: 'Mauve',
 };
 
-function getDiceDisplayValue(value: DiceColor | 'wild' | number): string {
+function getDiceDisplayValue(value: DiceColor | DiceNumber): string {
   if (value === 'wild') return 'Joker';
   const display = displayMap[value];
   if (display) return display;
   return value.toString();
 }
 
-function getDiceShortDisplayValue(value: DiceColor | 'wild' | number): string {
+function getDiceShortDisplayValue(value: DiceColor | DiceNumber): string {
   if (value === 'wild') return '?';
   const display = getDiceDisplayValue(value);
   return display[0];
 }
+
+const isColorDice = (dice: DiceResult): dice is ColorDiceResult => dice.type === 'color';
+const isNumberDice = (dice: DiceResult): dice is NumberDiceResult => dice.type === 'number';
 
 // Pure deterministic delay based on a string id. Avoids Math.random during render.
 function getStableAnimationDelayFromId(id: string): string {
@@ -141,8 +144,8 @@ export const DicePanel = ({
   const prevDiceIdsRef = useRef<string>('');
   const prevPhaseRef = useRef<string>(phase);
 
-  const colorDice = dice.filter(d => d.type === 'color');
-  const numberDice = dice.filter(d => d.type === 'number');
+  const colorDice = dice.filter(isColorDice);
+  const numberDice = dice.filter(isNumberDice);
 
   // Track when dice are rolled (phase transitions from rolling to selection)
   useEffect(() => {

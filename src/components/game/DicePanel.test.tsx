@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { DicePanel } from './DicePanel';
-import { DiceResult } from '@/types/game';
+import { ColorDiceResult, DiceResult } from '@/types/game';
 
 const mockDice: DiceResult[] = [
   { id: 'c1', type: 'color', value: 'red', selected: false },
@@ -11,6 +11,8 @@ const mockDice: DiceResult[] = [
   { id: 'n2', type: 'number', value: 2, selected: false },
   { id: 'n3', type: 'number', value: 3, selected: false },
 ];
+
+const mockSelectedColorDie: ColorDiceResult = { id: 'c1', type: 'color', value: 'red', selected: false };
 
 describe('DicePanel Component', () => {
   it('renders the dice panel with roll button', () => {
@@ -95,7 +97,7 @@ describe('DicePanel Component', () => {
         dice={mockDice} 
         phase="active-selection" 
         canSelect={true}
-        selectedColorDice={mockDice[0]} // red
+        selectedColorDice={mockSelectedColorDie}
       />
     );
     

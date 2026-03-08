@@ -1,5 +1,7 @@
+import { ColorDiceResult, DiceResult, GameState, GameColor, NumberDiceResult, Square } from '@/types/game';
 
-import { GameState, DiceResult, GameColor, DiceNumber, Square } from '@/types/game';
+const isColorDice = (dice: DiceResult): dice is ColorDiceResult => dice.type === 'color';
+const isNumberDice = (dice: DiceResult): dice is NumberDiceResult => dice.type === 'number';
 
 // Finds all connected groups of uncrossed squares for a given color
 const findConnectedComponents = (board: Square[][], color: GameColor): { row: number, col: number }[][] => {
@@ -74,18 +76,18 @@ export const useAIPlayer = () => {
   const makeAIMove = (
     gameState: GameState,
     isValidMove: (squares: { row: number; col: number }[], color: GameColor, playerBoard: Square[][]) => boolean
-  ): { color: DiceResult, number: DiceResult, squares: {row: number, col: number}[] } | null => {
+  ): { color: ColorDiceResult, number: NumberDiceResult, squares: {row: number, col: number}[] } | null => {
     const currentPlayer = gameState.players[gameState.currentPlayer];
     if (!currentPlayer.isAI) {
       return null;
     }
 
-    const availableColorDice = gameState.dice.filter(d => d.type === 'color' && !d.selected);
-    const availableNumberDice = gameState.dice.filter(d => d.type === 'number' && !d.selected);
+    const availableColorDice = gameState.dice.filter(isColorDice).filter(d => !d.selected);
+    const availableNumberDice = gameState.dice.filter(isNumberDice).filter(d => !d.selected);
 
     const possibleMoves: {
-        color: DiceResult;
-        number: DiceResult;
+        color: ColorDiceResult;
+        number: NumberDiceResult;
         squares: { row: number; col: number }[];
         score: number;
     }[] = [];

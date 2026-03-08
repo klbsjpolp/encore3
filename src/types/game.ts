@@ -12,12 +12,22 @@ export interface Square {
   row: number;
 }
 
-export interface DiceResult {
+interface BaseDiceResult {
   id: string;
-  type: 'color' | 'number';
-  value: DiceColor | DiceNumber;
   selected: boolean;
 }
+
+export interface ColorDiceResult extends BaseDiceResult {
+  type: 'color';
+  value: DiceColor;
+}
+
+export interface NumberDiceResult extends BaseDiceResult {
+  type: 'number';
+  value: DiceNumber;
+}
+
+export type DiceResult = ColorDiceResult | NumberDiceResult;
 
 export interface Player {
   id: string;
@@ -54,7 +64,7 @@ export interface GameState {
   phase: GamePhase | AIPhase;
   lastPhase?: GamePhase | AIPhase;
   dice: DiceResult[];
-  selectedDice: { color: DiceResult | null; number: DiceResult | null };
+  selectedDice: { color: ColorDiceResult | null; number: NumberDiceResult | null };
   selectedFromJoker: { color: boolean; number: boolean };
   gameStarted: boolean;
   winner: Player | null;
@@ -67,7 +77,7 @@ export interface GameState {
 
 export interface GameMove {
   playerId: string;
-  colorDice: DiceResult;
-  numberDice: DiceResult;
+  colorDice: ColorDiceResult;
+  numberDice: NumberDiceResult;
   squares: { row: number; col: number }[];
 }

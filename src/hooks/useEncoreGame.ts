@@ -261,8 +261,9 @@ export const useEncoreGame = () => {
       if (dice.selected && isPassivePhase) {
         return prev;
       }
-      const newSelectedDice = { ...prev.selectedDice };
-      newSelectedDice[dice.type] = dice;
+      const newSelectedDice = dice.type === 'color'
+        ? { ...prev.selectedDice, color: dice }
+        : { ...prev.selectedDice, number: dice };
       const newSelectedFromJoker = { ...prev.selectedFromJoker };
       newSelectedFromJoker[dice.type] = dice.value === 'wild';
       const jokersNeeded = (newSelectedFromJoker.color ? 1 : 0) + (newSelectedFromJoker.number ? 1 : 0);
