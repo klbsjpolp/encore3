@@ -332,7 +332,11 @@ export const EncoreGame = () => {
 
   const actionsDisable = isSwitching || !(gameState.phase === 'active-selection' || gameState.phase === 'passive-selection');
   const state = isSwitching ? 'Changement de joueur...' :
-    gameState.phase === 'game-over' ? `🎉 ${gameState.winner?.name} gagne ! 🎉` :
+    gameState.phase === 'game-over'
+      ? gameState.winners.length > 1
+        ? `🤝 Égalité : ${gameState.winners.map(player => player.name).join(', ')}`
+        : `🎉 ${gameState.winner?.name} gagne ! 🎉`
+      :
       gameState.phase === 'rolling' ? 'Lancer les dés' :
         gameState.phase === 'active-selection' ? 'Tour du joueur actif' :
           gameState.phase === 'passive-selection' ? 'Tour des joueurs passifs' :

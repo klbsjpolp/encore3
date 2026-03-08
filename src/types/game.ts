@@ -58,6 +58,8 @@ export interface GameState {
   selectedFromJoker: { color: boolean; number: boolean };
   gameStarted: boolean;
   winner: Player | null;
+  winners: Player[];
+  pendingGameOver: boolean;
   claimedFirstColumnBonus: Record<string, string>; // Maps column char to player ID
   claimedFirstColorBonus: Partial<Record<GameColor, string>>; // Maps color to first finisher player ID
   claimedSecondColorBonus: Partial<Record<GameColor, string>>; // Maps color to second finisher player ID

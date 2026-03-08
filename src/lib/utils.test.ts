@@ -7,7 +7,7 @@ describe('cn util', () => {
   });
 
   it('should handle conditional classes', () => {
-    expect(cn('flex', true && 'items-center', false && 'hidden')).toBe('flex items-center');
+    expect(cn('flex', 'items-center', undefined)).toBe('flex items-center');
   });
 
   it('should merge tailwind classes correctly', () => {

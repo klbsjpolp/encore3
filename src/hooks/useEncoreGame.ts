@@ -19,6 +19,10 @@ export const calculateColumnScore = (player: Player): number => {
   }).reduce((a, b) => a + b, 0);
 };
 
+export const calculateStarPenalty = (player: Player): number => {
+  return (TOTAL_STARS - player.starsCollected) * 2;
+};
+
 export const calculateFinalScore = (player: Player): {
   columnsScore: number;
   jokersScore: number;
@@ -29,10 +33,35 @@ export const calculateFinalScore = (player: Player): {
   const columnsScore = calculateColumnScore(player);
   const jokersScore = player.jokersRemaining;
   const colorsScore = player.completedColorsFirst.length * 5 + player.completedColorsNotFirst.length * 3;
-  const starPenalty = TOTAL_STARS - player.starsCollected;
+  const starPenalty = calculateStarPenalty(player);
   const totalScore = columnsScore + jokersScore + colorsScore - starPenalty;
 
   return { columnsScore, jokersScore, colorsScore, starPenalty, totalScore };
+};
+
+export const determineWinners = (players: Player[]): Player[] => {
+  if (players.length === 0) {
+    return [];
+  }
+
+  const maxScore = Math.max(...players.map(player => calculateFinalScore(player).totalScore));
+  const topPlayers = players.filter(player => calculateFinalScore(player).totalScore === maxScore);
+
+  if (topPlayers.length <= 1) {
+    return topPlayers;
+  }
+
+  const maxJokers = Math.max(...topPlayers.map(player => player.jokersRemaining));
+  return topPlayers.filter(player => player.jokersRemaining === maxJokers);
+};
+
+const getWinnerState = (players: Player[]) => {
+  const winners = determineWinners(players);
+
+  return {
+    winner: winners.length === 1 ? winners[0] : null,
+    winners,
+  };
 };
 
 const createInitialBoard = (boardConfiguration: BoardConfiguration): Square[][] => {
@@ -128,6 +157,8 @@ export const useEncoreGame = () => {
     selectedFromJoker: { color: false, number: false },
     gameStarted: false,
     winner: null,
+    winners: [],
+    pendingGameOver: false,
     claimedFirstColumnBonus: {},
     claimedFirstColorBonus: {},
     claimedSecondColorBonus: {},
@@ -203,6 +234,8 @@ export const useEncoreGame = () => {
       selectedFromJoker: { color: false, number: false },
       gameStarted: true,
       winner: null,
+      winners: [],
+      pendingGameOver: false,
       claimedFirstColumnBonus: {},
       claimedFirstColorBonus: {},
       claimedSecondColorBonus: {},
@@ -333,18 +366,7 @@ export const useEncoreGame = () => {
       });
 
       const updatedPlayer = newPlayers[currentPlayer];
-      if (updatedPlayer.completedColors.length >= 2) {
-        // Calculate final scores for all players to determine the winner
-        const playerScores = newPlayers.map(p => ({
-          player: p,
-          finalScore: calculateFinalScore(p).totalScore
-        }));
-        const winner = playerScores.reduce((max, current) =>
-          current.finalScore > max.finalScore ? current : max
-        ).player;
-
-        return { ...prev, players: newPlayers, phase: 'game-over', winner, claimedFirstColumnBonus: newClaimedFirstColumnBonus, claimedFirstColorBonus: newClaimedFirstColorBonus, claimedSecondColorBonus: newClaimedSecondColorBonus };
-      }
+      const pendingGameOver = prev.pendingGameOver || updatedPlayer.completedColors.length >= 2;
 
       // Only mark dice as used (selected) when the active player makes their selection.
       const isActiveSelectionPhase = phase === 'active-selection' || phase === 'active-selection-ai';
@@ -360,6 +382,7 @@ export const useEncoreGame = () => {
         claimedFirstColumnBonus: newClaimedFirstColumnBonus,
         claimedFirstColorBonus: newClaimedFirstColorBonus,
         claimedSecondColorBonus: newClaimedSecondColorBonus,
+        pendingGameOver,
         dice: newDice,
         phase: 'player-switching',
         lastPhase: phase,
@@ -394,6 +417,15 @@ export const useEncoreGame = () => {
         const nextPlayerIndex = (activePlayer + 1) % players.length;
 
         if (nextPlayerIndex === activePlayer) {
+            if (prev.pendingGameOver) {
+              return {
+                ...prev,
+                phase: 'game-over',
+                pendingGameOver: false,
+                ...getWinnerState(players),
+              };
+            }
+
             const newActivePlayer = activePlayer;
             const nextPlayer = players[newActivePlayer];
             const nextPhase = nextPlayer.isAI ? 'rolling-ai' : 'rolling';
@@ -409,6 +441,15 @@ export const useEncoreGame = () => {
         const nextPlayerIndex = (currentPlayer + 1) % players.length;
 
         if (nextPlayerIndex === activePlayer) {
+          if (prev.pendingGameOver) {
+            return {
+              ...prev,
+              phase: 'game-over',
+              pendingGameOver: false,
+              ...getWinnerState(players),
+            };
+          }
+
           const newActivePlayer = (activePlayer + 1) % players.length;
           const nextPlayer = players[newActivePlayer];
           const nextPhase = nextPlayer.isAI ? 'rolling-ai' : 'rolling';

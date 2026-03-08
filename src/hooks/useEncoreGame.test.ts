@@ -3,6 +3,8 @@ import { describe, it, expect } from 'vitest';
 import {
   calculateColumnScore,
   calculateFinalScore,
+  calculateStarPenalty,
+  determineWinners,
   findConnectedGroup,
   TOTAL_STARS,
   useEncoreGame,
@@ -101,8 +103,8 @@ describe('calculateFinalScore', () => {
     const columnsScore = 5 + 2 + 1; // 8
     const jokersScore = 3;
     const colorsScore = 10 + 3; // 13
-    const starPenalty = TOTAL_STARS - 10; // 15 - 10 = 5
-    const totalScore = columnsScore + jokersScore + colorsScore - starPenalty; // 8 + 3 + 13 - 5 = 19
+    const starPenalty = (TOTAL_STARS - 10) * 2; // 10 points missing => 5 unchecked stars => -10
+    const totalScore = columnsScore + jokersScore + colorsScore - starPenalty; // 8 + 3 + 13 - 10 = 14
 
     expect(calculateFinalScore(player)).toEqual({
       columnsScore,
@@ -111,6 +113,51 @@ describe('calculateFinalScore', () => {
       starPenalty,
       totalScore,
     });
+  });
+});
+
+describe('calculateStarPenalty', () => {
+  it('subtracts 2 points for each unchecked star', () => {
+    const player = makePlayer({ starsCollected: 13 });
+
+    expect(calculateStarPenalty(player)).toBe(4);
+  });
+});
+
+describe('determineWinners', () => {
+  it('breaks score ties with remaining jokers', () => {
+    const playerA = makePlayer({
+      id: 'p1',
+      jokersRemaining: 2,
+      starsCollected: 15,
+      completedColumnsFirst: ['A'],
+    });
+    const playerB = makePlayer({
+      id: 'p2',
+      jokersRemaining: 4,
+      starsCollected: 15,
+      completedColumnsFirst: ['C'],
+    });
+
+    expect(calculateFinalScore(playerA).totalScore).toBe(calculateFinalScore(playerB).totalScore);
+    expect(determineWinners([playerA, playerB]).map(player => player.id)).toEqual(['p2']);
+  });
+
+  it('returns all tied players when score and jokers are equal', () => {
+    const playerA = makePlayer({
+      id: 'p1',
+      jokersRemaining: 3,
+      starsCollected: 15,
+      completedColumnsFirst: ['A'],
+    });
+    const playerB = makePlayer({
+      id: 'p2',
+      jokersRemaining: 3,
+      starsCollected: 15,
+      completedColumnsFirst: ['A'],
+    });
+
+    expect(determineWinners([playerA, playerB]).map(player => player.id)).toEqual(['p1', 'p2']);
   });
 });
 
@@ -192,5 +239,66 @@ describe('useEncoreGame move limit', () => {
 
     expect(result.current.isValidMove(fiveOrangeCells, 'orange', playerBoard)).toBe(true);
     expect(result.current.isValidMove(sixOrangeCells, 'orange', playerBoard)).toBe(false);
+  });
+
+  it('waits until the end of the turn before ending the game', () => {
+    const { result } = renderHook(() => useEncoreGame());
+
+    act(() => {
+      result.current.initializeGame(['Player 1', 'Player 2']);
+    });
+
+    const gameState = result.current.gameState;
+    const activePlayer = gameState.players[0];
+    const targetRow = 0;
+    const targetCol = 7;
+    const targetColor = activePlayer.board[targetRow][targetCol].color;
+    const existingColor = (['yellow', 'green', 'blue', 'red', 'orange'] as const).find(color => color !== targetColor)!;
+
+    activePlayer.completedColors = [existingColor];
+    activePlayer.completedColorsFirst = [existingColor];
+
+    for (const row of activePlayer.board) {
+      for (const cell of row) {
+        if (cell.color === targetColor) {
+          cell.crossed = !(cell.row === targetRow && cell.column === String.fromCharCode(65 + targetCol));
+        }
+      }
+    }
+
+    gameState.phase = 'active-selection';
+    gameState.selectedDice = {
+      color: { id: 'color-wild', type: 'color', value: 'wild', selected: true },
+      number: { id: 'number-1', type: 'number', value: 1, selected: true },
+    };
+    gameState.selectedFromJoker = { color: true, number: false };
+
+    act(() => {
+      result.current.makeMove([{ row: targetRow, col: targetCol }]);
+    });
+
+    expect(result.current.gameState.phase).toBe('player-switching');
+    expect(result.current.gameState.pendingGameOver).toBe(true);
+    expect(result.current.gameState.winner).toBeNull();
+
+    act(() => {
+      result.current.completePlayerSwitch();
+    });
+
+    expect(result.current.gameState.phase).toBe('passive-selection');
+
+    act(() => {
+      result.current.skipTurn();
+    });
+
+    expect(result.current.gameState.phase).toBe('player-switching');
+
+    act(() => {
+      result.current.completePlayerSwitch();
+    });
+
+    expect(result.current.gameState.phase).toBe('game-over');
+    expect(result.current.gameState.pendingGameOver).toBe(false);
+    expect(result.current.gameState.winners).toHaveLength(1);
   });
 });

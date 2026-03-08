@@ -64,6 +64,8 @@ const createGameState = (numberValue: 1 | 2 | 3 | 4 | 5 | 'wild' = 2): GameState
   selectedFromJoker: { color: false, number: false },
   gameStarted: true,
   winner: null,
+  winners: [],
+  pendingGameOver: false,
   claimedFirstColumnBonus: {},
   claimedFirstColorBonus: {},
   claimedSecondColorBonus: {},

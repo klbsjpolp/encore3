@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Star, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS, TOTAL_STARS, MAX_JOKERS, calculateColumnScore, calculateFinalScore} from "@/hooks/useEncoreGame.ts";
+import {COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS, TOTAL_STARS, MAX_JOKERS, calculateColumnScore, calculateFinalScore, determineWinners} from "@/hooks/useEncoreGame.ts";
 import {ReactNode} from "react";
 import colors from 'tailwindcss/colors';
 
@@ -49,10 +49,8 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
             <Badge variant="default" className={cn('transition-all duration-300', !isCurrentPlayer && 'invisible')}>Actuel</Badge>
           </span>
           {gameComplete && allPlayers.length > 0 && (() => {
-            const playerScores = allPlayers.map(p => calculateFinalScore(p).totalScore);
-            const maxScore = Math.max(...playerScores);
-            const currentScore = calculateFinalScore(player).totalScore;
-            return currentScore === maxScore && (
+            const winners = determineWinners(allPlayers);
+            return winners.some(winner => winner.id === player.id) && (
               <Trophy className="w-5 h-5 text-yellow-500" />
             );
           })()}
