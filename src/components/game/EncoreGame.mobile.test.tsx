@@ -78,6 +78,8 @@ const createGameState = (): GameState => ({
   claimedSecondColorBonus: {},
 });
 
+let testContainer: HTMLElement;
+
 const setupGame = (overrides?: Partial<ReturnType<typeof mockUseEncoreGame>>) => {
   window.resizeTo(390, 844);
 
@@ -95,14 +97,13 @@ const setupGame = (overrides?: Partial<ReturnType<typeof mockUseEncoreGame>>) =>
 
   mockFindConnectedGroup.mockImplementation((row: number, col: number) => [{ row, col }]);
 
-  render(<EncoreGame />);
+  const { container } = render(<EncoreGame />);
+  testContainer = container;
   fireEvent.click(screen.getByText('Commencer la partie'));
 };
 
 const getMainBoardSquares = () =>
-  screen
-    .getAllByRole('button')
-    .filter(btn => btn.className.includes('aspect-square') && btn.className.includes('cursor-pointer'));
+  Array.from(testContainer.querySelectorAll<HTMLElement>('button.aspect-square.cursor-pointer'));
 
 describe('EncoreGame mobile layout', () => {
   beforeEach(() => {

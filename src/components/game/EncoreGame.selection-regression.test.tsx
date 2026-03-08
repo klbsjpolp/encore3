@@ -71,15 +71,13 @@ const createGameState = (): GameState => ({
   claimedSecondColorBonus: {},
 });
 
+let testContainer: HTMLElement;
+
 const getMainBoardSquares = () =>
-  screen
-    .getAllByRole('button')
-    .filter(btn => btn.className.includes('aspect-square') && btn.className.includes('cursor-pointer'));
+  Array.from(testContainer.querySelectorAll<HTMLElement>('button.aspect-square.cursor-pointer'));
 
 const getSelectedSquareCount = () =>
-  screen
-    .getAllByRole('button')
-    .filter(btn => btn.className.includes('aspect-square') && btn.className.includes('ring-ring') && btn.className.includes('cursor-pointer')).length;
+  testContainer.querySelectorAll('button.aspect-square.cursor-pointer.ring-ring').length;
 
 const setupGame = () => {
   mockUseEncoreGame.mockReturnValue({
@@ -99,7 +97,8 @@ const setupGame = () => {
     { row, col: 2 },
   ]);
 
-  render(<EncoreGame />);
+  const { container } = render(<EncoreGame />);
+  testContainer = container;
   fireEvent.click(screen.getByText('Commencer la partie'));
 };
 
