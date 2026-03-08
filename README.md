@@ -35,6 +35,12 @@ Exécute ESLint pour trouver et corriger les problèmes dans le code.
 
 Lance un serveur local pour prévisualiser la version de production.
 
+## Tests
+
+Les exécutions `pnpm test` sur CI sont environ 2x plus lentes qu'en local. Il faut en tenir compte quand on évalue le temps d'exécution d'un test.
+
+Si la limite visée sur CI est de `5s`, un test qui prend plus de `2.5s` en local est déjà à risque de dépasser cette limite sur CI.
+
 ## Game State Machine
 
 Le jeu est contrôlé par une machine à états finis. Voici les différentes phases et l'ordre dans lequel elles se déroulent.

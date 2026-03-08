@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { DiceColor, DiceNumber, GameColor } from '@/types/game';
+import { DiceColor, DiceNumber, GameColor, Square } from '@/types/game';
 import { useEncoreGame, findConnectedGroup } from '@/hooks/useEncoreGame';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getSelectionLimit, MAX_SELECTABLE_CELLS } from '@/lib/game-rules';
@@ -30,6 +30,52 @@ function formatDiceValue(value?: DiceColor | DiceNumber) {
   if (value == null) return 'Aucun';
   if (typeof value === 'number') return value.toString();
   return COLOR_LABELS[value] ?? value;
+}
+
+function hasAnyPossibleMove(
+  board: Square[][],
+  selectedColor: DiceColor | undefined,
+  selectedNumber: DiceNumber | undefined,
+  isValidMove: (squares: { row: number; col: number }[], color: GameColor, playerBoard: Square[][]) => boolean,
+) {
+  if (!selectedColor || !selectedNumber) return false;
+
+  const colorsToCheck: GameColor[] = selectedColor === 'wild'
+    ? ['yellow', 'green', 'blue', 'red', 'orange']
+    : [selectedColor];
+
+  for (let row = 0; row < board.length; row++) {
+    for (let col = 0; col < board[row].length; col++) {
+      const square = board[row][col];
+      if (square.crossed) continue;
+
+      for (const color of colorsToCheck) {
+        if (square.color !== color) continue;
+
+        const group = findConnectedGroup(row, col, color, board);
+        if (group.length === 0) continue;
+
+        if (selectedNumber === 'wild') {
+          for (let size = 1; size <= Math.min(group.length, MAX_SELECTABLE_CELLS); size++) {
+            const candidate = group.slice(0, size);
+            if (isValidMove(candidate, color, board)) {
+              return true;
+            }
+          }
+          continue;
+        }
+
+        if (group.length >= selectedNumber) {
+          const candidate = group.slice(0, selectedNumber);
+          if (isValidMove(candidate, color, board)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 export const EncoreGame = () => {
@@ -353,6 +399,14 @@ export const EncoreGame = () => {
   }
 
   const actionsDisable = isSwitching || !(gameState.phase === 'active-selection' || gameState.phase === 'passive-selection');
+  const hasSelectedDice = !!gameState.selectedDice.color && !!gameState.selectedDice.number;
+  const confirmGlow = canMakeMove() && !actionsDisable;
+  const skipGlow = !actionsDisable && hasSelectedDice && !hasAnyPossibleMove(
+    currentPlayer.board,
+    gameState.selectedDice.color?.value,
+    gameState.selectedDice.number?.value,
+    isValidMove,
+  );
   const currentPlayerSummary = (
     <div className="bg-card rounded-lg p-3 sm:p-4 shadow-square">
       <div className="flex items-start justify-between gap-3">
@@ -363,9 +417,6 @@ export const EncoreGame = () => {
           <p className="text-xs sm:text-sm text-muted-foreground">
             Couleur: {formatDiceValue(gameState.selectedDice.color?.value)} · Nombre: {formatDiceValue(gameState.selectedDice.number?.value)}
           </p>
-          {gameState.phase === 'passive-selection' && (
-            <p className="text-xs sm:text-sm text-muted-foreground">Tous les autres joueurs peuvent jouer.</p>
-          )}
         </div>
         <Badge variant="default" className="shrink-0 text-xs sm:text-sm px-2 py-0.5 sm:px-3 sm:py-1">
           {statusLabel}
@@ -385,6 +436,7 @@ export const EncoreGame = () => {
         onClick={handleConfirmMove}
         disabled={!canMakeMove() || actionsDisable}
         variant="game"
+        glow={confirmGlow}
         className="flex-1 text-sm sm:text-base"
       >
         {isMobile ? (
@@ -408,6 +460,7 @@ export const EncoreGame = () => {
         onClick={onSkipTurn}
         variant="secondary"
         disabled={actionsDisable}
+        glow={skipGlow}
         className="text-sm sm:text-base"
       >
         <span className="hidden sm:inline">Passer le tour</span>

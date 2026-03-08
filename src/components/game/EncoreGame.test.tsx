@@ -25,22 +25,22 @@ const boardConfiguration: BoardConfiguration = {
   starPositions: new Set<string>(),
 };
 
-const createBoard = (): Square[][] =>
+const createBoard = (crossed = false): Square[][] =>
   Array.from({ length: 7 }, (_, row) =>
     Array.from({ length: 15 }, (_, col) => ({
       color: 'orange',
       hasStar: false,
-      crossed: false,
+      crossed,
       column: String.fromCharCode(65 + col),
       row,
     }))
   );
 
-const createPlayer = (id: string, name: string): Player => ({
+const createPlayer = (id: string, name: string, board = createBoard()): Player => ({
   id,
   name,
   isAI: false,
-  board: createBoard(),
+  board,
   boardConfiguration,
   starsCollected: 0,
   completedColors: [],
@@ -51,8 +51,11 @@ const createPlayer = (id: string, name: string): Player => ({
   jokersRemaining: 8,
 });
 
-const createGameState = (numberValue: 1 | 2 | 3 | 4 | 5 | 'wild' = 2): GameState => ({
-  players: [createPlayer('p1', 'Player 1'), createPlayer('p2', 'Player 2')],
+const createGameState = (
+  numberValue: 1 | 2 | 3 | 4 | 5 | 'wild' = 2,
+  players: Player[] = [createPlayer('p1', 'Player 1'), createPlayer('p2', 'Player 2')],
+): GameState => ({
+  players,
   currentPlayer: 0,
   activePlayer: 0,
   phase: 'active-selection',
@@ -149,5 +152,39 @@ describe('EncoreGame selection logic', () => {
     fireEvent.click(square);
 
     expect(getSelectedSquares()).toHaveLength(1);
+  });
+
+  it('highlights confirm when the current placement is valid', () => {
+    mockFindConnectedGroup.mockImplementation((row: number, col: number) => [{ row, col }]);
+
+    setupGame(1);
+
+    const [square] = getMainBoardSquares();
+    fireEvent.click(square);
+
+    expect(screen.getByRole('button', { name: /confirmer le placement/i }).className).toContain('before:ring-yellow-400');
+  });
+
+  it('highlights skip turn when no move is possible', () => {
+    mockFindConnectedGroup.mockImplementation(() => []);
+
+    mockUseEncoreGame.mockReturnValue({
+      gameState: createGameState(1, [
+        createPlayer('p1', 'Player 1', createBoard(true)),
+        createPlayer('p2', 'Player 2'),
+      ]),
+      initializeGame: vi.fn(),
+      rollNewDice: vi.fn(),
+      selectDice: vi.fn(),
+      makeMove: vi.fn(),
+      skipTurn: vi.fn(),
+      isValidMove: vi.fn(() => false),
+      completePlayerSwitch: vi.fn(),
+    });
+
+    render(<EncoreGame />);
+    fireEvent.click(screen.getByText('Commencer la partie'));
+
+    expect(screen.getByRole('button', { name: /passer le tour/i }).className).toContain('before:ring-yellow-400');
   });
 });
