@@ -1,9 +1,11 @@
+import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import {
   calculateColumnScore,
   calculateFinalScore,
   findConnectedGroup,
   TOTAL_STARS,
+  useEncoreGame,
 } from './useEncoreGame';
 import type { Player, Square, GameColor } from '@/types/game';
 import type { BoardConfiguration } from '@/data/boardConfigurations';
@@ -164,5 +166,31 @@ describe('findConnectedGroup', () => {
       { row: 1, col: 2 },
       { row: 2, col: 2 },
     ].sort((a, b) => a.row - b.row || a.col - b.col));
+  });
+});
+
+describe('useEncoreGame move limit', () => {
+  it('rejects moves with more than 5 cells', () => {
+    const { result } = renderHook(() => useEncoreGame());
+
+    act(() => {
+      result.current.initializeGame(['Player 1']);
+    });
+
+    const playerBoard = result.current.gameState.players[0].board.map(row => row.map(cell => ({ ...cell })));
+    playerBoard[4][0].crossed = true;
+
+    const fiveOrangeCells = [
+      { row: 4, col: 1 },
+      { row: 4, col: 2 },
+      { row: 4, col: 3 },
+      { row: 4, col: 4 },
+      { row: 3, col: 4 },
+    ];
+
+    const sixOrangeCells = [...fiveOrangeCells, { row: 3, col: 5 }];
+
+    expect(result.current.isValidMove(fiveOrangeCells, 'orange', playerBoard)).toBe(true);
+    expect(result.current.isValidMove(sixOrangeCells, 'orange', playerBoard)).toBe(false);
   });
 });

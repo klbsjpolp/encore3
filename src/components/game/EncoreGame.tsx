@@ -1,5 +1,5 @@
 import {useState, useRef, useLayoutEffect, CSSProperties, useEffect, useCallback} from 'react';
-import { useEncoreGame, findConnectedGroup, MAX_MARKS_PER_TURN } from '@/hooks/useEncoreGame';
+import { useEncoreGame, findConnectedGroup } from '@/hooks/useEncoreGame';
 import { GameColor } from '@/types/game';
 import { GameBoard } from './GameBoard';
 import { BoardPreview } from './BoardPreview';
@@ -17,6 +17,7 @@ import {
   BoardId, getBoardConfiguration,
   getDefaultBoardId
 } from '@/data/boardConfigurations';
+import { getSelectionLimit, MAX_SELECTABLE_CELLS } from '@/lib/game-rules';
 
 export const EncoreGame = () => {
   const { gameState, initializeGame, rollNewDice, selectDice, makeMove, skipTurn, isValidMove, completePlayerSwitch } = useEncoreGame();
@@ -26,12 +27,12 @@ export const EncoreGame = () => {
   const [selectedBoards, setSelectedBoards] = useState<[BoardId,BoardId]>([getDefaultBoardId(), getDefaultBoardId()]);
   const [selectedSquares, _setSelectedSquares] = useState<{ row: number; col: number }[]>([]);
   const setSelectedSquares = useCallback((squares: { row: number; col: number }[]) => {
-    // remove duplicates and clamp to MAX_MARKS_PER_TURN
+    // Remove duplicates and clamp to the rulebook maximum selection size.
     const deduped: { row: number; col: number }[] = [];
     for (const s of squares) {
       if (!deduped.some(ns => ns.row === s.row && ns.col === s.col)) {
         deduped.push(s);
-        if (deduped.length >= MAX_MARKS_PER_TURN) break;
+        if (deduped.length >= MAX_SELECTABLE_CELLS) break;
       }
     }
     _setSelectedSquares(deduped);
@@ -89,31 +90,53 @@ export const EncoreGame = () => {
     if (gameState.phase !== 'active-selection' && gameState.phase !== 'passive-selection') return;
 
     const player = gameState.players[gameState.currentPlayer];
-    const color = player.board[row][col].color;
-    const group = findConnectedGroup(row, col, color, player.board);
-    const isGroupAlreadySelected =
-      selectedSquares.length === group.length &&
-      group.every(hs => selectedSquares.some(ss => ss.row === hs.row && ss.col === hs.col));
+    const clickedColor = player.board[row][col].color;
+    const group = findConnectedGroup(row, col, clickedColor, player.board);
+    const square = { row, col };
+    const isSelected = selectedSquares.some(s => s.row === row && s.col === col);
+    const isSubsetSelection = isSelected && group.length > selectedSquares.length;
 
-    if (isGroupAlreadySelected) {
-      setSelectedSquares([]);
-    } else {
-      const square = { row, col };
-      const isSelected = selectedSquares.some(s => s.row === row && s.col === col);
-
-      if (isSelected) {
-        setSelectedSquares(selectedSquares.filter(s => !(s.row === row && s.col === col)));
-      } else {
-        const isClickOnHoveredGroup = hoveredSquares.length > 0 && hoveredSquares.some(s => s.row === row && s.col === col);
-
-        if (isClickOnHoveredGroup) {
-          setSelectedSquares([...hoveredSquares]);
-        } else {
-          setSelectedSquares([...selectedSquares, square]);
-        }
-      }
+    if (isSubsetSelection) {
+      setSelectedSquares(selectedSquares.filter(s => !(s.row === row && s.col === col)));
+      return;
     }
-  }, [gameState.currentPlayer, gameState.phase, gameState.players, hoveredSquares, selectedSquares, setSelectedSquares]);
+
+    const selectedColor = gameState.selectedDice.color?.value;
+    const numberValue = gameState.selectedDice.number?.value;
+    const colorMatches = !selectedColor || selectedColor === 'wild' || selectedColor === clickedColor;
+    const isClickOnValidHoveredGroup =
+      hoveredSquares.length > 0 &&
+      hoveredSquares.some(s => s.row === row && s.col === col) &&
+      numberValue &&
+      hoveredSquares.length <= MAX_SELECTABLE_CELLS &&
+      (numberValue === 'wild' || hoveredSquares.length === numberValue) &&
+      colorMatches;
+
+    if (isClickOnValidHoveredGroup) {
+      const isGroupAlreadySelected =
+        selectedSquares.length === hoveredSquares.length &&
+        hoveredSquares.every(hs => selectedSquares.some(ss => ss.row === hs.row && ss.col === hs.col));
+
+      if (isGroupAlreadySelected) {
+        setSelectedSquares([]);
+      } else {
+        setSelectedSquares([...hoveredSquares]);
+      }
+      return;
+    }
+
+    if (isSelected) {
+      setSelectedSquares(selectedSquares.filter(s => !(s.row === row && s.col === col)));
+      return;
+    }
+
+    const maxNumber = getSelectionLimit(numberValue);
+    if (selectedSquares.length >= maxNumber) {
+      return;
+    }
+
+    setSelectedSquares([...selectedSquares, square]);
+  }, [gameState.currentPlayer, gameState.phase, gameState.players, gameState.selectedDice.color, gameState.selectedDice.number, hoveredSquares, selectedSquares, setSelectedSquares]);
 
   const handleSquareHover = useCallback((row: number, col: number) => {
     if (gameState.phase !== 'active-selection' && gameState.phase !== 'passive-selection') return;
@@ -129,27 +152,38 @@ export const EncoreGame = () => {
     }
 
     const group = findConnectedGroup(row, col, color, player.board);
-    const numberValue = gameState.selectedDice.number.value as (number | 'wild');
+    const numberValue = gameState.selectedDice.number.value;
 
-    if (numberValue === 'wild' || group.length === numberValue) { //If it fits the whole group, select it all
-      if(isValidMove(group, color, player.board)) {
+    if (numberValue === 'wild') {
+      if (group.length <= MAX_SELECTABLE_CELLS && isValidMove(group, color, player.board)) {
         setHoveredSquares(group);
       } else {
         setHoveredSquares([]);
       }
-    } else {
-      const selectedFromGroup = selectedSquares.filter(s => group.some(c => s.row === c.row && s.col === c.col));
-      if (selectedFromGroup.length > 0) { //If we already started to select from this group, select the cell
-        setHoveredSquares([...selectedFromGroup, {row, col}]);
-      } else if (group.length > numberValue) { //If the group is larger, select the cell
-        if (isValidMove([{row, col}], color, player.board)) {
-          setHoveredSquares([{row, col}]);
-        } else {
-          setHoveredSquares([]);
-        }
+      return;
+    }
+
+    if (group.length === numberValue) {
+      if (isValidMove(group, color, player.board)) {
+        setHoveredSquares(group);
       } else {
         setHoveredSquares([]);
       }
+      return;
+    }
+
+    const selectedFromGroup = selectedSquares.filter(s => group.some(c => s.row === c.row && s.col === c.col));
+    if (selectedFromGroup.length > 0) {
+      const isAlreadyInSelection = selectedFromGroup.some(s => s.row === row && s.col === col);
+      setHoveredSquares(isAlreadyInSelection ? selectedFromGroup : [...selectedFromGroup, { row, col }]);
+    } else if (group.length > numberValue) {
+      if (isValidMove([{ row, col }], color, player.board)) {
+        setHoveredSquares([{ row, col }]);
+      } else {
+        setHoveredSquares([]);
+      }
+    } else {
+      setHoveredSquares([]);
     }
   }, [gameState.currentPlayer, gameState.phase, gameState.players, gameState.selectedDice.color, gameState.selectedDice.number, isValidMove, selectedSquares]);
 

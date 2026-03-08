@@ -3,13 +3,13 @@ import { GameState, Player, DiceResult, GameColor, DiceColor, DiceNumber, Square
 import { useAIPlayer } from './useAIPlayer';
 import {BoardConfiguration, BoardId, getBoardConfiguration, getDefaultBoardId} from '@/data/boardConfigurations';
 import {generateRandomBoard} from "@/data/randomBoardGenerator.ts";
+import { MAX_SELECTABLE_CELLS } from '@/lib/game-rules';
 
 export const COLUMN_FIRST_PLAYER_POINTS = [5, 3, 3, 3, 2, 2, 2, 1, 2, 2, 2, 3, 3, 3, 5];
 export const COLUMN_SECOND_PLAYER_POINTS = [3, 2, 2, 2, 1, 1, 1, 0, 1, 1, 1, 2, 2, 2, 3];
 
 export const TOTAL_STARS = 15;
 export const MAX_JOKERS = 8;
-export const MAX_MARKS_PER_TURN = 5;
 
 export const calculateColumnScore = (player: Player): number => {
   return Array.from('ABCDEFGHIJKLMNO').map((c, i) => {
@@ -140,7 +140,7 @@ export const useEncoreGame = () => {
     playerBoard: Square[][]
   ): boolean => {
     if (squares.length === 0) return false;
-    if (squares.length > MAX_MARKS_PER_TURN) return false;
+    if (squares.length > MAX_SELECTABLE_CELLS) return false;
     if (!squares.every(({ row, col }) => playerBoard[row][col].color === color && !playerBoard[row][col].crossed)) return false;
 
     if (squares.length > 1) {
