@@ -17,13 +17,13 @@ const mockSelectedColorDie: ColorDiceResult = { id: 'c1', type: 'color', value: 
 describe('DicePanel Component', () => {
   it('renders the dice panel with roll button', () => {
     render(
-      <DicePanel 
-        dice={mockDice} 
-        phase="rolling" 
+      <DicePanel
+        dice={mockDice}
+        phase="rolling"
         canRoll={true}
       />
     );
-    
+
     expect(screen.getByText('Dés')).toBeInTheDocument();
     expect(screen.getByText('Lancer les dés')).toBeInTheDocument();
     expect(screen.getByText('Lancer les dés')).not.toBeDisabled();
@@ -32,14 +32,14 @@ describe('DicePanel Component', () => {
   it('calls onRollDice when roll button is clicked', () => {
     const onRollDice = vi.fn();
     render(
-      <DicePanel 
-        dice={mockDice} 
-        phase="rolling" 
-        canRoll={true} 
+      <DicePanel
+        dice={mockDice}
+        phase="rolling"
+        canRoll={true}
         onRollDice={onRollDice}
       />
     );
-    
+
     const rollButton = screen.getByText('Lancer les dés');
     fireEvent.click(rollButton);
     expect(onRollDice).toHaveBeenCalled();
@@ -47,44 +47,42 @@ describe('DicePanel Component', () => {
 
   it('disables roll button when canRoll is false', () => {
     render(
-      <DicePanel 
-        dice={mockDice} 
-        phase="active-selection" 
+      <DicePanel
+        dice={mockDice}
+        phase="active-selection"
         canRoll={false}
       />
     );
-    
-    expect(screen.getByText('Lancer les dés')).toBeDisabled();
+
+    expect(screen.getByRole('button', { name: /lancer/i })).toBeDisabled();
   });
 
   it('calls onDiceSelect when a die is clicked', () => {
     const onDiceSelect = vi.fn();
     render(
-      <DicePanel 
-        dice={mockDice} 
-        phase="active-selection" 
-        canSelect={true} 
+      <DicePanel
+        dice={mockDice}
+        phase="active-selection"
+        canSelect={true}
         onDiceSelect={onDiceSelect}
       />
     );
-    
-    // The Red color die should have 'R' as short display value (from getDiceShortDisplayValue)
-    const redDie = screen.getByText('R');
-    fireEvent.click(redDie);
+
+    fireEvent.click(screen.getByText('R'));
     expect(onDiceSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'c1', value: 'red' }));
   });
 
   it('disables selection when canSelect is false', () => {
     const onDiceSelect = vi.fn();
     render(
-      <DicePanel 
-        dice={mockDice} 
-        phase="rolling" 
-        canSelect={false} 
+      <DicePanel
+        dice={mockDice}
+        phase="rolling"
+        canSelect={false}
         onDiceSelect={onDiceSelect}
       />
     );
-    
+
     const redDie = screen.getByText('R').closest('button');
     expect(redDie).toBeDisabled();
     if (redDie) fireEvent.click(redDie);
@@ -93,15 +91,45 @@ describe('DicePanel Component', () => {
 
   it('shows selected state for dice', () => {
     render(
-      <DicePanel 
-        dice={mockDice} 
-        phase="active-selection" 
+      <DicePanel
+        dice={mockDice}
+        phase="active-selection"
         canSelect={true}
         selectedColorDice={mockSelectedColorDie}
       />
     );
-    
+
     const redDie = screen.getByText('R').closest('button');
     expect(redDie).toHaveClass('ring-4');
+  });
+
+  it('renders compact dice in a single ordered row', () => {
+    render(
+      <DicePanel
+        dice={mockDice}
+        phase="active-selection"
+        canSelect={true}
+        compact={true}
+      />
+    );
+
+    const compactRow = screen.getByTestId('compact-dice-row');
+    expect(compactRow.children).toHaveLength(6);
+    expect(screen.getByRole('button', { name: 'Dé couleur Rouge' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Dé nombre 1' })).toBeInTheDocument();
+  });
+
+  it('keeps selection highlighting in compact mode', () => {
+    render(
+      <DicePanel
+        dice={mockDice}
+        phase="active-selection"
+        canSelect={true}
+        compact={true}
+        selectedColorDice={mockSelectedColorDie}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Dé couleur Rouge' })).toHaveClass('ring-2');
   });
 });

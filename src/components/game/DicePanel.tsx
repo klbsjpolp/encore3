@@ -1,8 +1,8 @@
-import { ColorDiceResult, DiceResult, DiceColor, DiceNumber, GameState, NumberDiceResult } from '@/types/game';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Shuffle, HelpCircle } from 'lucide-react';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { ColorDiceResult, DiceColor, DiceNumber, DiceResult, GameState, NumberDiceResult } from '@/types/game';
 
 interface DicePanelProps {
   dice: DiceResult[];
@@ -14,6 +14,7 @@ interface DicePanelProps {
   selectedColorDice?: ColorDiceResult | null;
   selectedNumberDice?: NumberDiceResult | null;
   flashRoll?: boolean;
+  compact?: boolean;
 }
 
 const colorMap = {
@@ -55,15 +56,13 @@ function getDiceShortDisplayValue(value: DiceColor | DiceNumber): string {
 const isColorDice = (dice: DiceResult): dice is ColorDiceResult => dice.type === 'color';
 const isNumberDice = (dice: DiceResult): dice is NumberDiceResult => dice.type === 'number';
 
-// Pure deterministic delay based on a string id. Avoids Math.random during render.
 function getStableAnimationDelayFromId(id: string): string {
   let hash = 5381;
   for (let i = 0; i < id.length; i++) {
-    // djb2 hash
     hash = ((hash << 5) + hash) + id.charCodeAt(i);
   }
-  const n = Math.abs(hash % 100); // 0..99
-  const seconds = n / 1000; // 0.000..0.099s
+  const n = Math.abs(hash % 100);
+  const seconds = n / 1000;
   return `${seconds}s`;
 }
 
@@ -74,6 +73,7 @@ const DiceDisplay = ({
   isSelected,
   hideUsedMarks = false,
   isRolling = false,
+  compact = false,
 }: {
   dice: DiceResult;
   onSelect?: (dice: DiceResult) => void;
@@ -81,40 +81,36 @@ const DiceDisplay = ({
   isSelected?: boolean;
   hideUsedMarks?: boolean;
   isRolling?: boolean;
+  compact?: boolean;
 }) => {
-  const isColorDice = dice.type === 'color';
+  const isColorDie = dice.type === 'color';
   const value = dice.value;
-
   const isUsed = dice.selected && !hideUsedMarks;
-  const ariaState = isUsed
-    ? 'used'
-    : canSelect
-      ? 'available'
-      : 'unavailable';
-
+  const sizeClass = compact
+    ? 'h-11 w-11 rounded-md text-sm'
+    : 'w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl text-base sm:text-lg';
   const animationDelay = useMemo(() => (isRolling ? getStableAnimationDelayFromId(dice.id) : undefined), [isRolling, dice.id]);
 
   return (
     <button
       onClick={() => canSelect && onSelect?.(dice)}
       disabled={!canSelect || isUsed}
-      aria-label={`dice-${ariaState}-${isColorDice ? 'color' : 'number'}-${value}`}
+      aria-label={`${isColorDie ? 'Dé couleur' : 'Dé nombre'} ${getDiceDisplayValue(value)}`}
       title={isUsed ? 'Dé déjà utilisé' : canSelect ? 'Sélectionner ce dé' : "En attente du tour de l'autre joueur"}
       className={cn(
-        "relative overflow-hidden w-16 h-16 rounded-xl shadow-dice transition-all duration-300",
-        "flex items-center justify-center font-bold text-lg",
-        isColorDice ? getDiceColorClass(value as DiceColor) : "bg-gradient-dice text-foreground",
-        isSelected && "ring-4 ring-ring shadow-glow scale-110",
-        isUsed && "opacity-50 cursor-not-allowed",
-        canSelect ? "hover:scale-105 active:scale-95" : "cursor-not-allowed opacity-30",
-        isRolling && "animate-spin duration-500 blur-xs opacity-30"
+        'relative overflow-hidden shadow-dice transition-all duration-300',
+        'flex items-center justify-center font-bold',
+        sizeClass,
+        isColorDie ? getDiceColorClass(value as DiceColor) : 'bg-gradient-dice text-foreground',
+        isSelected && (compact ? 'ring-2 ring-ring shadow-glow scale-105' : 'ring-4 ring-ring shadow-glow scale-110'),
+        isUsed && 'opacity-50 cursor-not-allowed',
+        canSelect ? 'hover:scale-105 active:scale-95' : 'cursor-not-allowed opacity-30',
+        isRolling && 'animate-spin duration-500 blur-xs opacity-30'
       )}
-      style={{
-        animationDelay,
-      }}
+      style={{ animationDelay }}
     >
       {value === 'wild' ? (
-        <HelpCircle className="w-6 h-6" />
+        <HelpCircle className={compact ? 'w-4 h-4' : 'w-5 h-5 sm:w-6 sm:h-6'} />
       ) : (
         <span>{getDiceShortDisplayValue(value)}</span>
       )}
@@ -139,6 +135,7 @@ export const DicePanel = ({
   selectedColorDice,
   selectedNumberDice,
   flashRoll = false,
+  compact = false,
 }: DicePanelProps) => {
   const [isRolling, setIsRolling] = useState(false);
   const prevDiceIdsRef = useRef<string>('');
@@ -146,17 +143,16 @@ export const DicePanel = ({
 
   const colorDice = dice.filter(isColorDice);
   const numberDice = dice.filter(isNumberDice);
+  const orderedDice = [...colorDice, ...numberDice];
 
-  // Track when dice are rolled (phase transitions from rolling to selection)
   useEffect(() => {
     const currentDiceIds = dice.map(d => d.id).join(',');
     const wasRolling = prevPhaseRef.current === 'rolling' || prevPhaseRef.current === 'rolling-ai';
     const isNowSelecting = phase === 'active-selection' || phase === 'active-selection-ai' ||
-                          phase === 'passive-selection' || phase === 'passive-selection-ai';
+      phase === 'passive-selection' || phase === 'passive-selection-ai';
     const diceChanged = currentDiceIds !== prevDiceIdsRef.current && prevDiceIdsRef.current !== '';
 
     let clear: (() => void) | undefined;
-    // Animate if we just rolled (rolling -> selection phase) OR if dice changed during same player's turn
     if (dice.length > 0 && diceChanged && ((wasRolling && isNowSelecting) || phase === prevPhaseRef.current)) {
       const start = setTimeout(() => setIsRolling(true), 0);
       const stop = setTimeout(() => setIsRolling(false), 600);
@@ -175,98 +171,109 @@ export const DicePanel = ({
   const disabled = phase.includes('-ai');
   const finalCanRoll = canRoll && !disabled;
   const finalCanSelect = canSelect && !disabled;
-
   const placeholderSrc = `${import.meta.env.BASE_URL}placeholder.svg`;
 
+  const renderPlaceholders = (count: number) =>
+    Array.from({ length: count }, (_, index) => (
+      <div
+        key={index}
+        className={cn(
+          'shadow-dice bg-muted/40 flex items-center justify-center',
+          compact ? 'h-11 w-11 rounded-md' : 'w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl'
+        )}
+      >
+        <img src={placeholderSrc} alt="Dé en attente" className={cn('opacity-60', compact ? 'w-4 h-4' : 'w-5 h-5 sm:w-6 sm:h-6')} />
+      </div>
+    ));
+
   return (
-    <div className={cn("bg-card rounded-xl p-6 shadow-square space-y-6 transition-opacity", disabled && "opacity-50 pointer-events-none")}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">Dés</h3>
+    <div
+      className={cn(
+        compact ? 'bg-card rounded-lg p-3 shadow-square space-y-3 transition-opacity' : 'bg-card rounded-xl p-3 sm:p-4 lg:p-6 shadow-square space-y-3 sm:space-y-4 lg:space-y-6 transition-opacity',
+        disabled && 'opacity-50 pointer-events-none'
+      )}
+    >
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <h3 className={cn('font-semibold text-foreground', compact ? 'text-sm' : 'text-base sm:text-lg')}>Dés</h3>
         <Button
           onClick={onRollDice}
           size="sm"
           variant="game"
           glow={flashRoll}
-          className="gap-2 transition-all"
+          className={cn('gap-2 transition-all', compact ? 'w-full' : 'w-full sm:w-auto')}
           disabled={!finalCanRoll}
         >
           <Shuffle className="w-4 h-4" />
-          Lancer les dés
+          {compact ? (
+            <span>Lancer</span>
+          ) : (
+            <>
+              <span className="hidden sm:inline">Lancer les dés</span>
+              <span className="sm:hidden">Lancer</span>
+            </>
+          )}
         </Button>
       </div>
 
-      <div className="space-y-4">
-        {/* Color Dice */}
-        <div>
-          <p className="text-sm font-medium text-muted-foreground mb-2">Dés de couleur</p>
-          <div className="flex gap-2 flex-wrap">
-            {colorDice.length === 0 ? (
-              <>
-                <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src={placeholderSrc} alt="Dé en attente" className="w-6 h-6 opacity-60" />
-                </div>
-                <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src={placeholderSrc} alt="Dé en attente" className="w-6 h-6 opacity-60" />
-                </div>
-                <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src={placeholderSrc} alt="Dé en attente" className="w-6 h-6 opacity-60" />
-                </div>
-              </>
-            ) : (
-              colorDice.map(die => (
-                <DiceDisplay
-                  key={die.id}
-                  dice={die}
-                  onSelect={onDiceSelect}
-                  canSelect={finalCanSelect}
-                  isSelected={selectedColorDice?.id === die.id}
-                  hideUsedMarks={false}
-                  isRolling={isRolling}
-                />
-              ))
-            )}
+      {compact ? (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Couleur puis nombre</p>
+          <div className="grid grid-cols-6 gap-2" data-testid="compact-dice-row">
+            {orderedDice.length === 0
+              ? renderPlaceholders(6)
+              : orderedDice.map(die => (
+                  <DiceDisplay
+                    key={die.id}
+                    dice={die}
+                    onSelect={onDiceSelect}
+                    canSelect={finalCanSelect}
+                    isSelected={selectedColorDice?.id === die.id || selectedNumberDice?.id === die.id}
+                    hideUsedMarks={false}
+                    isRolling={isRolling}
+                    compact={true}
+                  />
+                ))}
           </div>
         </div>
-
-        {/* Number Dice */}
-        <div>
-          <p className="text-sm font-medium text-muted-foreground mb-2">Dés numériques</p>
-          <div className="flex gap-2 flex-wrap">
-            {numberDice.length === 0 ? (
-              <>
-                <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src={placeholderSrc} alt="Dé en attente" className="w-6 h-6 opacity-60" />
-                </div>
-                <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src={placeholderSrc} alt="Dé en attente" className="w-6 h-6 opacity-60" />
-                </div>
-                <div className="w-16 h-16 rounded-xl shadow-dice bg-muted/40 flex items-center justify-center">
-                  <img src={placeholderSrc} alt="Dé en attente" className="w-6 h-6 opacity-60" />
-                </div>
-              </>
-            ) : (
-              numberDice.map(die => (
-                <DiceDisplay
-                  key={die.id}
-                  dice={die}
-                  onSelect={onDiceSelect}
-                  canSelect={finalCanSelect}
-                  isSelected={selectedNumberDice?.id === die.id}
-                  hideUsedMarks={false}
-                  isRolling={isRolling}
-                />
-              ))
-            )}
+      ) : (
+        <div className="space-y-3 sm:space-y-4">
+          <div>
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">Couleur</p>
+            <div className="flex gap-1.5 sm:gap-2 flex-wrap">
+              {colorDice.length === 0
+                ? renderPlaceholders(3)
+                : colorDice.map(die => (
+                    <DiceDisplay
+                      key={die.id}
+                      dice={die}
+                      onSelect={onDiceSelect}
+                      canSelect={finalCanSelect}
+                      isSelected={selectedColorDice?.id === die.id}
+                      hideUsedMarks={false}
+                      isRolling={isRolling}
+                    />
+                  ))}
+            </div>
           </div>
-        </div>
-      </div>
 
-      {selectedColorDice && selectedNumberDice && (
-        <div className="hidden bg-gradient-active text-primary-foreground rounded-lg p-3">
-          <p className="text-sm font-medium">Combinaison sélectionnée :</p>
-          <p className="text-lg font-bold">
-            {getDiceDisplayValue(selectedColorDice.value)} + {getDiceDisplayValue(selectedNumberDice.value)}
-          </p>
+          <div>
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">Nombre</p>
+            <div className="flex gap-1.5 sm:gap-2 flex-wrap">
+              {numberDice.length === 0
+                ? renderPlaceholders(3)
+                : numberDice.map(die => (
+                    <DiceDisplay
+                      key={die.id}
+                      dice={die}
+                      onSelect={onDiceSelect}
+                      canSelect={finalCanSelect}
+                      isSelected={selectedNumberDice?.id === die.id}
+                      hideUsedMarks={false}
+                      isRolling={isRolling}
+                    />
+                  ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -1,44 +1,59 @@
-import {useState, useRef, useLayoutEffect, CSSProperties, useEffect, useCallback} from 'react';
-import { useEncoreGame, findConnectedGroup } from '@/hooks/useEncoreGame';
-import { GameColor } from '@/types/game';
-import { GameBoard } from './GameBoard';
-import { BoardPreview } from './BoardPreview';
-import { DicePanel } from './DicePanel';
-import { ScorePanel } from './ScorePanel';
+import { CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Gamepad2, Users, Bot, Play, RotateCcw } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Gamepad2, Users, Bot, Play, RotateCcw } from 'lucide-react';
-import {
-  BOARD_CONFIGURATIONS,
-  BoardId, getBoardConfiguration,
-  getDefaultBoardId
-} from '@/data/boardConfigurations';
+import { cn } from '@/lib/utils';
+import { DiceColor, DiceNumber, GameColor } from '@/types/game';
+import { useEncoreGame, findConnectedGroup } from '@/hooks/useEncoreGame';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { getSelectionLimit, MAX_SELECTABLE_CELLS } from '@/lib/game-rules';
+import { BOARD_CONFIGURATIONS, BoardId, getBoardConfiguration, getDefaultBoardId } from '@/data/boardConfigurations';
+import { BoardPreview } from './BoardPreview';
+import { DicePanel } from './DicePanel';
+import { GameBoard } from './GameBoard';
+import { ScorePanel } from './ScorePanel';
+
+const COLOR_LABELS: Record<DiceColor, string> = {
+  yellow: 'Jaune',
+  green: 'Vert',
+  blue: 'Bleu',
+  red: 'Rouge',
+  orange: 'Orange',
+  wild: 'Joker',
+};
+
+function formatDiceValue(value?: DiceColor | DiceNumber) {
+  if (value == null) return 'Aucun';
+  if (typeof value === 'number') return value.toString();
+  return COLOR_LABELS[value] ?? value;
+}
 
 export const EncoreGame = () => {
   const { gameState, initializeGame, rollNewDice, selectDice, makeMove, skipTurn, isValidMove, completePlayerSwitch } = useEncoreGame();
+  const isMobile = useIsMobile();
   const [setupMode, setSetupMode] = useState(true);
+  const [mobilePanel, setMobilePanel] = useState<'other' | 'scores'>('other');
   const [playerNames, setPlayerNames] = useState(['Joueur 1', 'Joueur 2']);
   const [aiPlayers, setAIPlayers] = useState([false, true]);
-  const [selectedBoards, setSelectedBoards] = useState<[BoardId,BoardId]>([getDefaultBoardId(), getDefaultBoardId()]);
+  const [selectedBoards, setSelectedBoards] = useState<[BoardId, BoardId]>([getDefaultBoardId(), getDefaultBoardId()]);
   const [selectedSquares, _setSelectedSquares] = useState<{ row: number; col: number }[]>([]);
+  const [hoveredSquares, setHoveredSquares] = useState<{ row: number; col: number }[]>([]);
+  const [isAnimating, setIsAnimating] = useState(false);
+
   const setSelectedSquares = useCallback((squares: { row: number; col: number }[]) => {
-    // Remove duplicates and clamp to the rulebook maximum selection size.
     const deduped: { row: number; col: number }[] = [];
-    for (const s of squares) {
-      if (!deduped.some(ns => ns.row === s.row && ns.col === s.col)) {
-        deduped.push(s);
+    for (const square of squares) {
+      if (!deduped.some(existing => existing.row === square.row && existing.col === square.col)) {
+        deduped.push(square);
         if (deduped.length >= MAX_SELECTABLE_CELLS) break;
       }
     }
     _setSelectedSquares(deduped);
   }, []);
-  const [hoveredSquares, setHoveredSquares] = useState<{ row: number; col: number }[]>([]);
-  const [isAnimating, setIsAnimating] = useState(false);
 
   const mainBoardContainerRef = useRef<HTMLDivElement>(null);
   const otherBoardContainerRef = useRef<HTMLDivElement>(null);
@@ -47,30 +62,25 @@ export const EncoreGame = () => {
   const isSwitching = gameState.phase === 'player-switching';
 
   useLayoutEffect(() => {
-    // On every render, if we're not animating, measure the positions.
-    // This captures the correct "before" state for the animation.
-    if (!isAnimating && mainBoardContainerRef.current && otherBoardContainerRef.current) {
+    if (!isMobile && !isAnimating && mainBoardContainerRef.current && otherBoardContainerRef.current) {
       setPositions({
         main: mainBoardContainerRef.current.getBoundingClientRect(),
         other: otherBoardContainerRef.current.getBoundingClientRect(),
       });
     }
-  }, [isAnimating]);
+  }, [isAnimating, isMobile]);
 
   useEffect(() => {
-    if (isSwitching) {
-      // 1. Pause for 500ms
+    if (!isMobile && isSwitching) {
       const pauseTimer = setTimeout(() => {
-        // 2. Start the animation
         setIsAnimating(true);
       }, 500);
 
       return () => clearTimeout(pauseTimer);
     }
-  }, [isSwitching]);
+  }, [isMobile, isSwitching]);
 
   const handleTransitionEnd = useCallback(() => {
-    // 3. When animation is over, complete the switch
     if (isAnimating) {
       completePlayerSwitch();
       setIsAnimating(false);
@@ -78,11 +88,10 @@ export const EncoreGame = () => {
   }, [completePlayerSwitch, isAnimating]);
 
   const handleGameSetup = useCallback(() => {
-    if (playerNames.some(name => !name.trim())) {
-      return;
-    }
+    if (playerNames.some(name => !name.trim())) return;
 
     initializeGame(playerNames, aiPlayers, selectedBoards);
+    setMobilePanel('other');
     setSetupMode(false);
   }, [aiPlayers, initializeGame, playerNames, selectedBoards]);
 
@@ -117,11 +126,7 @@ export const EncoreGame = () => {
         selectedSquares.length === hoveredSquares.length &&
         hoveredSquares.every(hs => selectedSquares.some(ss => ss.row === hs.row && ss.col === hs.col));
 
-      if (isGroupAlreadySelected) {
-        setSelectedSquares([]);
-      } else {
-        setSelectedSquares([...hoveredSquares]);
-      }
+      setSelectedSquares(isGroupAlreadySelected ? [] : [...hoveredSquares]);
       return;
     }
 
@@ -131,9 +136,7 @@ export const EncoreGame = () => {
     }
 
     const maxNumber = getSelectionLimit(numberValue);
-    if (selectedSquares.length >= maxNumber) {
-      return;
-    }
+    if (selectedSquares.length >= maxNumber) return;
 
     setSelectedSquares([...selectedSquares, square]);
   }, [gameState.currentPlayer, gameState.phase, gameState.players, gameState.selectedDice.color, gameState.selectedDice.number, hoveredSquares, selectedSquares, setSelectedSquares]);
@@ -199,19 +202,20 @@ export const EncoreGame = () => {
   const canMakeMove = useCallback(() => {
     if (!gameState.selectedDice.color || !gameState.selectedDice.number) return false;
     if (selectedSquares.length === 0) return false;
-    
+
     const player = gameState.players[gameState.currentPlayer];
-    const colorValue = gameState.selectedDice.color.value === 'wild' ? 
-      (selectedSquares.length > 0 ? player.board[selectedSquares[0].row][selectedSquares[0].col].color : 'yellow') :
-      gameState.selectedDice.color.value;
+    const colorValue = gameState.selectedDice.color.value === 'wild'
+      ? (selectedSquares.length > 0 ? player.board[selectedSquares[0].row][selectedSquares[0].col].color : 'yellow')
+      : gameState.selectedDice.color.value;
     const numberValue = gameState.selectedDice.number.value === 'wild' ? selectedSquares.length : gameState.selectedDice.number.value;
-    
-    return selectedSquares.length === numberValue && 
-           isValidMove(selectedSquares, colorValue as GameColor, player.board);
+
+    return selectedSquares.length === numberValue &&
+      isValidMove(selectedSquares, colorValue as GameColor, player.board);
   }, [gameState.currentPlayer, gameState.players, gameState.selectedDice.color, gameState.selectedDice.number, isValidMove, selectedSquares]);
 
   const resetGame = useCallback(() => {
     setSetupMode(true);
+    setMobilePanel('other');
     setSelectedSquares([]);
   }, [setSelectedSquares]);
 
@@ -270,7 +274,7 @@ export const EncoreGame = () => {
                     >
                       <SelectTrigger className="w-[140px]">
                         <SelectValue>
-                          <BoardPreview size="small" board={getBoardConfiguration(selectedBoards[index])}/>
+                          <BoardPreview size="small" board={getBoardConfiguration(selectedBoards[index])} />
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
@@ -301,11 +305,29 @@ export const EncoreGame = () => {
   const canRoll = gameState.phase === 'rolling';
   const canSelectDice = gameState.phase === 'active-selection' || gameState.phase === 'passive-selection';
   const firstBonusClaimed = gameState.players.flatMap(p => p.completedColumnsFirst);
+  const selectionLimit = getSelectionLimit(gameState.selectedDice.number?.value);
+  const boardDisabled = isSwitching || gameState.phase === 'rolling' || gameState.phase === 'game-over';
+  const state = isSwitching ? 'Changement de joueur...' :
+    gameState.phase === 'game-over'
+      ? gameState.winners.length > 1
+        ? `🤝 Égalité : ${gameState.winners.map(player => player.name).join(', ')}`
+        : `🎉 ${gameState.winner?.name} gagne ! 🎉`
+      : gameState.phase === 'rolling' ? 'Lancer les dés'
+      : gameState.phase === 'active-selection' ? 'Tour du joueur actif'
+      : gameState.phase === 'passive-selection' ? 'Tour des joueurs passifs'
+      : null;
+  const statusLabel = isSwitching ? 'Changement...'
+    : gameState.phase === 'game-over'
+      ? gameState.winners.length > 1 ? 'Égalité' : `${gameState.winner?.name} gagne !`
+      : gameState.phase === 'rolling' ? 'Lancer dés'
+      : gameState.phase === 'active-selection' ? 'Joueur actif'
+      : gameState.phase === 'passive-selection' ? 'Joueurs passifs'
+      : 'En cours';
 
   let mainBoardStyle: CSSProperties = {};
   let otherBoardStyle: CSSProperties = {};
 
-  if (isAnimating) {
+  if (!isMobile && isAnimating) {
     const { main: mainPos, other: otherPos } = positions;
     if (mainPos && otherPos) {
       const mainTx = otherPos.left - mainPos.left;
@@ -331,93 +353,145 @@ export const EncoreGame = () => {
   }
 
   const actionsDisable = isSwitching || !(gameState.phase === 'active-selection' || gameState.phase === 'passive-selection');
-  const state = isSwitching ? 'Changement de joueur...' :
-    gameState.phase === 'game-over'
-      ? gameState.winners.length > 1
-        ? `🤝 Égalité : ${gameState.winners.map(player => player.name).join(', ')}`
-        : `🎉 ${gameState.winner?.name} gagne ! 🎉`
-      :
-      gameState.phase === 'rolling' ? 'Lancer les dés' :
-        gameState.phase === 'active-selection' ? 'Tour du joueur actif' :
-          gameState.phase === 'passive-selection' ? 'Tour des joueurs passifs' :
-              null;
+  const currentPlayerSummary = (
+    <div className="bg-card rounded-lg p-3 sm:p-4 shadow-square">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-base sm:text-lg font-semibold">
+            Tour actuel : {currentPlayer?.name}
+          </p>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Couleur: {formatDiceValue(gameState.selectedDice.color?.value)} · Nombre: {formatDiceValue(gameState.selectedDice.number?.value)}
+          </p>
+          {gameState.phase === 'passive-selection' && (
+            <p className="text-xs sm:text-sm text-muted-foreground">Tous les autres joueurs peuvent jouer.</p>
+          )}
+        </div>
+        <Badge variant="default" className="shrink-0 text-xs sm:text-sm px-2 py-0.5 sm:px-3 sm:py-1">
+          {statusLabel}
+        </Badge>
+      </div>
+      {isMobile && (
+        <div className="mt-3 flex items-center justify-between rounded-md bg-muted/70 px-3 py-2 text-xs text-muted-foreground">
+          <span>Sélection</span>
+          <span>{selectedSquares.length}/{selectionLimit}</span>
+        </div>
+      )}
+    </div>
+  );
+  const moveControls = (
+    <div className={cn('gap-2', isMobile ? 'grid grid-cols-3' : 'flex flex-col sm:flex-row')}>
+      <Button
+        onClick={handleConfirmMove}
+        disabled={!canMakeMove() || actionsDisable}
+        variant="game"
+        className="flex-1 text-sm sm:text-base"
+      >
+        {isMobile ? (
+          <span>Confirmer ({selectedSquares.length})</span>
+        ) : (
+          <>
+            <span className="hidden sm:inline">Confirmer le placement ({selectedSquares.length} cases)</span>
+            <span className="sm:hidden">Confirmer ({selectedSquares.length})</span>
+          </>
+        )}
+      </Button>
+      <Button
+        onClick={() => setSelectedSquares([])}
+        variant="outline"
+        disabled={actionsDisable}
+        className="text-sm sm:text-base"
+      >
+        Effacer
+      </Button>
+      <Button
+        onClick={onSkipTurn}
+        variant="secondary"
+        disabled={actionsDisable}
+        className="text-sm sm:text-base"
+      >
+        <span className="hidden sm:inline">Passer le tour</span>
+        <span className="sm:hidden">Passer</span>
+      </Button>
+    </div>
+  );
+  const mainBoard = (
+    <div className="@container" ref={mainBoardContainerRef} style={mainBoardStyle} onTransitionEnd={handleTransitionEnd}>
+      <GameBoard
+        board={currentPlayer?.board || []}
+        boardConfiguration={currentPlayer?.boardConfiguration}
+        onSquareClick={handleSquareClick}
+        onSquareHover={handleSquareHover}
+        onSquareLeave={handleSquareLeave}
+        selectedSquares={selectedSquares}
+        hoveredSquares={hoveredSquares}
+        disabled={boardDisabled}
+        firstBonusClaimed={firstBonusClaimed}
+        iClaimedFirstBonus={currentPlayer.completedColumnsFirst}
+        iClaimedSecondBonus={currentPlayer.completedColumnsNotFirst}
+        compact={isMobile}
+      />
+    </div>
+  );
+  const otherBoard = (
+    <div className="flex flex-col gap-1">
+      <p className="text-xs sm:text-sm font-medium text-muted-foreground">
+        {isMobile ? `Autre : ${otherPlayer?.name ?? '—'}` : `Autre joueur (${otherPlayer?.name ?? '—'}) :`}
+      </p>
+      <div className="@container" ref={otherBoardContainerRef} style={otherBoardStyle}>
+        <GameBoard
+          board={otherPlayer?.board || []}
+          boardConfiguration={otherPlayer?.boardConfiguration}
+          selectedSquares={[]}
+          disabled={true}
+          firstBonusClaimed={firstBonusClaimed}
+          iClaimedFirstBonus={otherPlayer.completedColumnsFirst}
+          iClaimedSecondBonus={otherPlayer.completedColumnsNotFirst}
+          compact={isMobile}
+          showColumnScores={!isMobile}
+        />
+      </div>
+    </div>
+  );
+  const scorePanels = (
+    <div className={cn(isMobile ? 'space-y-3' : 'space-y-4')}>
+      {gameState.players.map((player, index) => (
+        <ScorePanel
+          key={player.id}
+          player={player}
+          isCurrentPlayer={index === gameState.currentPlayer}
+          gameComplete={gameState.phase === 'game-over'}
+          claimedFirstColumnBonus={gameState.claimedFirstColumnBonus}
+          allPlayers={gameState.players}
+          compact={isMobile}
+        />
+      ))}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-board p-4 overflow-hidden">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-              <Gamepad2 className="w-8 h-8" />
+    <div className={cn("min-h-screen bg-gradient-board", isMobile ? "px-2 pb-28 pt-2" : "p-4 overflow-hidden")}>
+      <div className={cn("max-w-7xl mx-auto", isMobile ? "space-y-3" : "space-y-6")}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground flex items-center gap-2">
+              <Gamepad2 className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" />
               Encore !
             </h1>
-            {state && <Badge variant="default" className="text-lg px-3 py-1">
+            {!isMobile && state && <Badge variant="default" className="text-sm sm:text-base lg:text-lg px-2 py-0.5 sm:px-3 sm:py-1">
               {state}
             </Badge>}
           </div>
-          <Button onClick={resetGame} variant="outline">
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Nouvelle partie
+          <Button onClick={resetGame} variant="outline" size="sm" className="w-full sm:w-auto">
+            <RotateCcw className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Nouvelle partie</span>
+            <span className="sm:hidden">Nouvelle</span>
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Game Board - Takes up most space */}
-          <div className="lg:col-span-2 flex flex-col gap-4">
-            {/* Current Player Info */}
-            {gameState.phase !== 'game-over' && (
-              <div className="bg-card rounded-lg p-4">
-                <p className="text-lg font-semibold">
-                  Tour actuel : {currentPlayer?.name}
-                  {gameState.phase === 'passive-selection' && ' (Tous les autres joueurs peuvent jouer)'}
-                </p>
-              </div>
-            )}
-            <div className="@container" ref={mainBoardContainerRef} style={mainBoardStyle} onTransitionEnd={handleTransitionEnd}>
-              <GameBoard
-                board={currentPlayer?.board || []}
-                boardConfiguration={currentPlayer?.boardConfiguration}
-                onSquareClick={handleSquareClick}
-                onSquareHover={handleSquareHover}
-                onSquareLeave={handleSquareLeave}
-                selectedSquares={selectedSquares}
-                hoveredSquares={hoveredSquares}
-                disabled={isSwitching || gameState.phase === 'rolling' || gameState.phase === 'game-over'}
-                firstBonusClaimed={firstBonusClaimed}
-                iClaimedFirstBonus={currentPlayer.completedColumnsFirst}
-                iClaimedSecondBonus={currentPlayer.completedColumnsNotFirst}
-              />
-            </div>
-            
-            {/* Move Controls */}
-            <div className="flex gap-2">
-              <Button
-                onClick={handleConfirmMove}
-                disabled={!canMakeMove() || actionsDisable}
-                variant="game"
-                className="flex-1"
-              >
-                Confirmer le placement ({selectedSquares.length} cases)
-              </Button>
-              <Button
-                onClick={() => setSelectedSquares([])}
-                variant="outline"
-                disabled={actionsDisable}
-              >
-                Effacer
-              </Button>
-              <Button
-                onClick={onSkipTurn}
-                variant="secondary"
-                disabled={actionsDisable}
-              >
-                Passer le tour
-              </Button>
-            </div>
-          </div>
-
-          {/* Dice Panel */}
-          <div className="flex flex-col gap-2">
+        {isMobile ? (
+          <>
+            {gameState.phase !== 'game-over' && currentPlayerSummary}
             <DicePanel
               phase={gameState.phase}
               dice={gameState.dice}
@@ -428,37 +502,66 @@ export const EncoreGame = () => {
               selectedColorDice={gameState.selectedDice.color}
               selectedNumberDice={gameState.selectedDice.number}
               flashRoll={gameState.phase === 'rolling'}
+              compact={true}
             />
-            <div className="flex flex-col gap-1">
-              <p className="text-sm font-medium text-muted-foreground">Autre joueur ({otherPlayer.name}) :</p>
-              <div className="@container" ref={otherBoardContainerRef} style={otherBoardStyle}>
-                <GameBoard
-                  board={otherPlayer?.board || []}
-                  boardConfiguration={otherPlayer?.boardConfiguration}
-                  selectedSquares={[]}
-                  disabled={true}
-                  firstBonusClaimed={firstBonusClaimed}
-                  iClaimedFirstBonus={otherPlayer.completedColumnsFirst}
-                  iClaimedSecondBonus={otherPlayer.completedColumnsNotFirst}
-                />
+            {mainBoard}
+            <div className="rounded-xl bg-card p-3 shadow-square">
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={mobilePanel === 'other' ? 'default' : 'outline'}
+                  className="w-full"
+                  onClick={() => setMobilePanel('other')}
+                  aria-pressed={mobilePanel === 'other'}
+                >
+                  Autre joueur
+                </Button>
+                <Button
+                  type="button"
+                  variant={mobilePanel === 'scores' ? 'default' : 'outline'}
+                  className="w-full"
+                  onClick={() => setMobilePanel('scores')}
+                  aria-pressed={mobilePanel === 'scores'}
+                >
+                  Scores
+                </Button>
+              </div>
+              <div className="mt-3">
+                {mobilePanel === 'other' ? otherBoard : scorePanels}
               </div>
             </div>
-          </div>
+            <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+              <div className="mx-auto max-w-7xl">
+                {moveControls}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-2 flex flex-col gap-4">
+              {gameState.phase !== 'game-over' && currentPlayerSummary}
+              {mainBoard}
+              {moveControls}
+            </div>
 
-          {/* Score Panel */}
-          <div className="space-y-4">
-            {gameState.players.map((player, index) => (
-              <ScorePanel
-                key={player.id}
-                player={player}
-                isCurrentPlayer={index === gameState.currentPlayer}
-                gameComplete={gameState.phase === 'game-over'}
-                claimedFirstColumnBonus={gameState.claimedFirstColumnBonus}
-                allPlayers={gameState.players}
+            <div className="flex flex-col gap-2">
+              <DicePanel
+                phase={gameState.phase}
+                dice={gameState.dice}
+                onDiceSelect={selectDice}
+                onRollDice={rollNewDice}
+                canRoll={canRoll}
+                canSelect={canSelectDice}
+                selectedColorDice={gameState.selectedDice.color}
+                selectedNumberDice={gameState.selectedDice.number}
+                flashRoll={gameState.phase === 'rolling'}
               />
-            ))}
+              {otherBoard}
+            </div>
+
+            {scorePanels}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
