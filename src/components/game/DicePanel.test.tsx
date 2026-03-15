@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { DicePanel } from './DicePanel';
 import { ColorDiceResult, DiceResult } from '@/types/game';
 
@@ -13,6 +13,10 @@ const mockDice: DiceResult[] = [
 ];
 
 const mockSelectedColorDie: ColorDiceResult = { id: 'c1', type: 'color', value: 'red', selected: false };
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('DicePanel Component', () => {
   it('renders the dice panel with roll button', () => {
@@ -131,5 +135,38 @@ describe('DicePanel Component', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Dé couleur Rouge' })).toHaveClass('ring-2');
+  });
+
+  it('animates dice on the first roll transition', () => {
+    vi.useFakeTimers();
+
+    const { rerender } = render(
+      <DicePanel
+        dice={[]}
+        phase="rolling"
+        canRoll={true}
+      />
+    );
+
+    rerender(
+      <DicePanel
+        dice={mockDice}
+        phase="active-selection"
+        canSelect={true}
+      />
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(0);
+    });
+
+    const redDie = screen.getByRole('button', { name: 'Dé couleur Rouge' });
+    expect(redDie).toHaveClass('animate-spin');
+
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+
+    expect(redDie).not.toHaveClass('animate-spin');
   });
 });

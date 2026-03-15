@@ -150,10 +150,13 @@ export const DicePanel = ({
     const wasRolling = prevPhaseRef.current === 'rolling' || prevPhaseRef.current === 'rolling-ai';
     const isNowSelecting = phase === 'active-selection' || phase === 'active-selection-ai' ||
       phase === 'passive-selection' || phase === 'passive-selection-ai';
-    const diceChanged = currentDiceIds !== prevDiceIdsRef.current && prevDiceIdsRef.current !== '';
+    const hasPreviousDice = prevDiceIdsRef.current !== '';
+    const diceChanged = currentDiceIds !== prevDiceIdsRef.current;
+    const changedAfterRoll = wasRolling && isNowSelecting;
+    const changedWithinPhase = hasPreviousDice && phase === prevPhaseRef.current;
 
     let clear: (() => void) | undefined;
-    if (dice.length > 0 && diceChanged && ((wasRolling && isNowSelecting) || phase === prevPhaseRef.current)) {
+    if (dice.length > 0 && diceChanged && (changedAfterRoll || changedWithinPhase)) {
       const start = setTimeout(() => setIsRolling(true), 0);
       const stop = setTimeout(() => setIsRolling(false), 600);
       clear = () => {
