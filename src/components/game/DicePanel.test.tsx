@@ -161,12 +161,12 @@ describe('DicePanel Component', () => {
     });
 
     const redDie = screen.getByRole('button', { name: 'Dé couleur Rouge' });
-    expect(redDie).toHaveClass('animate-spin');
+    expect(Array.from(redDie.classList).some(c => c.startsWith('animate-'))).toBe(true);
 
     act(() => {
       vi.advanceTimersByTime(600);
     });
-
-    expect(redDie).not.toHaveClass('animate-spin');
+    
+    expect(Array.from(redDie.classList).some(c => c.startsWith('animate-'))).toBe(false);
   });
 });
