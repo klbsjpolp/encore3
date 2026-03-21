@@ -47,6 +47,7 @@ jobs:
         run: pnpm build
         env:
           NODE_ENV: production
+          VITE_BASE_PATH: ${{ format('/{0}/', github.event.repository.name) }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4

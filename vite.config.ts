@@ -4,8 +4,13 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const isProd = mode === 'production'
-  const base = isProd ? '/encore3/' : '/'
+  const isProd = mode === "production";
+
+  // GitHub Pages serves project sites from /<repo>/.
+  // In CI, derive this automatically from GITHUB_REPOSITORY to avoid hardcoding.
+  const repositoryName = process.env.GITHUB_REPOSITORY?.split("/")[1];
+  const githubPagesBase = repositoryName ? `/${repositoryName}/` : "/";
+  const base = isProd ? process.env.VITE_BASE_PATH ?? githubPagesBase : "/";
 
   return ({
     base,
