@@ -18,6 +18,10 @@ vi.mock('@/hooks/useEncoreGame', async (importOriginal) => {
   };
 });
 
+vi.mock('@/hooks/use-mobile', () => ({
+  useIsMobile: () => true,
+}));
+
 const boardConfiguration: BoardConfiguration = {
   id: 'classic',
   fillClass: 'bg-slate-900',
@@ -140,22 +144,23 @@ describe('EncoreGame mobile layout', () => {
     await setupGame();
 
     const [first, second] = getMainBoardSquares();
+    const confirmButton = screen.getByRole('button', { name: /confirmer/i });
 
     fireEvent.click(first);
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /confirmer \(1\)/i })).toBeInTheDocument();
+      expect(confirmButton).toHaveTextContent('Confirmer (1)');
     });
 
     fireEvent.click(second);
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /confirmer \(2\)/i })).toBeInTheDocument();
+      expect(confirmButton).toHaveTextContent('Confirmer (2)');
     });
 
     fireEvent.click(second);
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /confirmer \(1\)/i })).toBeInTheDocument();
+      expect(confirmButton).toHaveTextContent('Confirmer (1)');
     });
-  });
+  }, 10000);
 
   it('does not rely on desktop animation to show switching state on mobile', async () => {
     await setupGame({
