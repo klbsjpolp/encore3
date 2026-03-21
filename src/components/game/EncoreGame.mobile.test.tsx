@@ -80,7 +80,7 @@ const createGameState = (): GameState => ({
 
 let testContainer: HTMLElement;
 
-const setupGame = (overrides?: Partial<ReturnType<typeof mockUseEncoreGame>>) => {
+const setupGame = async (overrides?: Partial<ReturnType<typeof mockUseEncoreGame>>) => {
   window.resizeTo(390, 844);
 
   mockUseEncoreGame.mockReturnValue({
@@ -100,6 +100,8 @@ const setupGame = (overrides?: Partial<ReturnType<typeof mockUseEncoreGame>>) =>
   const { container } = render(<EncoreGame />);
   testContainer = container;
   fireEvent.click(screen.getByText('Commencer la partie'));
+
+  await screen.findByTestId('compact-dice-row');
 };
 
 const getMainBoardSquares = () =>
@@ -111,11 +113,7 @@ describe('EncoreGame mobile layout', () => {
   });
 
   it('renders compact mobile controls with panel toggles and sticky actions', async () => {
-    setupGame();
-
-    await waitFor(() => {
-      expect(screen.getByTestId('compact-dice-row')).toBeInTheDocument();
-    });
+    await setupGame();
 
     expect(screen.getByRole('button', { name: 'Autre joueur' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Scores' })).toBeInTheDocument();
@@ -125,7 +123,7 @@ describe('EncoreGame mobile layout', () => {
   });
 
   it('switches between opponent board and compact score summaries on mobile', async () => {
-    setupGame();
+    await setupGame();
 
     expect(screen.getByText(/Autre : Player 2/)).toBeInTheDocument();
     expect(screen.queryByText('Colonnes: 2')).not.toBeInTheDocument();
@@ -139,7 +137,7 @@ describe('EncoreGame mobile layout', () => {
   });
 
   it('keeps touch selection workflow visible from the sticky action bar', async () => {
-    setupGame();
+    await setupGame();
 
     const [first, second] = getMainBoardSquares();
 
@@ -160,7 +158,7 @@ describe('EncoreGame mobile layout', () => {
   });
 
   it('does not rely on desktop animation to show switching state on mobile', async () => {
-    setupGame({
+    await setupGame({
       gameState: {
         ...createGameState(),
         phase: 'player-switching',
