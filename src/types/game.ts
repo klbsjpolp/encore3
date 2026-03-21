@@ -1,8 +1,18 @@
 import {BoardConfiguration, BoardId} from "@/data/boardConfigurations.ts";
 
-export type GameColor = 'yellow' | 'green' | 'blue' | 'red' | 'orange';
-export type DiceColor = GameColor | 'wild';
-export type DiceNumber = 1 | 2 | 3 | 4 | 5 | 'wild';
+export const GAME_COLORS = ['yellow', 'green', 'blue', 'red', 'orange'] as const;
+export type GameColor = typeof GAME_COLORS[number];
+
+export const DICE_COLOR_FACES = [...GAME_COLORS, 'wild'] as const;
+export type DiceColor = typeof DICE_COLOR_FACES[number];
+
+export const DICE_NUMBER_VALUES = [1, 2, 3, 4, 5] as const;
+export type DiceNumberValue = typeof DICE_NUMBER_VALUES[number];
+
+export const DICE_NUMBER_FACES = [...DICE_NUMBER_VALUES, 'wild'] as const;
+export type DiceNumber = typeof DICE_NUMBER_FACES[number];
+
+export const DEFAULT_GAME_COLOR: GameColor = GAME_COLORS[0];
 
 export interface Square {
   color: GameColor;

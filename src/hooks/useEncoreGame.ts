@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { GameState, Player, DiceResult, GameColor, DiceColor, DiceNumber, Square } from '@/types/game';
+import { GameState, Player, DiceResult, GameColor, DiceColor, DiceNumber, Square, DICE_COLOR_FACES, DICE_NUMBER_FACES, DEFAULT_GAME_COLOR } from '@/types/game';
 import { useAIPlayer } from './useAIPlayer';
 import {BoardConfiguration, BoardId, getBoardConfiguration, getDefaultBoardId} from '@/data/boardConfigurations';
 import {generateRandomBoard} from "@/data/randomBoardGenerator.ts";
@@ -86,11 +86,9 @@ const createInitialBoard = (boardConfiguration: BoardConfiguration): Square[][] 
 const generateDiceId = () => Math.random().toString(36).substr(2, 9);
 
 const rollDice = (): DiceResult[] => {
-  const colorValues: DiceColor[] = ['yellow', 'green', 'blue', 'red', 'orange', 'wild'];
-  const numberValues: DiceNumber[] = [1, 2, 3, 4, 5, 'wild'];
   const dice: DiceResult[] = [];
-  for (let i = 0; i < 3; i++) dice.push({ id: generateDiceId(), type: 'color', value: colorValues[Math.floor(Math.random() * colorValues.length)], selected: false });
-  for (let i = 0; i < 3; i++) dice.push({ id: generateDiceId(), type: 'number', value: numberValues[Math.floor(Math.random() * numberValues.length)], selected: false });
+  for (let i = 0; i < 3; i++) dice.push({ id: generateDiceId(), type: 'color', value: DICE_COLOR_FACES[Math.floor(Math.random() * DICE_COLOR_FACES.length)], selected: false });
+  for (let i = 0; i < 3; i++) dice.push({ id: generateDiceId(), type: 'number', value: DICE_NUMBER_FACES[Math.floor(Math.random() * DICE_NUMBER_FACES.length)], selected: false });
   return dice;
 };
 
@@ -306,7 +304,7 @@ export const useEncoreGame = () => {
       }
 
       const player = players[currentPlayer];
-      const colorValue = selectedDice.color.value === 'wild' ? (moveSquares.length > 0 ? player.board[moveSquares[0].row][moveSquares[0].col].color : 'yellow') : selectedDice.color.value as GameColor;
+      const colorValue = selectedDice.color.value === 'wild' ? (moveSquares.length > 0 ? player.board[moveSquares[0].row][moveSquares[0].col].color : DEFAULT_GAME_COLOR) : selectedDice.color.value as GameColor;
       const numberValue = selectedDice.number.value === 'wild' ? moveSquares.length : (selectedDice.number.value as number);
 
       if (moveSquares.length !== numberValue || !isValidMove(moveSquares, colorValue, player.board)) {

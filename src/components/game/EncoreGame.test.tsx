@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EncoreGame } from './EncoreGame';
-import type { GameState, Player, Square } from '@/types/game';
+import type { DiceNumber, GameState, Player, Square } from '@/types/game';
 import type { BoardConfiguration } from '@/data/boardConfigurations';
 
 const mockUseEncoreGame = vi.fn();
@@ -52,7 +52,7 @@ const createPlayer = (id: string, name: string, board = createBoard()): Player =
 });
 
 const createGameState = (
-  numberValue: 1 | 2 | 3 | 4 | 5 | 'wild' = 2,
+  numberValue: DiceNumber = 2,
   players: Player[] = [createPlayer('p1', 'Player 1'), createPlayer('p2', 'Player 2')],
 ): GameState => ({
   players,
@@ -74,7 +74,7 @@ const createGameState = (
   claimedSecondColorBonus: {},
 });
 
-const setupGame = (numberValue: 1 | 2 | 3 | 4 | 5 | 'wild' = 2) => {
+const setupGame = (numberValue: DiceNumber = 2) => {
   mockUseEncoreGame.mockReturnValue({
     gameState: createGameState(numberValue),
     initializeGame: vi.fn(),

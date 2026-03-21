@@ -1,4 +1,4 @@
-import { ColorDiceResult, DiceResult, GameState, GameColor, NumberDiceResult, Square } from '@/types/game';
+import { ColorDiceResult, DiceResult, GameState, GameColor, NumberDiceResult, Square, GAME_COLORS } from '@/types/game';
 
 const isColorDice = (dice: DiceResult): dice is ColorDiceResult => dice.type === 'color';
 const isNumberDice = (dice: DiceResult): dice is NumberDiceResult => dice.type === 'number';
@@ -99,8 +99,8 @@ export const useAIPlayer = () => {
         if (jokersNeededForCombo > currentPlayer.jokersRemaining) continue;
 
         const number = numberDice.value as number;
-        const colorsToConsider: GameColor[] = colorDice.value === 'wild' 
-            ? ['red', 'yellow', 'green', 'blue'] 
+        const colorsToConsider: GameColor[] = colorDice.value === 'wild'
+            ? [...GAME_COLORS]
             : [colorDice.value as GameColor];
 
         for (const color of colorsToConsider) {

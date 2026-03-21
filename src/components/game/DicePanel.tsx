@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Shuffle, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ColorDiceResult, DiceColor, DiceNumber, DiceResult, GameState, NumberDiceResult } from '@/types/game';
+import { ColorDiceResult, DiceColor, DiceNumber, DiceResult, GameState, NumberDiceResult, DICE_COLOR_FACES, DICE_NUMBER_FACES } from '@/types/game';
 
 interface DicePanelProps {
   dice: DiceResult[];
@@ -56,6 +56,11 @@ function getDiceShortDisplayValue(value: DiceColor | DiceNumber): string {
 const isColorDice = (dice: DiceResult): dice is ColorDiceResult => dice.type === 'color';
 const isNumberDice = (dice: DiceResult): dice is NumberDiceResult => dice.type === 'number';
 
+function getRandomDiceValue(dice: DiceResult): DiceColor | DiceNumber {
+  const values = dice.type === 'color' ? DICE_COLOR_FACES : DICE_NUMBER_FACES;
+  return values[Math.floor(Math.random() * values.length)];
+}
+
 function getStableAnimationDelayFromId(id: string): string {
   let hash = 5381;
   for (let i = 0; i < id.length; i++) {
@@ -74,6 +79,7 @@ const DiceDisplay = ({
   hideUsedMarks = false,
   isRolling = false,
   compact = false,
+  displayValue,
 }: {
   dice: DiceResult;
   onSelect?: (dice: DiceResult) => void;
@@ -82,10 +88,12 @@ const DiceDisplay = ({
   hideUsedMarks?: boolean;
   isRolling?: boolean;
   compact?: boolean;
+  displayValue?: DiceColor | DiceNumber;
 }) => {
   const isColorDie = dice.type === 'color';
-  const value = dice.value;
+  const value = displayValue ?? dice.value;
   const isUsed = dice.selected && !hideUsedMarks;
+  const isInteractable = canSelect && !isRolling;
   const sizeClass = compact
     ? 'h-11 w-11 rounded-md text-sm'
     : 'w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl text-base sm:text-lg';
@@ -93,10 +101,10 @@ const DiceDisplay = ({
 
   return (
     <button
-      onClick={() => canSelect && onSelect?.(dice)}
-      disabled={!canSelect || isUsed}
-      aria-label={`${isColorDie ? 'Dé couleur' : 'Dé nombre'} ${getDiceDisplayValue(value)}`}
-      title={isUsed ? 'Dé déjà utilisé' : canSelect ? 'Sélectionner ce dé' : "En attente du tour de l'autre joueur"}
+      onClick={() => isInteractable && onSelect?.(dice)}
+      disabled={!isInteractable || isUsed}
+      aria-label={isRolling ? `${isColorDie ? 'Dé couleur' : 'Dé nombre'} en rotation` : `${isColorDie ? 'Dé couleur' : 'Dé nombre'} ${getDiceDisplayValue(value)}`}
+      title={isUsed ? 'Dé déjà utilisé' : isRolling ? 'Résultat en cours' : canSelect ? 'Sélectionner ce dé' : "En attente du tour de l'autre joueur"}
       className={cn(
         'relative overflow-hidden shadow-dice transition-all duration-300',
         'flex items-center justify-center font-bold',
@@ -104,7 +112,7 @@ const DiceDisplay = ({
         isColorDie ? getDiceColorClass(value as DiceColor) : 'bg-gradient-dice text-foreground',
         isSelected && (compact ? 'ring-2 ring-ring shadow-glow scale-105' : 'ring-4 ring-ring shadow-glow scale-110'),
         isUsed && 'opacity-50 cursor-not-allowed',
-        canSelect ? 'hover:scale-105 active:scale-95' : 'cursor-not-allowed opacity-30',
+        isInteractable ? 'hover:scale-105 active:scale-95' : 'cursor-not-allowed opacity-30',
         isRolling && 'animate-spin duration-500 blur-xs opacity-30'
       )}
       style={{ animationDelay }}
@@ -138,6 +146,7 @@ export const DicePanel = ({
   compact = false,
 }: DicePanelProps) => {
   const [isRolling, setIsRolling] = useState(false);
+  const [rollingValues, setRollingValues] = useState<Record<string, DiceColor | DiceNumber>>({});
   const prevDiceIdsRef = useRef<string>('');
   const prevPhaseRef = useRef<string>(phase);
 
@@ -170,6 +179,24 @@ export const DicePanel = ({
       clear?.();
     };
   }, [dice, phase]);
+
+  useEffect(() => {
+    if (!isRolling || dice.length === 0) return;
+
+    const randomize = () => {
+      setRollingValues(
+        Object.fromEntries(dice.map((die) => [die.id, getRandomDiceValue(die)]))
+      );
+    };
+
+    const initialTimeout = window.setTimeout(randomize, 0);
+    const interval = window.setInterval(randomize, 300);
+
+    return () => {
+      window.clearTimeout(initialTimeout);
+      window.clearInterval(interval);
+    };
+  }, [dice, isRolling]);
 
   const disabled = phase.includes('-ai');
   const finalCanRoll = canRoll && !disabled;
@@ -234,6 +261,7 @@ export const DicePanel = ({
                     hideUsedMarks={false}
                     isRolling={isRolling}
                     compact={true}
+                    displayValue={isRolling ? rollingValues[die.id] : undefined}
                   />
                 ))}
           </div>
@@ -254,6 +282,7 @@ export const DicePanel = ({
                       isSelected={selectedColorDice?.id === die.id}
                       hideUsedMarks={false}
                       isRolling={isRolling}
+                      displayValue={isRolling ? rollingValues[die.id] : undefined}
                     />
                   ))}
             </div>
@@ -273,6 +302,7 @@ export const DicePanel = ({
                       isSelected={selectedNumberDice?.id === die.id}
                       hideUsedMarks={false}
                       isRolling={isRolling}
+                      displayValue={isRolling ? rollingValues[die.id] : undefined}
                     />
                   ))}
             </div>

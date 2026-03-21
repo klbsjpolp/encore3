@@ -16,6 +16,7 @@ const mockSelectedColorDie: ColorDiceResult = { id: 'c1', type: 'color', value: 
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe('DicePanel Component', () => {
@@ -160,13 +161,52 @@ describe('DicePanel Component', () => {
       vi.advanceTimersByTime(0);
     });
 
-    const redDie = screen.getByRole('button', { name: 'Dé couleur Rouge' });
-    expect(Array.from(redDie.classList).some(c => c.startsWith('animate-'))).toBe(true);
+    const rollingColorDice = screen.getAllByRole('button', { name: 'Dé couleur en rotation' });
+    expect(rollingColorDice).toHaveLength(3);
+    expect(Array.from(rollingColorDice[0].classList).some(c => c.startsWith('animate-'))).toBe(true);
 
     act(() => {
       vi.advanceTimersByTime(600);
     });
-    
+
+    const redDie = screen.getByRole('button', { name: 'Dé couleur Rouge' });
     expect(Array.from(redDie.classList).some(c => c.startsWith('animate-'))).toBe(false);
+  });
+
+  it('shows randomized dice values until the roll animation finishes', () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    const { rerender } = render(
+      <DicePanel
+        dice={[]}
+        phase="rolling"
+        canRoll={true}
+      />
+    );
+
+    rerender(
+      <DicePanel
+        dice={mockDice}
+        phase="active-selection"
+        canSelect={true}
+      />
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(0);
+    });
+
+    expect(screen.queryByRole('button', { name: 'Dé couleur Rouge' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dé nombre 1' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Dé couleur en rotation' })).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: 'Dé nombre en rotation' })).toHaveLength(3);
+
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+
+    expect(screen.getByRole('button', { name: 'Dé couleur Rouge' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Dé nombre 1' })).toBeInTheDocument();
   });
 });

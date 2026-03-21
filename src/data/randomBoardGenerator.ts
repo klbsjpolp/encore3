@@ -1,4 +1,4 @@
-import { GameColor } from '@/types/game';
+import { GameColor, GAME_COLORS } from '@/types/game';
 import {BoardConfiguration, BOARD_CONFIGURATIONS} from './boardConfigurations';
 
 /**
@@ -109,17 +109,12 @@ function mirrorVertical(
  * Randomly remap colors
  */
 function remapColors(board: GameColor[][]): GameColor[][] {
-  const colors: GameColor[] = ['yellow', 'green', 'blue', 'red', 'orange'];
-  const shuffled = [...colors];
+  const shuffled = [...GAME_COLORS];
   shuffleArray(shuffled);
 
-  const colorMap: Record<GameColor, GameColor> = {
-    yellow: shuffled[0],
-    green: shuffled[1],
-    blue: shuffled[2],
-    red: shuffled[3],
-    orange: shuffled[4]
-  };
+  const colorMap = Object.fromEntries(
+    GAME_COLORS.map((color, index) => [color, shuffled[index]])
+  ) as Record<GameColor, GameColor>;
 
   return board.map(row => row.map(cell => colorMap[cell]));
 }

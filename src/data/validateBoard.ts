@@ -1,5 +1,5 @@
 import { BoardConfiguration } from './boardConfigurations';
-import { GameColor } from '@/types/game';
+import { GameColor, GAME_COLORS } from '@/types/game';
 
 /**
  * Validates that a board configuration follows all strict constraints
@@ -19,13 +19,9 @@ export function validateBoard(board: BoardConfiguration): { valid: boolean; erro
   }
 
   // Count colors
-  const colorCounts: Record<GameColor, number> = {
-    yellow: 0,
-    green: 0,
-    blue: 0,
-    red: 0,
-    orange: 0
-  };
+  const colorCounts = Object.fromEntries(
+    GAME_COLORS.map(color => [color, 0])
+  ) as Record<GameColor, number>;
 
   for (const row of board.colorLayout) {
     for (const cell of row) {
@@ -45,7 +41,7 @@ export function validateBoard(board: BoardConfiguration): { valid: boolean; erro
   }
 
   // Check group sizes for each color
-  for (const color of Object.keys(colorCounts) as GameColor[]) {
+  for (const color of GAME_COLORS) {
     const groups = findColorGroups(board.colorLayout, color);
     const sizes = groups.sort((a, b) => a - b);
     const expectedSizes = [1, 2, 3, 4, 5, 6];
@@ -62,13 +58,9 @@ export function validateBoard(board: BoardConfiguration): { valid: boolean; erro
 
   // Check one star per column
   const starColumns = new Set<number>();
-  const starsByColor: Record<GameColor, number> = {
-    yellow: 0,
-    green: 0,
-    blue: 0,
-    red: 0,
-    orange: 0
-  };
+  const starsByColor = Object.fromEntries(
+    GAME_COLORS.map(color => [color, 0])
+  ) as Record<GameColor, number>;
 
   for (const pos of board.starPositions) {
     const [row, col] = pos.split(',').map(Number);
@@ -97,7 +89,7 @@ export function validateBoard(board: BoardConfiguration): { valid: boolean; erro
   }
 
   // Check: no two stars in the same color group
-  for (const color of Object.keys(colorCounts) as GameColor[]) {
+  for (const color of GAME_COLORS) {
     const starCounts = countStarsInGroups(board.colorLayout, board.starPositions, color);
     for (const k of starCounts) {
       if (k > 1) {

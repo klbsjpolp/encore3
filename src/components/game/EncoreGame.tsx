@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { DiceColor, DiceNumber, GameColor, Square } from '@/types/game';
+import { DiceColor, DiceNumber, GameColor, Square, GAME_COLORS, DEFAULT_GAME_COLOR } from '@/types/game';
 import { useEncoreGame, findConnectedGroup } from '@/hooks/useEncoreGame';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getSelectionLimit, MAX_SELECTABLE_CELLS } from '@/lib/game-rules';
@@ -41,7 +41,7 @@ function hasAnyPossibleMove(
   if (!selectedColor || !selectedNumber) return false;
 
   const colorsToCheck: GameColor[] = selectedColor === 'wild'
-    ? ['yellow', 'green', 'blue', 'red', 'orange']
+    ? [...GAME_COLORS]
     : [selectedColor];
 
   for (let row = 0; row < board.length; row++) {
@@ -251,7 +251,7 @@ export const EncoreGame = () => {
 
     const player = gameState.players[gameState.currentPlayer];
     const colorValue = gameState.selectedDice.color.value === 'wild'
-      ? (selectedSquares.length > 0 ? player.board[selectedSquares[0].row][selectedSquares[0].col].color : 'yellow')
+      ? (selectedSquares.length > 0 ? player.board[selectedSquares[0].row][selectedSquares[0].col].color : DEFAULT_GAME_COLOR)
       : gameState.selectedDice.color.value;
     const numberValue = gameState.selectedDice.number.value === 'wild' ? selectedSquares.length : gameState.selectedDice.number.value;
 

@@ -9,6 +9,7 @@ import {
   TOTAL_STARS,
   useEncoreGame,
 } from './useEncoreGame';
+import { GAME_COLORS } from '@/types/game';
 import type { Player, Square, GameColor } from '@/types/game';
 import type { BoardConfiguration } from '@/data/boardConfigurations';
 
@@ -253,7 +254,7 @@ describe('useEncoreGame move limit', () => {
     const targetRow = 0;
     const targetCol = 7;
     const targetColor = activePlayer.board[targetRow][targetCol].color;
-    const existingColor = (['yellow', 'green', 'blue', 'red', 'orange'] as const).find(color => color !== targetColor)!;
+    const existingColor = GAME_COLORS.find(color => color !== targetColor)!;
 
     activePlayer.completedColors = [existingColor];
     activePlayer.completedColorsFirst = [existingColor];

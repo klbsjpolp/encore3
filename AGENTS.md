@@ -2,6 +2,7 @@
 
 ## Project Overview
 Architecture et conventions décrites dans `.claude/AI_CONTEXT.md`.
+Règles plus spécifiques décrites dans les fichiers `.claude/rules/*.md`. 
 
 ## Core Rules
 - Respecter l’architecture du projet.
