@@ -130,13 +130,13 @@ describe('EncoreGame mobile layout', () => {
     await setupGame();
 
     expect(screen.getByText(/Autre : Player 2/)).toBeInTheDocument();
-    expect(screen.queryByText('Colonnes: 2')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Colonnes \(total:/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Scores' }));
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Scores' })).toHaveAttribute('aria-pressed', 'true');
-      expect(screen.getAllByText('Colonnes: 2')).toHaveLength(2);
+      expect(screen.getAllByText(/Colonnes \(total:/)).toHaveLength(2);
     });
   });
 
