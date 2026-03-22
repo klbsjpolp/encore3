@@ -5,12 +5,14 @@ This document outlines the **strict constraints** and requirements for creating 
 ## Board Structure
 
 ### Dimensions
+
 - **Grid Size**: 7 rows × 15 columns (fixed)
 - **Total Cells**: 105 squares
 
 ### Color Distribution
 
 All boards must use exactly **5 colors**:
+
 - `yellow`
 - `green`
 - `blue`
@@ -29,6 +31,7 @@ This is a **strict requirement** verified across all 4 official boards.
 #### ⚠️ CRITICAL CONSTRAINT: Each color must have exactly 6 groups of sizes 1, 2, 3, 4, 5, and 6 cells
 
 This is a **strict requirement** verified across all 4 official boards:
+
 - One isolated cell (group of 1)
 - One pair (group of 2)
 - One trio (group of 3)
@@ -39,14 +42,17 @@ This is a **strict requirement** verified across all 4 official boards:
 **Total: 1 + 2 + 3 + 4 + 5 + 6 = 21 cells per color**
 
 ### Definition
+
 A "color group" is a contiguous cluster of cells of the same color (connected horizontally or vertically, **not diagonally**).
 
 This constraint ensures:
+
 - Balanced strategic gameplay
 - Progressive difficulty in completing each color
 - Consistent challenge across all colors
 
 **All 4 official boards follow this pattern perfectly:**
+
 - Board 1: All colors have groups [1, 2, 3, 4, 5, 6] ✓
 - Board 2: All colors have groups [1, 2, 3, 4, 5, 6] ✓
 - Board 3: All colors have groups [1, 2, 3, 4, 5, 6] ✓
@@ -55,17 +61,20 @@ This constraint ensures:
 ## Star Placement
 
 ### Requirements
+
 - **Exactly 15 stars** must be placed on the board
 - **One star per column** (columns 0-14)
 - Stars can be on any row (0-6) within their column
 - ⚠️ Must not have two stars in the same color group (at most 1 star per group)
 
 ### Star Position Format
+
 Stars are stored as a `Set<string>` with format `"row,column"`:
+
 ```typescript
 starPositions: new Set([
-  '2,0',  // Row 2, Column 0
-  '5,1',  // Row 5, Column 1
+  '2,0', // Row 2, Column 0
+  '5,1', // Row 5, Column 1
   // ... 15 total positions
 ])
 ```
@@ -73,6 +82,7 @@ starPositions: new Set([
 ### ⚠️ CRITICAL CONSTRAINT: Exactly 3 stars per color
 
 Verified across all 4 official boards:
+
 - **Yellow**: 3 stars
 - **Green**: 3 stars
 - **Blue**: 3 stars
@@ -91,6 +101,7 @@ This ensures balanced star collection opportunities for all colors.
 - **Board 4**: Row 0:3, Row 1:3, Row 2:3, Row 3:2, Row 4:1, Row 5:2, Row 6:1
 
 **Guidelines**:
+
 - No strict pattern for row distribution (varies by board)
 - Can concentrate stars in specific rows for strategic effect
 - Balance star accessibility with strategic placement
@@ -99,16 +110,18 @@ This ensures balanced star collection opportunities for all colors.
 ## Board Configuration Object
 
 ### TypeScript Interface
+
 ```typescript
 interface BoardConfiguration {
-  id: string;              // Unique identifier (e.g., 'classic', 'blue')
-  fillClass: string;       // Tailwind CSS background class for theme
-  colorLayout: GameColor[][]; // 7×15 array of colors
-  starPositions: Set<string>; // Set of 15 "row,col" strings
+  id: string // Unique identifier (e.g., 'classic', 'blue')
+  fillClass: string // Tailwind CSS background class for theme
+  colorLayout: GameColor[][] // 7×15 array of colors
+  starPositions: Set<string> // Set of 15 "row,col" strings
 }
 ```
 
 ### Example Structure
+
 ```
 const NEW_BOARD: BoardConfiguration = {
   id: 'unique-name',
@@ -130,10 +143,12 @@ const NEW_BOARD: BoardConfiguration = {
 Before finalizing a board configuration, verify:
 
 ### Grid Structure
+
 - [ ] Grid is exactly 7 rows × 15 columns (105 cells total)
 - [ ] All cells use only valid GameColor values: 'yellow', 'green', 'blue', 'red', 'orange'
 
 ### ⚠️ Color Distribution (CRITICAL)
+
 - [ ] Each color appears **exactly 21 times**
 - [ ] Yellow: 21 cells
 - [ ] Green: 21 cells
@@ -142,6 +157,7 @@ Before finalizing a board configuration, verify:
 - [ ] Orange: 21 cells
 
 ### ⚠️ Color Groups (CRITICAL)
+
 - [ ] Each color has exactly 6 groups with sizes: 1, 2, 3, 4, 5, 6
 - [ ] Yellow groups: [1, 2, 3, 4, 5, 6]
 - [ ] Green groups: [1, 2, 3, 4, 5, 6]
@@ -151,6 +167,7 @@ Before finalizing a board configuration, verify:
 - [ ] Groups are connected horizontally/vertically only (not diagonally)
 
 ### ⚠️ Star Placement (CRITICAL)
+
 - [ ] Exactly 15 stars are defined
 - [ ] Each column (0-14) has exactly one star
 - [ ] Each color has exactly 3 stars
@@ -164,12 +181,14 @@ Before finalizing a board configuration, verify:
 - [ ] No duplicate star positions
 
 ### Configuration
+
 - [ ] Board has a unique ID
 - [ ] Fill class is defined for theme styling
 
 ## Design Strategy
 
 ### Within the Constraints
+
 Since the mathematical constraints are strict (21 cells per color, groups of 1-2-3-4-5-6, 3 stars per color), **board difficulty and variety come from**:
 
 1. **Spatial arrangement of groups**
@@ -190,11 +209,13 @@ Since the mathematical constraints are strict (21 cells per color, groups of 1-2
    - Creating strategic paths vs obstacles
 
 ### Difficulty Tuning
+
 - **Easier boards**: Place stars in larger groups (4-6), keep same-color groups closer together
 - **Harder boards**: Place stars in smaller groups (1-3), spread groups across the board, separate same-color groups
 - **Column strategy**: Vary color distribution per column to affect completion difficulty
 
 ### Visual Appeal
+
 - Consider the visual flow of colors
 - Create interesting patterns within the mathematical constraints
 - Theme color (fillClass) should complement the board design but doesn't affect gameplay
@@ -204,19 +225,23 @@ Since the mathematical constraints are strict (21 cells per color, groups of 1-2
 All boards follow the same strict constraints but differ in spatial arrangement and star placement:
 
 ### Board 1: Classic (bg-black)
+
 - Traditional balanced design
 - Star distribution: Row 5 has 5 stars (most concentrated)
 - All colors: exactly 21 cells, groups of [1,2,3,4,5,6], 3 stars each ✓
 
 ### Board 2: Blue (bg-sky-400)
+
 - Star distribution: Row 1 has 5 stars (most concentrated)
 - All colors: exactly 21 cells, groups of [1,2,3,4,5,6], 3 stars each ✓
 
 ### Board 3: Green (bg-lime-600)
+
 - Star distribution: Row 4 has 6 stars (most concentrated)
 - All colors: exactly 21 cells, groups of [1,2,3,4,5,6], 3 stars each ✓
 
 ### Board 4: Red (bg-rose-600)
+
 - Star distribution: Rows 0, 1, 2 each have 3 stars (more even distribution)
 - All colors: exactly 21 cells, groups of [1,2,3,4,5,6], 3 stars each ✓
 
@@ -225,13 +250,16 @@ All boards follow the same strict constraints but differ in spatial arrangement 
 When creating a new board:
 
 ### Automated Validation
+
 Run validation to ensure:
+
 1. Exactly 21 cells per color
 2. Each color has groups of sizes [1, 2, 3, 4, 5, 6]
 3. Exactly 3 stars per color
 4. One star per column (15 total)
 
 ### Gameplay Testing
+
 1. Test all color completion paths are viable
 2. Verify star collection feels balanced
 3. Ensure column completion bonuses create strategic choices
@@ -241,12 +269,14 @@ Run validation to ensure:
 ## Summary of Critical Constraints
 
 ### ⚠️ Mathematical Constraints (MUST be exact):
+
 - **Grid**: 7 rows × 15 columns = 105 cells
 - **Colors**: 5 colors × 21 cells = 105 cells
 - **Groups**: Each color has groups of [1, 2, 3, 4, 5, 6] = 21 cells
 - **Stars**: 15 stars total = 3 per color, 1 per column, max 1 per color group
 
 ### ✨ Design Freedom (creates variety):
+
 - Spatial placement of groups on the grid
 - Which cells within groups get stars
 - Row distribution of stars (can vary: clustered vs spread)

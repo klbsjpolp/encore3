@@ -2,40 +2,46 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         node-version: [22.x]
-    
+
     steps:
-    - uses: actions/checkout@v5
-    
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        run_install: false
-    
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v6
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'pnpm'
-    
-    - name: Install dependencies
-      run: pnpm install
-    
-    - name: Run tests
-      run: pnpm test
-    
-    - name: Run typecheck
-      run: pnpm typecheck
-    
-    - name: Build
-      run: pnpm build
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run format check
+        run: pnpm format:check
+
+      - name: Run lint
+        run: pnpm lint
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Run typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build

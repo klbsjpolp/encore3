@@ -1,0 +1,4 @@
+- appliquer Prettier sur chaque fichier modifié
+- appliquer ESLint avec auto-fix sur chaque fichier modifié
+- conserver les imports triés et sans imports inutilisés
+- ne pas contourner les règles de formatage (pas de `eslint-disable` sans justification claire)

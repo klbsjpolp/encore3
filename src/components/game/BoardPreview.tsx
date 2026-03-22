@@ -1,12 +1,13 @@
-import { Square, GameColor } from '@/types/game';
-import { cn } from '@/lib/utils';
-import {Star, StarOffIcon} from 'lucide-react';
-import {BOARD_CONFIGURATIONS, BoardConfiguration} from "@/data/boardConfigurations.ts";
-import {useMemo} from "react";
+import { Star } from 'lucide-react'
+import { useMemo } from 'react'
+
+import type { BoardConfiguration } from '@/data/boardConfigurations.ts'
+import { cn } from '@/lib/utils'
+import type { GameColor, Square } from '@/types/game'
 
 interface BoardPreviewProps {
-  size: 'small' | 'large';
-  board: BoardConfiguration;
+  size: 'small' | 'large'
+  board: BoardConfiguration
 }
 
 const getColorClass = (color: GameColor): string => {
@@ -17,63 +18,65 @@ const getColorClass = (color: GameColor): string => {
     red: 'bg-game-red border-red-700',
     orange: 'bg-game-orange border-orange-700',
     purple: 'bg-game-purple border-purple-700',
-  };
-  return colorMap[color];
-};
+  }
+  return colorMap[color]
+}
 
 export const BoardPreview = ({ size, board }: BoardPreviewProps) => {
   // Generate preview boards for setup
   const previewBoard = useMemo(() => {
-      const previewBoard: Square[][] = [];
-      for (let row = 0; row < board.colorLayout.length; row++) {
-        const boardRow: Square[] = [];
-        for (let col = 0; col < board.colorLayout[0].length; col++) {
-          boardRow.push({
-            color: board.colorLayout[row][col],
-            hasStar: board.starPositions.has(`${row},${col}`),
-            crossed: false,
-            column: String.fromCharCode(65 + col),
-            row
-          });
-        }
-        previewBoard.push(boardRow);
+    const previewBoard: Square[][] = []
+    for (let row = 0; row < board.colorLayout.length; row++) {
+      const boardRow: Square[] = []
+      for (let col = 0; col < board.colorLayout[0].length; col++) {
+        boardRow.push({
+          color: board.colorLayout[row][col],
+          hasStar: board.starPositions.has(`${row},${col}`),
+          crossed: false,
+          column: String.fromCharCode(65 + col),
+          row,
+        })
       }
-      return previewBoard;
-  }, [board]);
+      previewBoard.push(boardRow)
+    }
+    return previewBoard
+  }, [board])
 
-  const squareSize = size === 'small' ? 'w-1 h-1' : 'w-2 h-2';
-  const gap = 'gap-0';
-  const starSize = size === 'small' ? 'w-0.75 h-0.75' : 'w-1 h-1';
+  const squareSize = size === 'small' ? 'w-1 h-1' : 'w-2 h-2'
+  const gap = 'gap-0'
+  const starSize = size === 'small' ? 'w-0.75 h-0.75' : 'w-1 h-1'
 
   return (
-    <div className={cn('relative h-full', size === 'small' ? "p-1" : 'p-2', board.fillClass)}>
-      <div className={cn("flex flex-col", gap)}>
+    <div className={cn('relative h-full', size === 'small' ? 'p-1' : 'p-2', board.fillClass)}>
+      <div className={cn('flex flex-col', gap)}>
         {previewBoard.map((row, rowIndex) => (
-          <div key={rowIndex} className={cn("flex", gap)}>
+          <div key={rowIndex} className={cn('flex', gap)}>
             {row.map((square, colIndex) => (
               <div
                 key={`${rowIndex}-${colIndex}`}
-                className={cn(
-                  "border relative",
-                  squareSize,
-                  getColorClass(square.color)
-                )}
+                className={cn('border relative', squareSize, getColorClass(square.color))}
               >
                 {square.hasStar && (
-                  <Star fill="white" className={cn("absolute inset-0 m-auto text-white", starSize)} />
+                  <Star
+                    fill="white"
+                    className={cn('absolute inset-0 m-auto text-white', starSize)}
+                  />
                 )}
               </div>
             ))}
           </div>
         ))}
       </div>
-      {board.id === 'random' &&
-        <span className={cn(
-          "absolute inset-0 text-shadow-black text-shadow-md text-white font-bold flex w-full items-center justify-center",
-          size === 'small' ? 'text-[0.5rem]' : 'text-[1rem]'
-        )}>
+      {board.id === 'random' && (
+        <span
+          className={cn(
+            'absolute inset-0 text-shadow-black text-shadow-md text-white font-bold flex w-full items-center justify-center',
+            size === 'small' ? 'text-[0.5rem]' : 'text-[1rem]',
+          )}
+        >
           Différent à chaque fois!
-        </span>}
+        </span>
+      )}
     </div>
-  );
-};
+  )
+}

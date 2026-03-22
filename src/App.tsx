@@ -1,3 +1,3 @@
-import {EncoreGame} from "@/components/game/EncoreGame.tsx";
+import { EncoreGame } from '@/components/game/EncoreGame.tsx'
 
-export default EncoreGame;
+export default EncoreGame

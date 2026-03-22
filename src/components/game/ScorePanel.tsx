@@ -1,54 +1,63 @@
-import { Star, Trophy } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { Player } from '@/types/game';
+import { Star, Trophy } from 'lucide-react'
+
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  MAX_JOKERS,
-  TOTAL_STARS,
   calculateColumnScore,
   calculateFinalScore,
   determineWinners,
   getColorCompletionPoints,
   getColumnScoreBreakdown,
-} from "@/hooks/useEncoreGame.ts";
+  MAX_JOKERS,
+  TOTAL_STARS,
+} from '@/hooks/useEncoreGame.ts'
+import { cn } from '@/lib/utils'
+import type { Player } from '@/types/game'
 
 interface ScorePanelProps {
-  player: Player;
-  isCurrentPlayer?: boolean;
-  gameComplete?: boolean;
-  allPlayers?: Player[];
-  compact?: boolean;
+  player: Player
+  isCurrentPlayer?: boolean
+  gameComplete?: boolean
+  allPlayers?: Player[]
+  compact?: boolean
 }
 
-const getColorBadgeClasses = (color: string) => cn(
-  color === 'yellow' && 'bg-game-yellow border-yellow-600 text-black',
-  color === 'green' && 'bg-game-green border-green-700 text-white',
-  color === 'blue' && 'bg-game-blue border-blue-700 text-white',
-  color === 'red' && 'bg-game-red border-red-700 text-white',
-  color === 'orange' && 'bg-game-orange border-orange-700 text-black',
-);
+const getColorBadgeClasses = (color: string) =>
+  cn(
+    color === 'yellow' && 'bg-game-yellow border-yellow-600 text-black',
+    color === 'green' && 'bg-game-green border-green-700 text-white',
+    color === 'blue' && 'bg-game-blue border-blue-700 text-white',
+    color === 'red' && 'bg-game-red border-red-700 text-white',
+    color === 'orange' && 'bg-game-orange border-orange-700 text-black',
+  )
 
-export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = false, allPlayers = [], compact = false }: ScorePanelProps) => {
-  const columnsScore = calculateColumnScore(player);
-  const winners = allPlayers.length > 0 ? determineWinners(allPlayers) : [];
-  const isWinner = winners.some(winner => winner.id === player.id);
-  const columnScores = getColumnScoreBreakdown(player);
-  const completedColumnScores = columnScores.filter(({ points }) => points != null);
-  const colorScores = player.completedColors.map(color => ({
+export const ScorePanel = ({
+  player,
+  isCurrentPlayer = false,
+  gameComplete = false,
+  allPlayers = [],
+  compact = false,
+}: ScorePanelProps) => {
+  const columnsScore = calculateColumnScore(player)
+  const winners = allPlayers.length > 0 ? determineWinners(allPlayers) : []
+  const isWinner = winners.some((winner) => winner.id === player.id)
+  const columnScores = getColumnScoreBreakdown(player)
+  const completedColumnScores = columnScores.filter(({ points }) => points != null)
+  const colorScores = player.completedColors.map((color) => ({
     color,
     points: getColorCompletionPoints(player, color),
-  }));
-  const finalScore = gameComplete ? calculateFinalScore(player) : null;
+  }))
+  const finalScore = gameComplete ? calculateFinalScore(player) : null
 
   const renderScorePanel = (classes: string) => {
     if (!finalScore) {
-      return null;
+      return null
     }
 
     return (
       <div className={cn('flex gap-1 font-medium', classes)}>
-        <span className="font-normal">Total :</span><span className="grow" />
+        <span className="font-normal">Total :</span>
+        <span className="grow" />
         <span>{finalScore.columnsScore}</span>
         <span>+</span>
         <span>{finalScore.colorsScore}</span>
@@ -59,23 +68,31 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         <span>=</span>
         <span className="font-bold">{finalScore.totalScore}</span>
       </div>
-    );
-  };
+    )
+  }
 
   if (compact) {
     return (
-      <Card className={cn(
-        'transition-all duration-300',
-        gameComplete && isWinner && 'ring-2 ring-yellow-500 shadow-glow',
-        !gameComplete && isCurrentPlayer && 'ring-2 ring-primary shadow-glow',
-      )}>
+      <Card
+        className={cn(
+          'transition-all duration-300',
+          gameComplete && isWinner && 'ring-2 ring-yellow-500 shadow-glow',
+          !gameComplete && isCurrentPlayer && 'ring-2 ring-primary shadow-glow',
+        )}
+      >
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center justify-between text-sm">
             <span className="flex min-w-0 items-center gap-2">
               <span className="truncate">{player.name}</span>
-              {!gameComplete && isCurrentPlayer && <Badge variant="default" className="text-[0.65rem]">Actuel</Badge>}
+              {!gameComplete && isCurrentPlayer && (
+                <Badge variant="default" className="text-[0.65rem]">
+                  Actuel
+                </Badge>
+              )}
             </span>
-            {gameComplete && isWinner ? <Trophy className="w-4 h-4 text-yellow-800 fill-yellow-500" /> : null}
+            {gameComplete && isWinner ? (
+              <Trophy className="w-4 h-4 text-yellow-800 fill-yellow-500" />
+            ) : null}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 pt-0">
@@ -116,33 +133,51 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-1">
               <Star className="w-4 h-4 text-yellow-800 fill-yellow-500" />
-              Étoiles : <span className="font-bold">{player.starsCollected}/{TOTAL_STARS}</span>
+              Étoiles :{' '}
+              <span className="font-bold">
+                {player.starsCollected}/{TOTAL_STARS}
+              </span>
             </div>
             <div className="flex items-center gap-1">
               <span className="text-xs border rounded-full border-primary">❗</span>
-              Jokers : <span className="font-bold">{player.jokersRemaining}/{MAX_JOKERS}</span>
+              Jokers :{' '}
+              <span className="font-bold">
+                {player.jokersRemaining}/{MAX_JOKERS}
+              </span>
             </div>
           </div>
 
           {renderScorePanel('rounded-md bg-muted/70 px-2.5 py-2')}
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
-    <Card className={cn(
-      'transition-all duration-300',
-      !gameComplete && isCurrentPlayer && 'ring-2 ring-primary shadow-glow',
-      gameComplete && isWinner && 'ring-2 ring-yellow-500 shadow-glow',
-    )}>
+    <Card
+      className={cn(
+        'transition-all duration-300',
+        !gameComplete && isCurrentPlayer && 'ring-2 ring-primary shadow-glow',
+        gameComplete && isWinner && 'ring-2 ring-yellow-500 shadow-glow',
+      )}
+    >
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             {player.name}
-            <Badge variant="default" className={cn('transition-all duration-300', (gameComplete || !isCurrentPlayer) && 'invisible')}>Actuel</Badge>
+            <Badge
+              variant="default"
+              className={cn(
+                'transition-all duration-300',
+                (gameComplete || !isCurrentPlayer) && 'invisible',
+              )}
+            >
+              Actuel
+            </Badge>
           </span>
-          {gameComplete && isWinner ? <Trophy className="w-5 h-5 text-yellow-800 fill-yellow-500" /> : null}
+          {gameComplete && isWinner ? (
+            <Trophy className="w-5 h-5 text-yellow-800 fill-yellow-500" />
+          ) : null}
         </CardTitle>
       </CardHeader>
 
@@ -151,7 +186,10 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
           <p className="text-sm font-medium mb-2">Colonnes (total: {columnsScore} points) : </p>
           <div className="grid grid-cols-5 gap-0.5">
             {columnScores.map(({ column, points, isFirst }) => (
-              <Badge key={column} variant={points == null ? 'outline' : isFirst ? 'default' : 'secondary'}>
+              <Badge
+                key={column}
+                variant={points == null ? 'outline' : isFirst ? 'default' : 'secondary'}
+              >
                 {`${column}: ${points ?? '-'}`}
               </Badge>
             ))}
@@ -177,7 +215,9 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         </div>
 
         <div>
-          <p className="text-sm font-medium mb-2">Étoiles collectées ({player.starsCollected}/{TOTAL_STARS}) : </p>
+          <p className="text-sm font-medium mb-2">
+            Étoiles collectées ({player.starsCollected}/{TOTAL_STARS}) :{' '}
+          </p>
           <div className="flex items-center gap-1">
             {Array.from({ length: TOTAL_STARS }, (_, i) => (
               <Star
@@ -193,14 +233,19 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         </div>
 
         <div className="flex flex-row gap-2 items-baseline mb-2">
-          <span className="text-sm font-medium">Jokers ({player.jokersRemaining}/{MAX_JOKERS})</span>
+          <span className="text-sm font-medium">
+            Jokers ({player.jokersRemaining}/{MAX_JOKERS})
+          </span>
           <span className="flex font-mono">
             {Array.from({ length: MAX_JOKERS }, (_, i) => (
               <span
                 key={i}
-                className={cn('text-xs border rounded-full', i >= MAX_JOKERS - player.jokersRemaining && 'border-primary')}
+                className={cn(
+                  'text-xs border rounded-full',
+                  i >= MAX_JOKERS - player.jokersRemaining && 'border-primary',
+                )}
               >
-                {i >= (MAX_JOKERS - player.jokersRemaining) ? '❗' : '❕'}
+                {i >= MAX_JOKERS - player.jokersRemaining ? '❗' : '❕'}
               </span>
             ))}
           </span>
@@ -209,5 +254,5 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         {renderScorePanel('text-lg border-t pt-2')}
       </CardContent>
     </Card>
-  );
-};
+  )
+}

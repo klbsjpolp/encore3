@@ -54,7 +54,7 @@ Le tour commence pour le joueur "actif".
 - **`rolling`**: Le joueur humain doit cliquer sur "Lancer les dés".
 - **`rolling-ai`**: L'IA attend un court instant avant de lancer automatiquement les dés.
 
-*Transition*: Après le lancer, la phase devient `active-selection` ou `active-selection-ai`.
+_Transition_: Après le lancer, la phase devient `active-selection` ou `active-selection-ai`.
 
 ### 2. Sélection du joueur actif
 
@@ -63,7 +63,7 @@ Le joueur actif choisit une combinaison de dés et des cases sur son plateau.
 - **`active-selection`**: Le joueur humain sélectionne un dé de couleur et un dé numérique.
 - **`active-selection-ai`**: L'IA évalue les coups possibles et sélectionne une combinaison.
 
-*Transition*: Une fois le coup joué ou passé, la phase devient `player-switching`.
+_Transition_: Une fois le coup joué ou passé, la phase devient `player-switching`.
 
 ### 3. Tours des joueurs passifs
 
@@ -72,7 +72,7 @@ Le jeu passe en revue chaque joueur "passif" l'un après l'autre.
 - **`passive-selection`**: Le joueur humain peut utiliser la même combinaison de dés pour cocher des cases sur son propre plateau.
 - **`passive-selection-ai`**: L'IA évalue si elle peut jouer avec la combinaison de dés actuelle.
 
-*Transition*: Après chaque joueur passif, la phase redevient `player-switching` pour passer au joueur suivant.
+_Transition_: Après chaque joueur passif, la phase redevient `player-switching` pour passer au joueur suivant.
 
 ### 4. Changement de joueur (Phase de transition)
 

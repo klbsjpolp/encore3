@@ -1,7 +1,7 @@
-import { EncoreGame } from '@/components/game/EncoreGame';
+import { EncoreGame } from '@/components/game/EncoreGame'
 
 const Index = () => {
-  return <EncoreGame />;
-};
+  return <EncoreGame />
+}
 
-export default Index;
+export default Index

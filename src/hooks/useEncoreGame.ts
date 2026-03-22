@@ -1,172 +1,208 @@
-import { useState, useCallback, useEffect } from 'react';
-import { GameState, Player, DiceResult, GameColor, DiceColor, DiceNumber, Square, DICE_COLOR_FACES, DICE_NUMBER_FACES, DEFAULT_GAME_COLOR } from '@/types/game';
-import { useAIPlayer } from './useAIPlayer';
-import {BoardConfiguration, BoardId, getBoardConfiguration, getDefaultBoardId} from '@/data/boardConfigurations';
-import {generateRandomBoard} from "@/data/randomBoardGenerator.ts";
-import { MAX_SELECTABLE_CELLS } from '@/lib/game-rules';
+import { useCallback, useEffect, useState } from 'react'
 
-export const COLUMN_FIRST_PLAYER_POINTS = [5, 3, 3, 3, 2, 2, 2, 1, 2, 2, 2, 3, 3, 3, 5];
-export const COLUMN_SECOND_PLAYER_POINTS = [3, 2, 2, 2, 1, 1, 1, 0, 1, 1, 1, 2, 2, 2, 3];
-export const FIRST_COLOR_COMPLETION_POINTS = 5;
-export const SECOND_COLOR_COMPLETION_POINTS = 3;
-export const BOARD_COLUMNS = Array.from('ABCDEFGHIJKLMNO');
+import type { BoardConfiguration, BoardId } from '@/data/boardConfigurations'
+import { getBoardConfiguration, getDefaultBoardId } from '@/data/boardConfigurations'
+import { generateRandomBoard } from '@/data/randomBoardGenerator.ts'
+import { MAX_SELECTABLE_CELLS } from '@/lib/game-rules'
+import type { DiceResult, GameColor, GameState, Player, Square } from '@/types/game'
+import { DEFAULT_GAME_COLOR, DICE_COLOR_FACES, DICE_NUMBER_FACES } from '@/types/game'
 
-export const TOTAL_STARS = 15;
-export const MAX_JOKERS = 8;
+import { useAIPlayer } from './useAIPlayer'
 
-export const getColumnScoreBreakdown = (player: Player): { column: string; points: number | null; isFirst: boolean }[] => {
+export const COLUMN_FIRST_PLAYER_POINTS = [5, 3, 3, 3, 2, 2, 2, 1, 2, 2, 2, 3, 3, 3, 5]
+export const COLUMN_SECOND_PLAYER_POINTS = [3, 2, 2, 2, 1, 1, 1, 0, 1, 1, 1, 2, 2, 2, 3]
+export const FIRST_COLOR_COMPLETION_POINTS = 5
+export const SECOND_COLOR_COMPLETION_POINTS = 3
+export const BOARD_COLUMNS = Array.from('ABCDEFGHIJKLMNO')
+
+export const TOTAL_STARS = 15
+export const MAX_JOKERS = 8
+
+export const getColumnScoreBreakdown = (
+  player: Player,
+): { column: string; points: number | null; isFirst: boolean }[] => {
   return BOARD_COLUMNS.map((column, index) => {
-    const firstPoints = player.completedColumnsFirst.includes(column) ? COLUMN_FIRST_PLAYER_POINTS[index] : null;
-    const secondPoints = firstPoints == null && player.completedColumnsNotFirst.includes(column) ? COLUMN_SECOND_PLAYER_POINTS[index] : null;
+    const firstPoints = player.completedColumnsFirst.includes(column)
+      ? COLUMN_FIRST_PLAYER_POINTS[index]
+      : null
+    const secondPoints =
+      firstPoints == null && player.completedColumnsNotFirst.includes(column)
+        ? COLUMN_SECOND_PLAYER_POINTS[index]
+        : null
     return {
       column,
       points: firstPoints ?? secondPoints,
       isFirst: firstPoints != null,
-    };
-  });
-};
+    }
+  })
+}
 
 export const calculateColumnScore = (player: Player): number =>
-  getColumnScoreBreakdown(player).reduce((sum, { points }) => sum + (points ?? 0), 0);
+  getColumnScoreBreakdown(player).reduce((sum, { points }) => sum + (points ?? 0), 0)
 
 export const getColorCompletionPoints = (player: Player, color: GameColor): number => {
   if (player.completedColorsFirst.includes(color)) {
-    return FIRST_COLOR_COMPLETION_POINTS;
+    return FIRST_COLOR_COMPLETION_POINTS
   }
   if (player.completedColorsNotFirst.includes(color)) {
-    return SECOND_COLOR_COMPLETION_POINTS;
+    return SECOND_COLOR_COMPLETION_POINTS
   }
-  return 0;
-};
+  return 0
+}
 
 export const calculateColorsScore = (player: Player): number =>
   player.completedColorsFirst.length * FIRST_COLOR_COMPLETION_POINTS +
-  player.completedColorsNotFirst.length * SECOND_COLOR_COMPLETION_POINTS;
+  player.completedColorsNotFirst.length * SECOND_COLOR_COMPLETION_POINTS
 
 export const calculateStarPenalty = (player: Player): number => {
-  return (TOTAL_STARS - player.starsCollected) * 2;
-};
+  return (TOTAL_STARS - player.starsCollected) * 2
+}
 
-export const calculateFinalScore = (player: Player): {
-  columnsScore: number;
-  jokersScore: number;
-  colorsScore: number;
-  starPenalty: number;
-  totalScore: number;
+export const calculateFinalScore = (
+  player: Player,
+): {
+  columnsScore: number
+  jokersScore: number
+  colorsScore: number
+  starPenalty: number
+  totalScore: number
 } => {
-  const columnsScore = calculateColumnScore(player);
-  const jokersScore = player.jokersRemaining;
-  const colorsScore = calculateColorsScore(player);
-  const starPenalty = calculateStarPenalty(player);
-  const totalScore = columnsScore + jokersScore + colorsScore - starPenalty;
+  const columnsScore = calculateColumnScore(player)
+  const jokersScore = player.jokersRemaining
+  const colorsScore = calculateColorsScore(player)
+  const starPenalty = calculateStarPenalty(player)
+  const totalScore = columnsScore + jokersScore + colorsScore - starPenalty
 
-  return { columnsScore, jokersScore, colorsScore, starPenalty, totalScore };
-};
+  return { columnsScore, jokersScore, colorsScore, starPenalty, totalScore }
+}
 
 export const determineWinners = (players: Player[]): Player[] => {
   if (players.length === 0) {
-    return [];
+    return []
   }
 
-  const maxScore = Math.max(...players.map(player => calculateFinalScore(player).totalScore));
-  const topPlayers = players.filter(player => calculateFinalScore(player).totalScore === maxScore);
+  const maxScore = Math.max(...players.map((player) => calculateFinalScore(player).totalScore))
+  const topPlayers = players.filter((player) => calculateFinalScore(player).totalScore === maxScore)
 
   if (topPlayers.length <= 1) {
-    return topPlayers;
+    return topPlayers
   }
 
-  const maxJokers = Math.max(...topPlayers.map(player => player.jokersRemaining));
-  return topPlayers.filter(player => player.jokersRemaining === maxJokers);
-};
+  const maxJokers = Math.max(...topPlayers.map((player) => player.jokersRemaining))
+  return topPlayers.filter((player) => player.jokersRemaining === maxJokers)
+}
 
 const getWinnerState = (players: Player[]) => {
-  const winners = determineWinners(players);
+  const winners = determineWinners(players)
 
   return {
     winner: winners.length === 1 ? winners[0] : null,
     winners,
-  };
-};
+  }
+}
 
 const createInitialBoard = (boardConfiguration: BoardConfiguration): Square[][] => {
-  const { colorLayout, starPositions } = boardConfiguration.id === 'random' ? generateRandomBoard() : boardConfiguration;
-  const board: Square[][] = [];
+  const { colorLayout, starPositions } =
+    boardConfiguration.id === 'random' ? generateRandomBoard() : boardConfiguration
+  const board: Square[][] = []
   for (let row = 0; row < colorLayout.length; row++) {
-    const boardRow: Square[] = [];
+    const boardRow: Square[] = []
     for (let col = 0; col < colorLayout[0].length; col++) {
       boardRow.push({
         color: colorLayout[row][col],
         hasStar: starPositions.has(`${row},${col}`),
         crossed: false,
         column: String.fromCharCode(65 + col),
-        row
-      });
+        row,
+      })
     }
-    board.push(boardRow);
+    board.push(boardRow)
   }
-  return board;
-};
+  return board
+}
 
-const generateDiceId = () => Math.random().toString(36).substr(2, 9);
+const generateDiceId = () => Math.random().toString(36).substr(2, 9)
 
 const rollDice = (): DiceResult[] => {
-  const dice: DiceResult[] = [];
-  for (let i = 0; i < 3; i++) dice.push({ id: generateDiceId(), type: 'color', value: DICE_COLOR_FACES[Math.floor(Math.random() * DICE_COLOR_FACES.length)], selected: false });
-  for (let i = 0; i < 3; i++) dice.push({ id: generateDiceId(), type: 'number', value: DICE_NUMBER_FACES[Math.floor(Math.random() * DICE_NUMBER_FACES.length)], selected: false });
-  return dice;
-};
+  const dice: DiceResult[] = []
+  for (let i = 0; i < 3; i++) {
+    dice.push({
+      id: generateDiceId(),
+      type: 'color',
+      value: DICE_COLOR_FACES[Math.floor(Math.random() * DICE_COLOR_FACES.length)],
+      selected: false,
+    })
+  }
+  for (let i = 0; i < 3; i++) {
+    dice.push({
+      id: generateDiceId(),
+      type: 'number',
+      value: DICE_NUMBER_FACES[Math.floor(Math.random() * DICE_NUMBER_FACES.length)],
+      selected: false,
+    })
+  }
+  return dice
+}
 
 const checkColorCompletion = (board: Square[][], color: GameColor): boolean => {
-  return board.every(row => row.every(square => square.color !== color || square.crossed));
-};
+  return board.every((row) => row.every((square) => square.color !== color || square.crossed))
+}
 
 export const findConnectedGroup = (
   startRow: number,
   startCol: number,
   color: GameColor,
-  board: Square[][]
+  board: Square[][],
 ): { row: number; col: number }[] => {
   if (
-    startRow < 0 || startRow >= board.length ||
-    startCol < 0 || startCol >= board[0].length ||
+    startRow < 0 ||
+    startRow >= board.length ||
+    startCol < 0 ||
+    startCol >= board[0].length ||
     board[startRow][startCol].color !== color ||
     board[startRow][startCol].crossed
   ) {
-    return [];
+    return []
   }
 
-  const group: {row: number, col: number}[] = [];
-  const queue = [{ row: startRow, col: startCol }];
-  const visited = new Set<string>([`${startRow},${startCol}`]);
+  const group: { row: number; col: number }[] = []
+  const queue = [{ row: startRow, col: startCol }]
+  const visited = new Set<string>([`${startRow},${startCol}`])
 
   while (queue.length > 0) {
-    const { row, col } = queue.shift()!;
-    group.push({row, col});
+    const next = queue.shift()
+    if (!next) {
+      continue
+    }
+    const { row, col } = next
+    group.push({ row, col })
 
     const neighbors = [
       { r: row - 1, c: col },
       { r: row + 1, c: col },
       { r: row, c: col - 1 },
       { r: row, c: col + 1 },
-    ];
+    ]
 
     for (const n of neighbors) {
-      const key = `${n.r},${n.c}`;
+      const key = `${n.r},${n.c}`
       if (
-        n.r >= 0 && n.r < board.length &&
-        n.c >= 0 && n.c < board[0].length &&
+        n.r >= 0 &&
+        n.r < board.length &&
+        n.c >= 0 &&
+        n.c < board[0].length &&
         !visited.has(key) &&
         board[n.r][n.c].color === color &&
         !board[n.r][n.c].crossed
       ) {
-        visited.add(key);
-        queue.push({ row: n.r, col: n.c });
+        visited.add(key)
+        queue.push({ row: n.r, col: n.c })
       }
     }
   }
 
-  return group;
-};
+  return group
+}
 
 export const useEncoreGame = () => {
   const [gameState, setGameState] = useState<GameState>({
@@ -184,240 +220,352 @@ export const useEncoreGame = () => {
     claimedFirstColumnBonus: {},
     claimedFirstColorBonus: {},
     claimedSecondColorBonus: {},
-  });
-  const { makeAIMove } = useAIPlayer();
+  })
+  const { makeAIMove } = useAIPlayer()
 
-  const isValidMove = useCallback((
-    squares: { row: number; col: number }[],
-    color: GameColor,
-    playerBoard: Square[][]
-  ): boolean => {
-    if (squares.length === 0) return false;
-    if (squares.length > MAX_SELECTABLE_CELLS) return false;
-    if (!squares.every(({ row, col }) => playerBoard[row][col].color === color && !playerBoard[row][col].crossed)) return false;
+  const isValidMove = useCallback(
+    (
+      squares: { row: number; col: number }[],
+      color: GameColor,
+      playerBoard: Square[][],
+    ): boolean => {
+      if (squares.length === 0) {
+        return false
+      }
+      if (squares.length > MAX_SELECTABLE_CELLS) {
+        return false
+      }
+      if (
+        !squares.every(
+          ({ row, col }) => playerBoard[row][col].color === color && !playerBoard[row][col].crossed,
+        )
+      ) {
+        return false
+      }
 
-    if (squares.length > 1) {
-      const visited = new Set<string>();
-      const toVisit = [squares[0]];
-      visited.add(`${squares[0].row},${squares[0].col}`);
-      while (toVisit.length > 0) {
-        const current = toVisit.pop()!;
-        const neighbors = [{ r: current.row - 1, c: current.col }, { r: current.row + 1, c: current.col }, { r: current.row, c: current.col - 1 }, { r: current.row, c: current.col + 1 }];
-        for (const { r, c } of neighbors) {
-          const key = `${r},${c}`;
-          if (!visited.has(key) && squares.some(s => s.row === r && s.col === c)) {
-            visited.add(key);
-            toVisit.push({ row: r, col: c });
+      if (squares.length > 1) {
+        const visited = new Set<string>()
+        const toVisit = [squares[0]]
+        visited.add(`${squares[0].row},${squares[0].col}`)
+        while (toVisit.length > 0) {
+          const current = toVisit.pop()
+          if (!current) {
+            continue
+          }
+          const neighbors = [
+            { r: current.row - 1, c: current.col },
+            { r: current.row + 1, c: current.col },
+            { r: current.row, c: current.col - 1 },
+            { r: current.row, c: current.col + 1 },
+          ]
+          for (const { r, c } of neighbors) {
+            const key = `${r},${c}`
+            if (!visited.has(key) && squares.some((s) => s.row === r && s.col === c)) {
+              visited.add(key)
+              toVisit.push({ row: r, col: c })
+            }
           }
         }
+        if (visited.size !== squares.length) {
+          return false
+        }
       }
-      if (visited.size !== squares.length) return false;
-    }
 
-    if (!squares.some(({ col }) => col === 7)) {
-      const hasAdjacency = squares.some(({ row, col }) => {
-        const neighbors = [{ r: row - 1, c: col }, { r: row + 1, c: col }, { r: row, c: col - 1 }, { r: row, c: col + 1 }];
-        return neighbors.some(({ r, c }) => r >= 0 && r < playerBoard.length && c >= 0 && c < playerBoard[0].length && playerBoard[r][c].crossed);
-      });
-      if (!hasAdjacency) return false;
-    }
+      if (!squares.some(({ col }) => col === 7)) {
+        const hasAdjacency = squares.some(({ row, col }) => {
+          const neighbors = [
+            { r: row - 1, c: col },
+            { r: row + 1, c: col },
+            { r: row, c: col - 1 },
+            { r: row, c: col + 1 },
+          ]
+          return neighbors.some(
+            ({ r, c }) =>
+              r >= 0 &&
+              r < playerBoard.length &&
+              c >= 0 &&
+              c < playerBoard[0].length &&
+              playerBoard[r][c].crossed,
+          )
+        })
+        if (!hasAdjacency) {
+          return false
+        }
+      }
 
-    return true;
-  }, []);
+      return true
+    },
+    [],
+  )
 
-  const initializeGame = useCallback((playerNames: string[], aiPlayers: boolean[] = [], boardIds: BoardId[] = []) => {
-    const players: Player[] = playerNames.map((name, index) => {
-      const boardId = boardIds[index] || getDefaultBoardId();
-      const boardConfiguration = getBoardConfiguration(boardId);
-      const board = createInitialBoard(boardConfiguration);
-      return ({
-        id: `player-${index}`,
-        name,
-        isAI: aiPlayers[index] || false,
-        boardId,
-        board,
-        boardConfiguration,
-        starsCollected: 0,
-        completedColors: [],
-        completedColorsFirst: [],
-        completedColorsNotFirst: [],
-        completedColumnsFirst: [],
-        completedColumnsNotFirst: [],
-        jokersRemaining: MAX_JOKERS
-      });
-    });
-    setGameState({
-      players,
-      currentPlayer: 0,
-      activePlayer: 0,
-      phase: players[0].isAI ? 'rolling-ai' : 'rolling',
-      dice: [],
-      selectedDice: { color: null, number: null },
-      selectedFromJoker: { color: false, number: false },
-      gameStarted: true,
-      winner: null,
-      winners: [],
-      pendingGameOver: false,
-      claimedFirstColumnBonus: {},
-      claimedFirstColorBonus: {},
-      claimedSecondColorBonus: {},
-    });
-  }, []);
+  const initializeGame = useCallback(
+    (playerNames: string[], aiPlayers: boolean[] = [], boardIds: BoardId[] = []) => {
+      const players: Player[] = playerNames.map((name, index) => {
+        const boardId = boardIds[index] || getDefaultBoardId()
+        const boardConfiguration = getBoardConfiguration(boardId)
+        const board = createInitialBoard(boardConfiguration)
+        return {
+          id: `player-${index}`,
+          name,
+          isAI: aiPlayers[index] || false,
+          boardId,
+          board,
+          boardConfiguration,
+          starsCollected: 0,
+          completedColors: [],
+          completedColorsFirst: [],
+          completedColorsNotFirst: [],
+          completedColumnsFirst: [],
+          completedColumnsNotFirst: [],
+          jokersRemaining: MAX_JOKERS,
+        }
+      })
+      setGameState({
+        players,
+        currentPlayer: 0,
+        activePlayer: 0,
+        phase: players[0].isAI ? 'rolling-ai' : 'rolling',
+        dice: [],
+        selectedDice: { color: null, number: null },
+        selectedFromJoker: { color: false, number: false },
+        gameStarted: true,
+        winner: null,
+        winners: [],
+        pendingGameOver: false,
+        claimedFirstColumnBonus: {},
+        claimedFirstColorBonus: {},
+        claimedSecondColorBonus: {},
+      })
+    },
+    [],
+  )
 
   const rollNewDice = useCallback(() => {
-    setGameState(prev => {
-      if (prev.phase !== 'rolling' && prev.phase !== 'rolling-ai') return prev;
-      const nextPhase = prev.phase === 'rolling-ai' ? 'active-selection-ai' : 'active-selection';
-      return { ...prev, dice: rollDice(), phase: nextPhase, lastPhase: prev.phase, selectedDice: { color: null, number: null }, selectedFromJoker: { color: false, number: false } };
-    });
-  }, []);
+    setGameState((prev) => {
+      if (prev.phase !== 'rolling' && prev.phase !== 'rolling-ai') {
+        return prev
+      }
+      const nextPhase = prev.phase === 'rolling-ai' ? 'active-selection-ai' : 'active-selection'
+      return {
+        ...prev,
+        dice: rollDice(),
+        phase: nextPhase,
+        lastPhase: prev.phase,
+        selectedDice: { color: null, number: null },
+        selectedFromJoker: { color: false, number: false },
+      }
+    })
+  }, [])
 
   const selectDice = useCallback((dice: DiceResult) => {
-    setGameState(prev => {
-      const inActiveOrPassive = prev.phase === 'active-selection' || prev.phase === 'passive-selection';
-      const isPassivePhase = prev.phase === 'passive-selection';
+    setGameState((prev) => {
+      const inActiveOrPassive =
+        prev.phase === 'active-selection' || prev.phase === 'passive-selection'
+      const isPassivePhase = prev.phase === 'passive-selection'
       if (prev.phase.includes('-ai') || !inActiveOrPassive) {
-        return prev;
+        return prev
       }
       // Prevent selecting dice already used by the active player during passive-selection
       if (dice.selected && isPassivePhase) {
-        return prev;
+        return prev
       }
-      const newSelectedDice = dice.type === 'color'
-        ? { ...prev.selectedDice, color: dice }
-        : { ...prev.selectedDice, number: dice };
-      const newSelectedFromJoker = { ...prev.selectedFromJoker };
-      newSelectedFromJoker[dice.type] = dice.value === 'wild';
-      const jokersNeeded = (newSelectedFromJoker.color ? 1 : 0) + (newSelectedFromJoker.number ? 1 : 0);
+      const newSelectedDice =
+        dice.type === 'color'
+          ? { ...prev.selectedDice, color: dice }
+          : { ...prev.selectedDice, number: dice }
+      const newSelectedFromJoker = { ...prev.selectedFromJoker }
+      newSelectedFromJoker[dice.type] = dice.value === 'wild'
+      const jokersNeeded =
+        (newSelectedFromJoker.color ? 1 : 0) + (newSelectedFromJoker.number ? 1 : 0)
       if (jokersNeeded > prev.players[prev.currentPlayer].jokersRemaining) {
-        return prev;
+        return prev
       }
-      return { ...prev, selectedDice: newSelectedDice, selectedFromJoker: newSelectedFromJoker };
-    });
-  }, []);
+      return { ...prev, selectedDice: newSelectedDice, selectedFromJoker: newSelectedFromJoker }
+    })
+  }, [])
 
-  const makeMove = useCallback((squares?: { row: number; col: number }[]) => {
-    setGameState(prev => {
-      const { currentPlayer, players, phase, claimedFirstColumnBonus, claimedFirstColorBonus, claimedSecondColorBonus } = prev;
-      const isAI = phase.includes('-ai');
+  const makeMove = useCallback(
+    (squares?: { row: number; col: number }[]) => {
+      setGameState((prev) => {
+        const {
+          currentPlayer,
+          players,
+          phase,
+          claimedFirstColumnBonus,
+          claimedFirstColorBonus,
+          claimedSecondColorBonus,
+        } = prev
+        const isAI = phase.includes('-ai')
 
-      let moveSquares = squares;
-      let selectedDice = prev.selectedDice;
-      let selectedFromJoker = prev.selectedFromJoker;
+        let moveSquares = squares
+        let selectedDice = prev.selectedDice
+        let selectedFromJoker = prev.selectedFromJoker
 
-      if (isAI) {
-        const aiDecision = makeAIMove(prev, isValidMove);
-        if (aiDecision) {
-          moveSquares = aiDecision.squares;
-          selectedDice = { color: aiDecision.color, number: aiDecision.number };
-          selectedFromJoker = { color: aiDecision.color.value === 'wild', number: aiDecision.number.value === 'wild' };
-        } else {
-          // AI chooses to skip
-          return {
-            ...prev,
-            phase: 'player-switching',
-            lastPhase: phase,
-            selectedDice: { color: null, number: null },
-            selectedFromJoker: { color: false, number: false },
-          };
-        }
-      }
-
-      if (!moveSquares || !selectedDice.color || !selectedDice.number || !['active-selection', 'passive-selection', 'active-selection-ai', 'passive-selection-ai'].includes(phase)) {
-        return prev;
-      }
-
-      const player = players[currentPlayer];
-      const colorValue = selectedDice.color.value === 'wild' ? (moveSquares.length > 0 ? player.board[moveSquares[0].row][moveSquares[0].col].color : DEFAULT_GAME_COLOR) : selectedDice.color.value as GameColor;
-      const numberValue = selectedDice.number.value === 'wild' ? moveSquares.length : (selectedDice.number.value as number);
-
-      if (moveSquares.length !== numberValue || !isValidMove(moveSquares, colorValue, player.board)) {
-        return prev; // Invalid move for human, do nothing
-      }
-
-      const jokersUsed = (selectedFromJoker.color ? 1 : 0) + (selectedFromJoker.number ? 1 : 0);
-      // Guard: cannot use more jokers than remaining
-      if (jokersUsed > player.jokersRemaining) {
-        return prev;
-      }
-      const newClaimedFirstColumnBonus = { ...claimedFirstColumnBonus };
-            const newClaimedFirstColorBonus = { ...claimedFirstColorBonus };
-            const newClaimedSecondColorBonus = { ...claimedSecondColorBonus };
-      const newPlayers = players.map((p, index) => {
-        if (index !== currentPlayer) return p;
-        const newBoard = p.board.map(row => row.map(cell => ({ ...cell })));
-        let starsCollected = p.starsCollected;
-        const newCompletedColumnsFirst = [...p.completedColumnsFirst];
-        const newCompletedColumnsNotFirst = [...p.completedColumnsNotFirst];
-
-        moveSquares.forEach(({ row, col }) => {
-          if (!newBoard[row][col].crossed) {
-            newBoard[row][col].crossed = true;
-            if (newBoard[row][col].hasStar) starsCollected++;
-          }
-        });
-
-        for (let col = 0; col < newBoard[0].length; col++) {
-          const column = String.fromCharCode(65 + col);
-          if (!newCompletedColumnsFirst.includes(column) && !newCompletedColumnsNotFirst.includes(column)) {
-            if (newBoard.every(row => row[col].crossed)) {
-              if (!newClaimedFirstColumnBonus[column]) {
-                newClaimedFirstColumnBonus[column] = p.id;
-                newCompletedColumnsFirst.push(column);
-              } else {
-                newCompletedColumnsNotFirst.push(column);
-              }
+        if (isAI) {
+          const aiDecision = makeAIMove(prev, isValidMove)
+          if (aiDecision) {
+            moveSquares = aiDecision.squares
+            selectedDice = { color: aiDecision.color, number: aiDecision.number }
+            selectedFromJoker = {
+              color: aiDecision.color.value === 'wild',
+              number: aiDecision.number.value === 'wild',
+            }
+          } else {
+            // AI chooses to skip
+            return {
+              ...prev,
+              phase: 'player-switching',
+              lastPhase: phase,
+              selectedDice: { color: null, number: null },
+              selectedFromJoker: { color: false, number: false },
             }
           }
         }
 
-        const newCompletedColorsFirst = [...p.completedColorsFirst];
-        const newCompletedColorsNotFirst = [...p.completedColorsNotFirst];
-        const completedColors = [...p.completedColors];
-        if (colorValue && checkColorCompletion(newBoard, colorValue) && !completedColors.includes(colorValue)) {
-          completedColors.push(colorValue);
-          if (!newClaimedFirstColorBonus[colorValue]) {
-            newClaimedFirstColorBonus[colorValue] = p.id;
-            newCompletedColorsFirst.push(colorValue);
-          } else if (!newClaimedSecondColorBonus[colorValue] && newClaimedFirstColorBonus[colorValue] !== p.id) {
-            newClaimedSecondColorBonus[colorValue] = p.id;
-            newCompletedColorsNotFirst.push(colorValue);
-          }
+        if (
+          !moveSquares ||
+          !selectedDice.color ||
+          !selectedDice.number ||
+          ![
+            'active-selection',
+            'passive-selection',
+            'active-selection-ai',
+            'passive-selection-ai',
+          ].includes(phase)
+        ) {
+          return prev
         }
 
-        return { ...p, board: newBoard, starsCollected, completedColors, completedColorsFirst: newCompletedColorsFirst, completedColorsNotFirst: newCompletedColorsNotFirst, completedColumnsFirst: newCompletedColumnsFirst, completedColumnsNotFirst: newCompletedColumnsNotFirst, jokersRemaining: p.jokersRemaining - jokersUsed };
-      });
+        const player = players[currentPlayer]
+        const colorValue =
+          selectedDice.color.value === 'wild'
+            ? moveSquares.length > 0
+              ? player.board[moveSquares[0].row][moveSquares[0].col].color
+              : DEFAULT_GAME_COLOR
+            : (selectedDice.color.value as GameColor)
+        const numberValue =
+          selectedDice.number.value === 'wild'
+            ? moveSquares.length
+            : (selectedDice.number.value as number)
 
-      const updatedPlayer = newPlayers[currentPlayer];
-      const pendingGameOver = prev.pendingGameOver || updatedPlayer.completedColors.length >= 2;
+        if (
+          moveSquares.length !== numberValue ||
+          !isValidMove(moveSquares, colorValue, player.board)
+        ) {
+          return prev // Invalid move for human, do nothing
+        }
 
-      // Only mark dice as used (selected) when the active player makes their selection.
-      const isActiveSelectionPhase = phase === 'active-selection' || phase === 'active-selection-ai';
-      const newDice = isActiveSelectionPhase
-        ? prev.dice.map(d => ({
-            ...d,
-            selected: d.selected || d.id === selectedDice.color?.id || d.id === selectedDice.number?.id,
-          }))
-        : prev.dice;
-      return {
-        ...prev,
-        players: newPlayers,
-        claimedFirstColumnBonus: newClaimedFirstColumnBonus,
-        claimedFirstColorBonus: newClaimedFirstColorBonus,
-        claimedSecondColorBonus: newClaimedSecondColorBonus,
-        pendingGameOver,
-        dice: newDice,
-        phase: 'player-switching',
-        lastPhase: phase,
-        selectedDice: { color: null, number: null },
-        selectedFromJoker: { color: false, number: false },
-      };
-    });
-  }, [isValidMove, makeAIMove]);
+        const jokersUsed = (selectedFromJoker.color ? 1 : 0) + (selectedFromJoker.number ? 1 : 0)
+        // Guard: cannot use more jokers than remaining
+        if (jokersUsed > player.jokersRemaining) {
+          return prev
+        }
+        const newClaimedFirstColumnBonus = { ...claimedFirstColumnBonus }
+        const newClaimedFirstColorBonus = { ...claimedFirstColorBonus }
+        const newClaimedSecondColorBonus = { ...claimedSecondColorBonus }
+        const newPlayers = players.map((p, index) => {
+          if (index !== currentPlayer) {
+            return p
+          }
+          const newBoard = p.board.map((row) => row.map((cell) => ({ ...cell })))
+          let starsCollected = p.starsCollected
+          const newCompletedColumnsFirst = [...p.completedColumnsFirst]
+          const newCompletedColumnsNotFirst = [...p.completedColumnsNotFirst]
+
+          moveSquares.forEach(({ row, col }) => {
+            if (!newBoard[row][col].crossed) {
+              newBoard[row][col].crossed = true
+              if (newBoard[row][col].hasStar) {
+                starsCollected++
+              }
+            }
+          })
+
+          for (let col = 0; col < newBoard[0].length; col++) {
+            const column = String.fromCharCode(65 + col)
+            if (
+              !newCompletedColumnsFirst.includes(column) &&
+              !newCompletedColumnsNotFirst.includes(column)
+            ) {
+              if (newBoard.every((row) => row[col].crossed)) {
+                if (!newClaimedFirstColumnBonus[column]) {
+                  newClaimedFirstColumnBonus[column] = p.id
+                  newCompletedColumnsFirst.push(column)
+                } else {
+                  newCompletedColumnsNotFirst.push(column)
+                }
+              }
+            }
+          }
+
+          const newCompletedColorsFirst = [...p.completedColorsFirst]
+          const newCompletedColorsNotFirst = [...p.completedColorsNotFirst]
+          const completedColors = [...p.completedColors]
+          if (
+            colorValue &&
+            checkColorCompletion(newBoard, colorValue) &&
+            !completedColors.includes(colorValue)
+          ) {
+            completedColors.push(colorValue)
+            if (!newClaimedFirstColorBonus[colorValue]) {
+              newClaimedFirstColorBonus[colorValue] = p.id
+              newCompletedColorsFirst.push(colorValue)
+            } else if (
+              !newClaimedSecondColorBonus[colorValue] &&
+              newClaimedFirstColorBonus[colorValue] !== p.id
+            ) {
+              newClaimedSecondColorBonus[colorValue] = p.id
+              newCompletedColorsNotFirst.push(colorValue)
+            }
+          }
+
+          return {
+            ...p,
+            board: newBoard,
+            starsCollected,
+            completedColors,
+            completedColorsFirst: newCompletedColorsFirst,
+            completedColorsNotFirst: newCompletedColorsNotFirst,
+            completedColumnsFirst: newCompletedColumnsFirst,
+            completedColumnsNotFirst: newCompletedColumnsNotFirst,
+            jokersRemaining: p.jokersRemaining - jokersUsed,
+          }
+        })
+
+        const updatedPlayer = newPlayers[currentPlayer]
+        const pendingGameOver = prev.pendingGameOver || updatedPlayer.completedColors.length >= 2
+
+        // Only mark dice as used (selected) when the active player makes their selection.
+        const isActiveSelectionPhase =
+          phase === 'active-selection' || phase === 'active-selection-ai'
+        const newDice = isActiveSelectionPhase
+          ? prev.dice.map((d) => ({
+              ...d,
+              selected:
+                d.selected || d.id === selectedDice.color?.id || d.id === selectedDice.number?.id,
+            }))
+          : prev.dice
+        return {
+          ...prev,
+          players: newPlayers,
+          claimedFirstColumnBonus: newClaimedFirstColumnBonus,
+          claimedFirstColorBonus: newClaimedFirstColorBonus,
+          claimedSecondColorBonus: newClaimedSecondColorBonus,
+          pendingGameOver,
+          dice: newDice,
+          phase: 'player-switching',
+          lastPhase: phase,
+          selectedDice: { color: null, number: null },
+          selectedFromJoker: { color: false, number: false },
+        }
+      })
+    },
+    [isValidMove, makeAIMove],
+  )
 
   const skipTurn = useCallback(() => {
-    setGameState(prev => {
-      const { phase } = prev;
+    setGameState((prev) => {
+      const { phase } = prev
       if (phase.includes('active-selection') || phase.includes('passive-selection')) {
         return {
           ...prev,
@@ -425,43 +573,21 @@ export const useEncoreGame = () => {
           lastPhase: phase,
           selectedDice: { color: null, number: null },
           selectedFromJoker: { color: false, number: false },
-        };
+        }
       }
-      return prev;
-    });
-  }, []);
+      return prev
+    })
+  }, [])
 
   const completePlayerSwitch = useCallback(() => {
-    setGameState(prev => {
-      if (prev.phase !== 'player-switching') return prev;
-      const { players, currentPlayer, activePlayer, lastPhase } = prev;
+    setGameState((prev) => {
+      if (prev.phase !== 'player-switching') {
+        return prev
+      }
+      const { players, currentPlayer, activePlayer, lastPhase } = prev
 
       if (lastPhase === 'active-selection' || lastPhase === 'active-selection-ai') {
-        const nextPlayerIndex = (activePlayer + 1) % players.length;
-
-        if (nextPlayerIndex === activePlayer) {
-            if (prev.pendingGameOver) {
-              return {
-                ...prev,
-                phase: 'game-over',
-                pendingGameOver: false,
-                ...getWinnerState(players),
-              };
-            }
-
-            const newActivePlayer = activePlayer;
-            const nextPlayer = players[newActivePlayer];
-            const nextPhase = nextPlayer.isAI ? 'rolling-ai' : 'rolling';
-            return { ...prev, phase: nextPhase, currentPlayer: newActivePlayer, activePlayer: newActivePlayer };
-        }
-
-        const nextPlayer = players[nextPlayerIndex];
-        const nextPhase = nextPlayer.isAI ? 'passive-selection-ai' : 'passive-selection';
-        return { ...prev, phase: nextPhase, currentPlayer: nextPlayerIndex };
-      }
-
-      if (lastPhase === 'passive-selection' || lastPhase === 'passive-selection-ai') {
-        const nextPlayerIndex = (currentPlayer + 1) % players.length;
+        const nextPlayerIndex = (activePlayer + 1) % players.length
 
         if (nextPlayerIndex === activePlayer) {
           if (prev.pendingGameOver) {
@@ -470,45 +596,92 @@ export const useEncoreGame = () => {
               phase: 'game-over',
               pendingGameOver: false,
               ...getWinnerState(players),
-            };
+            }
           }
 
-          const newActivePlayer = (activePlayer + 1) % players.length;
-          const nextPlayer = players[newActivePlayer];
-          const nextPhase = nextPlayer.isAI ? 'rolling-ai' : 'rolling';
-          return { ...prev, phase: nextPhase, currentPlayer: newActivePlayer, activePlayer: newActivePlayer };
+          const newActivePlayer = activePlayer
+          const nextPlayer = players[newActivePlayer]
+          const nextPhase = nextPlayer.isAI ? 'rolling-ai' : 'rolling'
+          return {
+            ...prev,
+            phase: nextPhase,
+            currentPlayer: newActivePlayer,
+            activePlayer: newActivePlayer,
+          }
         }
 
-        const nextPlayer = players[nextPlayerIndex];
-        const nextPhase = nextPlayer.isAI ? 'passive-selection-ai' : 'passive-selection';
-        return { ...prev, phase: nextPhase, currentPlayer: nextPlayerIndex };
+        const nextPlayer = players[nextPlayerIndex]
+        const nextPhase = nextPlayer.isAI ? 'passive-selection-ai' : 'passive-selection'
+        return { ...prev, phase: nextPhase, currentPlayer: nextPlayerIndex }
       }
 
-      return prev;
-    });
-  }, []);
+      if (lastPhase === 'passive-selection' || lastPhase === 'passive-selection-ai') {
+        const nextPlayerIndex = (currentPlayer + 1) % players.length
+
+        if (nextPlayerIndex === activePlayer) {
+          if (prev.pendingGameOver) {
+            return {
+              ...prev,
+              phase: 'game-over',
+              pendingGameOver: false,
+              ...getWinnerState(players),
+            }
+          }
+
+          const newActivePlayer = (activePlayer + 1) % players.length
+          const nextPlayer = players[newActivePlayer]
+          const nextPhase = nextPlayer.isAI ? 'rolling-ai' : 'rolling'
+          return {
+            ...prev,
+            phase: nextPhase,
+            currentPlayer: newActivePlayer,
+            activePlayer: newActivePlayer,
+          }
+        }
+
+        const nextPlayer = players[nextPlayerIndex]
+        const nextPhase = nextPlayer.isAI ? 'passive-selection-ai' : 'passive-selection'
+        return { ...prev, phase: nextPhase, currentPlayer: nextPlayerIndex }
+      }
+
+      return prev
+    })
+  }, [])
 
   useEffect(() => {
-    const { phase } = gameState;
+    const { phase } = gameState
 
     if (phase === 'player-switching') {
-      const timer = setTimeout(() => completePlayerSwitch(), 200);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => completePlayerSwitch(), 200)
+      return () => clearTimeout(timer)
     }
 
-    if (!phase.includes('-ai')) return;
+    if (!phase.includes('-ai')) {
+      return
+    }
 
-    let timerId: ReturnType<typeof setTimeout> | undefined;
+    let timerId: ReturnType<typeof setTimeout> | undefined
     if (phase === 'rolling-ai') {
-      timerId = setTimeout(() => rollNewDice(), 1000);
+      timerId = setTimeout(() => rollNewDice(), 1000)
     } else if (phase === 'active-selection-ai' || phase === 'passive-selection-ai') {
-      timerId = setTimeout(() => makeMove(), 1000);
+      timerId = setTimeout(() => makeMove(), 1000)
     }
 
     return () => {
-      if (timerId) clearTimeout(timerId);
-    };
-  }, [gameState.phase, completePlayerSwitch, rollNewDice, makeMove, gameState]);
+      if (timerId) {
+        clearTimeout(timerId)
+      }
+    }
+  }, [gameState.phase, completePlayerSwitch, rollNewDice, makeMove, gameState])
 
-  return { gameState, initializeGame, rollNewDice, selectDice, makeMove, skipTurn, isValidMove, completePlayerSwitch };
-};
+  return {
+    gameState,
+    initializeGame,
+    rollNewDice,
+    selectDice,
+    makeMove,
+    skipTurn,
+    isValidMove,
+    completePlayerSwitch,
+  }
+}

@@ -1,29 +1,32 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { EncoreGame } from './EncoreGame';
-import type { GameState, Player, Square } from '@/types/game';
-import type { BoardConfiguration } from '@/data/boardConfigurations';
+import { fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockUseEncoreGame = vi.fn();
-const mockFindConnectedGroup = vi.fn();
+import type { BoardConfiguration } from '@/data/boardConfigurations'
+import type * as UseEncoreGameModule from '@/hooks/useEncoreGame'
+import type { GameState, Player, Square } from '@/types/game'
+
+import { EncoreGame } from './EncoreGame'
+
+const mockUseEncoreGame = vi.fn()
+const mockFindConnectedGroup = vi.fn()
 
 vi.mock('@/hooks/useEncoreGame', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/hooks/useEncoreGame')>();
+  const actual = await importOriginal<typeof UseEncoreGameModule>()
 
   return {
     ...actual,
     useEncoreGame: () => mockUseEncoreGame(),
     findConnectedGroup: (row: number, col: number, color: Square['color'], board: Square[][]) =>
       mockFindConnectedGroup(row, col, color, board),
-  };
-});
+  }
+})
 
 const boardConfiguration: BoardConfiguration = {
   id: 'classic',
   fillClass: 'bg-slate-900',
   colorLayout: Array.from({ length: 7 }, () => Array.from({ length: 15 }, () => 'orange')),
   starPositions: new Set<string>(),
-};
+}
 
 const createBoard = (): Square[][] =>
   Array.from({ length: 7 }, (_, row) =>
@@ -33,8 +36,8 @@ const createBoard = (): Square[][] =>
       crossed: false,
       column: String.fromCharCode(65 + col),
       row,
-    }))
-  );
+    })),
+  )
 
 const createPlayer = (id: string, name: string): Player => ({
   id,
@@ -49,7 +52,7 @@ const createPlayer = (id: string, name: string): Player => ({
   completedColumnsFirst: [],
   completedColumnsNotFirst: [],
   jokersRemaining: 8,
-});
+})
 
 const createGameState = (): GameState => ({
   players: [createPlayer('p1', 'Player 1'), createPlayer('p2', 'Player 2')],
@@ -69,15 +72,15 @@ const createGameState = (): GameState => ({
   claimedFirstColumnBonus: {},
   claimedFirstColorBonus: {},
   claimedSecondColorBonus: {},
-});
+})
 
-let testContainer: HTMLElement;
+let testContainer: HTMLElement
 
 const getMainBoardSquares = () =>
-  Array.from(testContainer.querySelectorAll<HTMLElement>('button.aspect-square.cursor-pointer'));
+  Array.from(testContainer.querySelectorAll<HTMLElement>('button.aspect-square.cursor-pointer'))
 
 const getSelectedSquareCount = () =>
-  testContainer.querySelectorAll('button.aspect-square.cursor-pointer.ring-ring').length;
+  testContainer.querySelectorAll('button.aspect-square.cursor-pointer.ring-ring').length
 
 const setupGame = () => {
   mockUseEncoreGame.mockReturnValue({
@@ -89,104 +92,104 @@ const setupGame = () => {
     skipTurn: vi.fn(),
     isValidMove: vi.fn(() => true),
     completePlayerSwitch: vi.fn(),
-  });
+  })
 
   mockFindConnectedGroup.mockImplementation((row: number) => [
     { row, col: 0 },
     { row, col: 1 },
     { row, col: 2 },
-  ]);
+  ])
 
-  const { container } = render(<EncoreGame />);
-  testContainer = container;
-  fireEvent.click(screen.getByText('Commencer la partie'));
-};
+  const { container } = render(<EncoreGame />)
+  testContainer = container
+  fireEvent.click(screen.getByText('Commencer la partie'))
+}
 
 const hoverAndClick = (element: HTMLElement) => {
-  fireEvent.mouseEnter(element);
-  fireEvent.click(element);
-};
+  fireEvent.mouseEnter(element)
+  fireEvent.click(element)
+}
 
 const tap = (element: HTMLElement) => {
-  fireEvent.click(element);
-};
+  fireEvent.click(element)
+}
 
 describe('EncoreGame manual selection regression', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   describe('mouse interactions with hover', () => {
     it('unselects the remaining selected cell in one click', () => {
-      setupGame();
+      setupGame()
 
-      const [first, second] = getMainBoardSquares();
+      const [first, second] = getMainBoardSquares()
 
-      hoverAndClick(first);
-      hoverAndClick(second);
-      expect(getSelectedSquareCount()).toBe(2);
+      hoverAndClick(first)
+      hoverAndClick(second)
+      expect(getSelectedSquareCount()).toBe(2)
 
-      hoverAndClick(first);
-      expect(getSelectedSquareCount()).toBe(1);
+      hoverAndClick(first)
+      expect(getSelectedSquareCount()).toBe(1)
 
-      hoverAndClick(second);
-      expect(getSelectedSquareCount()).toBe(0);
-    });
+      hoverAndClick(second)
+      expect(getSelectedSquareCount()).toBe(0)
+    })
 
     it('allows selecting another cell after unselecting back to zero', () => {
-      setupGame();
+      setupGame()
 
-      const [first, second, third] = getMainBoardSquares();
+      const [first, second, third] = getMainBoardSquares()
 
-      hoverAndClick(first);
-      hoverAndClick(second);
-      expect(getSelectedSquareCount()).toBe(2);
+      hoverAndClick(first)
+      hoverAndClick(second)
+      expect(getSelectedSquareCount()).toBe(2)
 
-      hoverAndClick(first);
-      expect(getSelectedSquareCount()).toBe(1);
+      hoverAndClick(first)
+      expect(getSelectedSquareCount()).toBe(1)
 
-      hoverAndClick(second);
-      expect(getSelectedSquareCount()).toBe(0);
+      hoverAndClick(second)
+      expect(getSelectedSquareCount()).toBe(0)
 
-      hoverAndClick(third);
-      expect(getSelectedSquareCount()).toBe(1);
-    });
-  });
+      hoverAndClick(third)
+      expect(getSelectedSquareCount()).toBe(1)
+    })
+  })
 
   describe('touch interactions without hover', () => {
     it('unselects the remaining selected cell in one tap', () => {
-      setupGame();
+      setupGame()
 
-      const [first, second] = getMainBoardSquares();
+      const [first, second] = getMainBoardSquares()
 
-      tap(first);
-      tap(second);
-      expect(getSelectedSquareCount()).toBe(2);
+      tap(first)
+      tap(second)
+      expect(getSelectedSquareCount()).toBe(2)
 
-      tap(first);
-      expect(getSelectedSquareCount()).toBe(1);
+      tap(first)
+      expect(getSelectedSquareCount()).toBe(1)
 
-      tap(second);
-      expect(getSelectedSquareCount()).toBe(0);
-    });
+      tap(second)
+      expect(getSelectedSquareCount()).toBe(0)
+    })
 
     it('allows selecting another cell after unselecting back to zero', () => {
-      setupGame();
+      setupGame()
 
-      const [first, second, third] = getMainBoardSquares();
+      const [first, second, third] = getMainBoardSquares()
 
-      tap(first);
-      tap(second);
-      expect(getSelectedSquareCount()).toBe(2);
+      tap(first)
+      tap(second)
+      expect(getSelectedSquareCount()).toBe(2)
 
-      tap(first);
-      expect(getSelectedSquareCount()).toBe(1);
+      tap(first)
+      expect(getSelectedSquareCount()).toBe(1)
 
-      tap(second);
-      expect(getSelectedSquareCount()).toBe(0);
+      tap(second)
+      expect(getSelectedSquareCount()).toBe(0)
 
-      tap(third);
-      expect(getSelectedSquareCount()).toBe(1);
-    });
-  });
-});
+      tap(third)
+      expect(getSelectedSquareCount()).toBe(1)
+    })
+  })
+})

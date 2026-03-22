@@ -132,7 +132,7 @@
     --ring: 220 50% 60%;
 
     --radius: 0.75rem;
-    
+
     /* Game Colors - Encore! specific */
     --game-yellow: 50 95% 65%;
     --game-green: 140 70% 50%;
@@ -141,17 +141,17 @@
     --game-orange: 25 90% 65%;
     --game-purple: 270 70% 65%;
     --game-wild: 0 0% 20%;
-    
+
     /* Game Gradients */
     --gradient-board: linear-gradient(135deg, hsl(220 20% 98%), hsl(220 15% 94%));
     --gradient-dice: linear-gradient(145deg, hsl(0 0% 95%), hsl(0 0% 85%));
     --gradient-active: linear-gradient(135deg, hsl(220 50% 55%), hsl(220 60% 45%));
-    
+
     /* Game Shadows */
     --shadow-dice: 0 4px 12px -2px hsl(220 25% 25% / 0.2), 0 2px 6px -1px hsl(220 25% 25% / 0.1);
     --shadow-square: 0 2px 8px -1px hsl(220 25% 25% / 0.15);
     --shadow-glow: 0 0 20px hsl(var(--ring) / 0.4);
-    
+
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);

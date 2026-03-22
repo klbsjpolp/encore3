@@ -1,33 +1,36 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { BoardConfiguration } from '@/data/boardConfigurations';
-import { GameState, Player, Square } from '@/types/game';
-import { EncoreGame } from './EncoreGame';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockUseEncoreGame = vi.fn();
-const mockFindConnectedGroup = vi.fn();
+import type { BoardConfiguration } from '@/data/boardConfigurations'
+import type * as UseEncoreGameModule from '@/hooks/useEncoreGame'
+import type { GameState, Player, Square } from '@/types/game'
+
+import { EncoreGame } from './EncoreGame'
+
+const mockUseEncoreGame = vi.fn()
+const mockFindConnectedGroup = vi.fn()
 
 vi.mock('@/hooks/useEncoreGame', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/hooks/useEncoreGame')>();
+  const actual = await importOriginal<typeof UseEncoreGameModule>()
 
   return {
     ...actual,
     useEncoreGame: () => mockUseEncoreGame(),
     findConnectedGroup: (row: number, col: number, color: Square['color'], board: Square[][]) =>
       mockFindConnectedGroup(row, col, color, board),
-  };
-});
+  }
+})
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => true,
-}));
+}))
 
 const boardConfiguration: BoardConfiguration = {
   id: 'classic',
   fillClass: 'bg-slate-900',
   colorLayout: Array.from({ length: 7 }, () => Array.from({ length: 15 }, () => 'orange')),
   starPositions: new Set<string>(),
-};
+}
 
 const createBoard = (): Square[][] =>
   Array.from({ length: 7 }, (_, row) =>
@@ -37,8 +40,8 @@ const createBoard = (): Square[][] =>
       crossed: false,
       column: String.fromCharCode(65 + col),
       row,
-    }))
-  );
+    })),
+  )
 
 const createPlayer = (id: string, name: string): Player => ({
   id,
@@ -53,7 +56,7 @@ const createPlayer = (id: string, name: string): Player => ({
   completedColumnsFirst: ['A'],
   completedColumnsNotFirst: ['B'],
   jokersRemaining: 6,
-});
+})
 
 const createGameState = (): GameState => ({
   players: [createPlayer('p1', 'Player 1'), createPlayer('p2', 'Player 2')],
@@ -80,12 +83,12 @@ const createGameState = (): GameState => ({
   claimedFirstColumnBonus: {},
   claimedFirstColorBonus: {},
   claimedSecondColorBonus: {},
-});
+})
 
-let testContainer: HTMLElement;
+let testContainer: HTMLElement
 
 const setupGame = async (overrides?: Partial<ReturnType<typeof mockUseEncoreGame>>) => {
-  window.resizeTo(390, 844);
+  window.resizeTo(390, 844)
 
   mockUseEncoreGame.mockReturnValue({
     gameState: createGameState(),
@@ -97,70 +100,70 @@ const setupGame = async (overrides?: Partial<ReturnType<typeof mockUseEncoreGame
     isValidMove: vi.fn(() => true),
     completePlayerSwitch: vi.fn(),
     ...overrides,
-  });
+  })
 
-  mockFindConnectedGroup.mockImplementation((row: number, col: number) => [{ row, col }]);
+  mockFindConnectedGroup.mockImplementation((row: number, col: number) => [{ row, col }])
 
-  const { container } = render(<EncoreGame />);
-  testContainer = container;
-  fireEvent.click(screen.getByText('Commencer la partie'));
+  const { container } = render(<EncoreGame />)
+  testContainer = container
+  fireEvent.click(screen.getByText('Commencer la partie'))
 
-  await screen.findByTestId('compact-dice-row');
-};
+  await screen.findByTestId('compact-dice-row')
+}
 
 const getMainBoardSquares = () =>
-  Array.from(testContainer.querySelectorAll<HTMLElement>('button.aspect-square.cursor-pointer'));
+  Array.from(testContainer.querySelectorAll<HTMLElement>('button.aspect-square.cursor-pointer'))
 
 describe('EncoreGame mobile layout', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   it('renders compact mobile controls with panel toggles and sticky actions', async () => {
-    await setupGame();
+    await setupGame()
 
-    expect(screen.getByRole('button', { name: 'Autre joueur' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Scores' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /confirmer/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^effacer$/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /passer/i })).toBeInTheDocument();
-  });
+    expect(screen.getByRole('button', { name: 'Autre joueur' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Scores' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /confirmer/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^effacer$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /passer/i })).toBeInTheDocument()
+  })
 
   it('switches between opponent board and compact score summaries on mobile', async () => {
-    await setupGame();
+    await setupGame()
 
-    expect(screen.getByText(/Autre : Player 2/)).toBeInTheDocument();
-    expect(screen.queryByText(/Colonnes \(total:/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Autre : Player 2/)).toBeInTheDocument()
+    expect(screen.queryByText(/Colonnes \(total:/)).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Scores' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Scores' }))
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Scores' })).toHaveAttribute('aria-pressed', 'true');
-      expect(screen.getAllByText(/Colonnes \(total:/)).toHaveLength(2);
-    });
-  });
+      expect(screen.getByRole('button', { name: 'Scores' })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getAllByText(/Colonnes \(total:/)).toHaveLength(2)
+    })
+  })
 
   it('keeps touch selection workflow visible from the sticky action bar', async () => {
-    await setupGame();
+    await setupGame()
 
-    const [first, second] = getMainBoardSquares();
-    const confirmButton = screen.getByRole('button', { name: /confirmer/i });
+    const [first, second] = getMainBoardSquares()
+    const confirmButton = screen.getByRole('button', { name: /confirmer/i })
 
-    fireEvent.click(first);
+    fireEvent.click(first)
     await waitFor(() => {
-      expect(confirmButton).toHaveTextContent('Confirmer (1)');
-    });
+      expect(confirmButton).toHaveTextContent('Confirmer (1)')
+    })
 
-    fireEvent.click(second);
+    fireEvent.click(second)
     await waitFor(() => {
-      expect(confirmButton).toHaveTextContent('Confirmer (2)');
-    });
+      expect(confirmButton).toHaveTextContent('Confirmer (2)')
+    })
 
-    fireEvent.click(second);
+    fireEvent.click(second)
     await waitFor(() => {
-      expect(confirmButton).toHaveTextContent('Confirmer (1)');
-    });
-  }, 10000);
+      expect(confirmButton).toHaveTextContent('Confirmer (1)')
+    })
+  }, 10000)
 
   it('does not rely on desktop animation to show switching state on mobile', async () => {
     await setupGame({
@@ -168,12 +171,12 @@ describe('EncoreGame mobile layout', () => {
         ...createGameState(),
         phase: 'player-switching',
       },
-    });
+    })
 
     await waitFor(() => {
-      expect(screen.getByText('Changement...')).toBeInTheDocument();
-    });
+      expect(screen.getByText('Changement...')).toBeInTheDocument()
+    })
 
-    expect(screen.getByRole('button', { name: 'Autre joueur' })).toBeInTheDocument();
-  });
-});
+    expect(screen.getByRole('button', { name: 'Autre joueur' })).toBeInTheDocument()
+  })
+})
