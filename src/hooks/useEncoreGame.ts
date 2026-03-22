@@ -7,17 +7,41 @@ import { MAX_SELECTABLE_CELLS } from '@/lib/game-rules';
 
 export const COLUMN_FIRST_PLAYER_POINTS = [5, 3, 3, 3, 2, 2, 2, 1, 2, 2, 2, 3, 3, 3, 5];
 export const COLUMN_SECOND_PLAYER_POINTS = [3, 2, 2, 2, 1, 1, 1, 0, 1, 1, 1, 2, 2, 2, 3];
+export const FIRST_COLOR_COMPLETION_POINTS = 5;
+export const SECOND_COLOR_COMPLETION_POINTS = 3;
+export const BOARD_COLUMNS = Array.from('ABCDEFGHIJKLMNO');
 
 export const TOTAL_STARS = 15;
 export const MAX_JOKERS = 8;
 
-export const calculateColumnScore = (player: Player): number => {
-  return Array.from('ABCDEFGHIJKLMNO').map((c, i) => {
-    const firstPoints = player.completedColumnsFirst.includes(c) ? COLUMN_FIRST_PLAYER_POINTS[i] : null;
-    const secondPoints = firstPoints == null && player.completedColumnsNotFirst.includes(c) ? COLUMN_SECOND_PLAYER_POINTS[i] : null;
-    return firstPoints ?? secondPoints ?? 0;
-  }).reduce((a, b) => a + b, 0);
+export const getColumnScoreBreakdown = (player: Player): { column: string; points: number | null; isFirst: boolean }[] => {
+  return BOARD_COLUMNS.map((column, index) => {
+    const firstPoints = player.completedColumnsFirst.includes(column) ? COLUMN_FIRST_PLAYER_POINTS[index] : null;
+    const secondPoints = firstPoints == null && player.completedColumnsNotFirst.includes(column) ? COLUMN_SECOND_PLAYER_POINTS[index] : null;
+    return {
+      column,
+      points: firstPoints ?? secondPoints,
+      isFirst: firstPoints != null,
+    };
+  });
 };
+
+export const calculateColumnScore = (player: Player): number =>
+  getColumnScoreBreakdown(player).reduce((sum, { points }) => sum + (points ?? 0), 0);
+
+export const getColorCompletionPoints = (player: Player, color: GameColor): number => {
+  if (player.completedColorsFirst.includes(color)) {
+    return FIRST_COLOR_COMPLETION_POINTS;
+  }
+  if (player.completedColorsNotFirst.includes(color)) {
+    return SECOND_COLOR_COMPLETION_POINTS;
+  }
+  return 0;
+};
+
+export const calculateColorsScore = (player: Player): number =>
+  player.completedColorsFirst.length * FIRST_COLOR_COMPLETION_POINTS +
+  player.completedColorsNotFirst.length * SECOND_COLOR_COMPLETION_POINTS;
 
 export const calculateStarPenalty = (player: Player): number => {
   return (TOTAL_STARS - player.starsCollected) * 2;
@@ -32,7 +56,7 @@ export const calculateFinalScore = (player: Player): {
 } => {
   const columnsScore = calculateColumnScore(player);
   const jokersScore = player.jokersRemaining;
-  const colorsScore = player.completedColorsFirst.length * 5 + player.completedColorsNotFirst.length * 3;
+  const colorsScore = calculateColorsScore(player);
   const starPenalty = calculateStarPenalty(player);
   const totalScore = columnsScore + jokersScore + colorsScore - starPenalty;
 
