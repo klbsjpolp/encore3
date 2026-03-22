@@ -534,7 +534,6 @@ export const EncoreGame = () => {
           player={player}
           isCurrentPlayer={index === gameState.currentPlayer}
           gameComplete={gameState.phase === 'game-over'}
-          claimedFirstColumnBonus={gameState.claimedFirstColumnBonus}
           allPlayers={gameState.players}
           compact={isMobile}
         />

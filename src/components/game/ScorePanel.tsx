@@ -1,5 +1,4 @@
-import { ReactNode } from "react";
-import colors from 'tailwindcss/colors';
+import { JSX } from "react";
 import { Star, Trophy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,23 +10,22 @@ interface ScorePanelProps {
   player: Player;
   isCurrentPlayer?: boolean;
   gameComplete?: boolean;
-  claimedFirstColumnBonus: Record<string, string>;
   allPlayers?: Player[];
   compact?: boolean;
 }
 
-export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = false, claimedFirstColumnBonus = {}, allPlayers = [], compact = false }: ScorePanelProps) => {
+export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = false, allPlayers = [], compact = false }: ScorePanelProps) => {
   const columnsScore = calculateColumnScore(player);
   const winners = allPlayers.length > 0 ? determineWinners(allPlayers) : [];
   const isWinner = winners.some(winner => winner.id === player.id);
   const completedColumns = [...player.completedColumnsFirst, ...player.completedColumnsNotFirst];
 
-  let scorePanel: ReactNode | null = null;
+  let scorePanel: (classes: string) => JSX.Element | null = null;
   if (gameComplete) {
     const { columnsScore: finalColumnsScore, jokersScore, colorsScore, starPenalty, totalScore } = calculateFinalScore(player);
-    scorePanel = (
-      <div className="flex font-bold text-lg border-t pt-2 gap-1">
-        <span>Total :</span><span className="grow" />
+    scorePanel = (classes: string) =>
+      <div className={cn("flex gap-1 font-medium", classes)}>
+        <span className="font-normal">Total :</span><span className="grow" />
         <span>{finalColumnsScore}</span>
         <span>+</span>
         <span>{colorsScore}</span>
@@ -36,66 +34,66 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
         <span>+</span>
         <span>{jokersScore}</span>
         <span>=</span>
-        <span>{totalScore}</span>
+        <span className="font-bold">{totalScore}</span>
       </div>
-    );
+    ;
   }
 
   if (compact) {
-    const finalScore = calculateFinalScore(player).totalScore;
-
     return (
       <Card className={cn(
-        "transition-all duration-300",
-        isCurrentPlayer && "ring-2 ring-primary shadow-glow"
+        "transition-all duration-300", 
+        gameComplete && isWinner && "ring-2 ring-yellow-500 shadow-glow",
+        !gameComplete && isCurrentPlayer && "ring-2 ring-primary shadow-glow"
       )}>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center justify-between text-sm">
             <span className="flex min-w-0 items-center gap-2">
               <span className="truncate">{player.name}</span>
-              {isCurrentPlayer && <Badge variant="default" className="text-[0.65rem]">Actuel</Badge>}
+              {!gameComplete && isCurrentPlayer && <Badge variant="default" className="text-[0.65rem]">Actuel</Badge>}
             </span>
-            {gameComplete && isWinner ? <Trophy className="w-4 h-4 text-yellow-500" /> : null}
+            {gameComplete && isWinner ? <Trophy className="w-4 h-4 text-yellow-800 fill-yellow-500" /> : null}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 pt-0">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Colonnes: {completedColumns.length}</span>
-            <span>Étoiles: {player.starsCollected}/{TOTAL_STARS}</span>
-            <span>Jokers: {player.jokersRemaining}/{MAX_JOKERS}</span>
-          </div>
-          {gameComplete && (
-            <div className="flex items-center justify-between rounded-md bg-muted/70 px-2.5 py-2">
-              <span className="text-xs text-muted-foreground">Score final</span>
-              <span className="text-base font-bold">{finalScore}</span>
-            </div>
-          )}
-          <div className="flex flex-wrap gap-1">
-            {completedColumns.length > 0 ? completedColumns.map(column => (
-              <Badge key={column} variant="outline" className="px-1.5 py-0 text-[0.65rem]">
-                {column}
-              </Badge>
-            )) : (
-              <span className="text-xs text-muted-foreground">Aucune colonne complétée</span>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {player.completedColors.length > 0 ? player.completedColors.map(color => (
-              <div
+            {completedColumns.length > 0 ?
+              <div className="flex flex-wrap items-center-safe gap-1 text-xs">
+                Colonnes: {Array.from('ABCDEFGHIJKLMNO').map((c, i) => {
+                const firstPoints = player.completedColumnsFirst.includes(c) ? COLUMN_FIRST_PLAYER_POINTS[i] : null;
+                const secondPoints = firstPoints == null && player.completedColumnsNotFirst.includes(c) ? COLUMN_SECOND_PLAYER_POINTS[i] : null;
+                return (firstPoints || secondPoints) ? <Badge key={c} variant='outline'>
+                  {`${c}: ${firstPoints ?? secondPoints}`}
+                </Badge> : null;
+              })}</div>
+              : <span className="text-xs text-muted-foreground">Aucune colonne complétée</span>}
+            {player.completedColors.length > 0 ? <div className="flex flex-wrap items-center-safe gap-1 text-xs">
+              Couleurs: {player.completedColors.map(color => {
+              const points = player.completedColorsFirst.includes(color) ? 5 : (player.completedColorsNotFirst.includes(color) ? 3 : 0);
+              return <div
                 key={color}
                 className={cn(
-                  "w-4 h-4 rounded border",
-                  color === 'yellow' && "bg-game-yellow border-yellow-600",
-                  color === 'green' && "bg-game-green border-green-700",
-                  color === 'blue' && "bg-game-blue border-blue-700",
-                  color === 'red' && "bg-game-red border-red-700",
-                  color === 'orange' && "bg-game-orange border-orange-700"
+                    "w-5 h-5 rounded border flex items-center justify-center text-[10px] font-bold",
+                    color === 'yellow' && "bg-game-yellow border-yellow-600 text-black",
+                    color === 'green' && "bg-game-green border-green-700 text-white",
+                    color === 'blue' && "bg-game-blue border-blue-700 text-white",
+                    color === 'red' && "bg-game-red border-red-700 text-white",
+                    color === 'orange' && "bg-game-orange border-orange-700 text-black"
                 )}
-              />
-            )) : (
-              <span className="text-xs text-muted-foreground">Aucune couleur complétée</span>
+              >{points > 0 ? `+${points}` : '0'}</div>
+            })}</div> : (
+                <span className="text-xs text-muted-foreground">Aucune couleur complétée</span>
             )}
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1">
+              <Star className="w-4 h-4 text-yellow-800 fill-yellow-500"/>
+              Étoiles: <span className="font-bold">{player.starsCollected}/{TOTAL_STARS}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-xs border rounded-full border-primary">❗</span>
+              Jokers: <span className="font-bold">{player.jokersRemaining}/{MAX_JOKERS}</span>
+            </div>
           </div>
+          {gameComplete && scorePanel?.("rounded-md bg-muted/70 px-2.5 py-2")}
         </CardContent>
       </Card>
     );
@@ -104,15 +102,16 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
   return (
     <Card className={cn(
       "transition-all duration-300",
-      isCurrentPlayer && "ring-2 ring-primary shadow-glow"
+      !gameComplete && isCurrentPlayer && "ring-2 ring-primary shadow-glow", 
+      gameComplete && isWinner && "ring-2 ring-yellow-500 shadow-glow"
     )}>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             {player.name}
-            <Badge variant="default" className={cn('transition-all duration-300', !isCurrentPlayer && 'invisible')}>Actuel</Badge>
+            <Badge variant="default" className={cn('transition-all duration-300', (gameComplete || !isCurrentPlayer) && 'invisible')}>Actuel</Badge>
           </span>
-          {gameComplete && isWinner ? <Trophy className="w-5 h-5 text-yellow-500" /> : null}
+          {gameComplete && isWinner ? <Trophy className="w-5 h-5 text-yellow-800 fill-yellow-500" /> : null}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -164,9 +163,9 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
               <Star
                 key={i}
                 className={cn(
-                  "w-4 h-4", i < player.starsCollected ? "text-yellow-800" : "text-black"
+                  "w-4 h-4", i < player.starsCollected ? "text-yellow-800" : "text-black",
+                  i < player.starsCollected ? "fill-yellow-500" : "fill-(--color-muted)"  
                 )}
-                fill={i < player.starsCollected ? colors.yellow[500] : "var(--color-muted)"}
               />
             ))}
           </div>
@@ -185,7 +184,7 @@ export const ScorePanel = ({ player, isCurrentPlayer = false, gameComplete = fal
           </span>
         </div>
 
-        {scorePanel}
+        {scorePanel?.("text-lg border-t pt-2")}
       </CardContent>
     </Card>
   );
