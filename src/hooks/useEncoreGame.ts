@@ -8,7 +8,7 @@ import { DEFAULT_GAME_COLOR } from '@/types/game'
 import { checkColorCompletion, createInitialBoard } from './encore-game/board'
 import { rollDice } from './encore-game/dice'
 import { isValidMoveSelection } from './encore-game/moveValidation'
-import { determineWinners,MAX_JOKERS } from './encore-game/scoring'
+import { determineWinners, MAX_JOKERS } from './encore-game/scoring'
 import { useAIPlayer } from './useAIPlayer'
 
 export { findConnectedGroup } from './encore-game/board'

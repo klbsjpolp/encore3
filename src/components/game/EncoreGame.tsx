@@ -1,33 +1,21 @@
-import { Bot, Gamepad2, Play, RotateCcw, Users } from 'lucide-react'
+import { Gamepad2, RotateCcw } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import type { BoardId } from '@/data/boardConfigurations'
-import { BOARD_CONFIGURATIONS, getBoardConfiguration } from '@/data/boardConfigurations'
 import { useIsMobile } from '@/hooks/use-mobile'
-import { findConnectedGroup, useEncoreGame } from '@/hooks/useEncoreGame'
+import { useEncoreGame } from '@/hooks/useEncoreGame'
 import { useStoredGameSetup } from '@/hooks/useStoredGameSetup'
-import { getSelectionLimit, MAX_SELECTABLE_CELLS } from '@/lib/game-rules'
+import { getSelectionLimit } from '@/lib/game-rules'
 import { cn } from '@/lib/utils'
-import type { DiceColor, DiceNumber, GameColor, Square } from '@/types/game'
-import { DEFAULT_GAME_COLOR, GAME_COLORS } from '@/types/game'
+import type { DiceColor, DiceNumber } from '@/types/game'
 
-import { BoardPreview } from './BoardPreview'
 import { DicePanel } from './DicePanel'
+import { EncoreGameSetup } from './EncoreGameSetup'
 import { GameBoard } from './GameBoard'
 import { ScorePanel } from './ScorePanel'
+import { useEncoreSelection } from './useEncoreSelection'
 
 const COLOR_LABELS: Record<DiceColor, string> = {
   yellow: 'Jaune',
@@ -46,62 +34,6 @@ function formatDiceValue(value?: DiceColor | DiceNumber) {
     return value.toString()
   }
   return COLOR_LABELS[value] ?? value
-}
-
-function hasAnyPossibleMove(
-  board: Square[][],
-  selectedColor: DiceColor | undefined,
-  selectedNumber: DiceNumber | undefined,
-  isValidMove: (
-    squares: { row: number; col: number }[],
-    color: GameColor,
-    playerBoard: Square[][],
-  ) => boolean,
-) {
-  if (!selectedColor || !selectedNumber) {
-    return false
-  }
-
-  const colorsToCheck: GameColor[] = selectedColor === 'wild' ? [...GAME_COLORS] : [selectedColor]
-
-  for (let row = 0; row < board.length; row++) {
-    for (let col = 0; col < board[row].length; col++) {
-      const square = board[row][col]
-      if (square.crossed) {
-        continue
-      }
-
-      for (const color of colorsToCheck) {
-        if (square.color !== color) {
-          continue
-        }
-
-        const group = findConnectedGroup(row, col, color, board)
-        if (group.length === 0) {
-          continue
-        }
-
-        if (selectedNumber === 'wild') {
-          for (let size = 1; size <= Math.min(group.length, MAX_SELECTABLE_CELLS); size++) {
-            const candidate = group.slice(0, size)
-            if (isValidMove(candidate, color, board)) {
-              return true
-            }
-          }
-          continue
-        }
-
-        if (group.length >= selectedNumber) {
-          const candidate = group.slice(0, selectedNumber)
-          if (isValidMove(candidate, color, board)) {
-            return true
-          }
-        }
-      }
-    }
-  }
-
-  return false
 }
 
 export const EncoreGame = () => {
@@ -126,22 +58,25 @@ export const EncoreGame = () => {
   } = useStoredGameSetup()
   const [setupMode, setSetupMode] = useState(true)
   const [mobilePanel, setMobilePanel] = useState<'other' | 'scores'>('other')
-  const [selectedSquares, _setSelectedSquares] = useState<{ row: number; col: number }[]>([])
-  const [hoveredSquares, setHoveredSquares] = useState<{ row: number; col: number }[]>([])
   const [isAnimating, setIsAnimating] = useState(false)
-
-  const setSelectedSquares = useCallback((squares: { row: number; col: number }[]) => {
-    const deduped: { row: number; col: number }[] = []
-    for (const square of squares) {
-      if (!deduped.some((existing) => existing.row === square.row && existing.col === square.col)) {
-        deduped.push(square)
-        if (deduped.length >= MAX_SELECTABLE_CELLS) {
-          break
-        }
-      }
-    }
-    _setSelectedSquares(deduped)
-  }, [])
+  const {
+    selectedSquares,
+    hoveredSquares,
+    setSelectedSquares,
+    clearSelection,
+    handleSquareClick,
+    handleSquareHover,
+    handleSquareLeave,
+    handleConfirmMove,
+    onSkipTurn,
+    canMakeMove,
+    hasAnyPossibleMove,
+  } = useEncoreSelection({
+    gameState,
+    makeMove,
+    skipTurn,
+    isValidMove,
+  })
 
   const mainBoardContainerRef = useRef<HTMLDivElement>(null)
   const otherBoardContainerRef = useRef<HTMLDivElement>(null)
@@ -193,286 +128,23 @@ export const EncoreGame = () => {
     setSetupMode(false)
   }, [aiPlayers, initializeGame, playerNames, selectedBoards])
 
-  const handleSquareClick = useCallback(
-    (row: number, col: number) => {
-      if (gameState.phase !== 'active-selection' && gameState.phase !== 'passive-selection') {
-        return
-      }
-
-      const player = gameState.players[gameState.currentPlayer]
-      const clickedColor = player.board[row][col].color
-      const group = findConnectedGroup(row, col, clickedColor, player.board)
-      const square = { row, col }
-      const isSelected = selectedSquares.some((s) => s.row === row && s.col === col)
-      const isSubsetSelection = isSelected && group.length > selectedSquares.length
-
-      if (isSubsetSelection) {
-        setSelectedSquares(selectedSquares.filter((s) => !(s.row === row && s.col === col)))
-        return
-      }
-
-      const selectedColor = gameState.selectedDice.color?.value
-      const numberValue = gameState.selectedDice.number?.value
-      const colorMatches =
-        !selectedColor || selectedColor === 'wild' || selectedColor === clickedColor
-      const clickSelectableGroup = (() => {
-        if (!numberValue || !colorMatches) {
-          return null
-        }
-
-        if (numberValue === 'wild') {
-          if (
-            group.length <= MAX_SELECTABLE_CELLS &&
-            isValidMove(group, clickedColor, player.board)
-          ) {
-            return group
-          }
-
-          return null
-        }
-
-        if (group.length === numberValue && isValidMove(group, clickedColor, player.board)) {
-          return group
-        }
-
-        return null
-      })()
-
-      const isClickOnValidHoveredGroup =
-        hoveredSquares.length > 0 &&
-        hoveredSquares.some((s) => s.row === row && s.col === col) &&
-        numberValue &&
-        hoveredSquares.length <= MAX_SELECTABLE_CELLS &&
-        (numberValue === 'wild' || hoveredSquares.length === numberValue) &&
-        colorMatches
-
-      const groupToSelect = isClickOnValidHoveredGroup ? hoveredSquares : clickSelectableGroup
-
-      if (groupToSelect) {
-        const isGroupAlreadySelected =
-          selectedSquares.length === groupToSelect.length &&
-          groupToSelect.every((candidate) =>
-            selectedSquares.some((ss) => ss.row === candidate.row && ss.col === candidate.col),
-          )
-
-        setSelectedSquares(isGroupAlreadySelected ? [] : [...groupToSelect])
-        return
-      }
-
-      if (isSelected) {
-        setSelectedSquares(selectedSquares.filter((s) => !(s.row === row && s.col === col)))
-        return
-      }
-
-      const maxNumber = getSelectionLimit(numberValue)
-      if (selectedSquares.length >= maxNumber) {
-        return
-      }
-
-      setSelectedSquares([...selectedSquares, square])
-    },
-    [
-      gameState.currentPlayer,
-      gameState.phase,
-      gameState.players,
-      gameState.selectedDice.color,
-      gameState.selectedDice.number,
-      hoveredSquares,
-      isValidMove,
-      selectedSquares,
-      setSelectedSquares,
-    ],
-  )
-
-  const handleSquareHover = useCallback(
-    (row: number, col: number) => {
-      if (gameState.phase !== 'active-selection' && gameState.phase !== 'passive-selection') {
-        return
-      }
-      if (!gameState.selectedDice.color || !gameState.selectedDice.number) {
-        return
-      }
-
-      const player = gameState.players[gameState.currentPlayer]
-      const color = player.board[row][col].color
-      const selectedColor = gameState.selectedDice.color.value
-
-      if (selectedColor !== 'wild' && selectedColor !== color) {
-        setHoveredSquares([])
-        return
-      }
-
-      const group = findConnectedGroup(row, col, color, player.board)
-      const numberValue = gameState.selectedDice.number.value
-
-      if (numberValue === 'wild') {
-        if (group.length <= MAX_SELECTABLE_CELLS && isValidMove(group, color, player.board)) {
-          setHoveredSquares(group)
-        } else {
-          setHoveredSquares([])
-        }
-        return
-      }
-
-      if (group.length === numberValue) {
-        if (isValidMove(group, color, player.board)) {
-          setHoveredSquares(group)
-        } else {
-          setHoveredSquares([])
-        }
-        return
-      }
-
-      const selectedFromGroup = selectedSquares.filter((s) =>
-        group.some((c) => s.row === c.row && s.col === c.col),
-      )
-      if (selectedFromGroup.length > 0) {
-        const isAlreadyInSelection = selectedFromGroup.some((s) => s.row === row && s.col === col)
-        setHoveredSquares(
-          isAlreadyInSelection ? selectedFromGroup : [...selectedFromGroup, { row, col }],
-        )
-      } else if (group.length > numberValue) {
-        if (isValidMove([{ row, col }], color, player.board)) {
-          setHoveredSquares([{ row, col }])
-        } else {
-          setHoveredSquares([])
-        }
-      } else {
-        setHoveredSquares([])
-      }
-    },
-    [
-      gameState.currentPlayer,
-      gameState.phase,
-      gameState.players,
-      gameState.selectedDice.color,
-      gameState.selectedDice.number,
-      isValidMove,
-      selectedSquares,
-    ],
-  )
-
-  const handleSquareLeave = useCallback(() => {
-    setHoveredSquares([])
-  }, [])
-
-  const handleConfirmMove = useCallback(() => {
-    makeMove(selectedSquares)
-    setSelectedSquares([])
-  }, [makeMove, selectedSquares, setSelectedSquares])
-
-  const canMakeMove = useCallback(() => {
-    if (!gameState.selectedDice.color || !gameState.selectedDice.number) {
-      return false
-    }
-    if (selectedSquares.length === 0) {
-      return false
-    }
-
-    const player = gameState.players[gameState.currentPlayer]
-    const colorValue =
-      gameState.selectedDice.color.value === 'wild'
-        ? selectedSquares.length > 0
-          ? player.board[selectedSquares[0].row][selectedSquares[0].col].color
-          : DEFAULT_GAME_COLOR
-        : gameState.selectedDice.color.value
-    const numberValue =
-      gameState.selectedDice.number.value === 'wild'
-        ? selectedSquares.length
-        : gameState.selectedDice.number.value
-
-    return (
-      selectedSquares.length === numberValue &&
-      isValidMove(selectedSquares, colorValue as GameColor, player.board)
-    )
-  }, [
-    gameState.currentPlayer,
-    gameState.players,
-    gameState.selectedDice.color,
-    gameState.selectedDice.number,
-    isValidMove,
-    selectedSquares,
-  ])
-
   const resetGame = useCallback(() => {
     setSetupMode(true)
     setMobilePanel('other')
-    setSelectedSquares([])
-  }, [setSelectedSquares])
-
-  const onSkipTurn = useCallback(() => {
-    setSelectedSquares([])
-    skipTurn()
-  }, [setSelectedSquares, skipTurn])
+    clearSelection()
+  }, [clearSelection])
 
   if (setupMode) {
     return (
-      <div className="min-h-screen bg-gradient-board flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center justify-center gap-2 text-2xl">
-              <Gamepad2 className="w-6 h-6" />
-              Configuration d'Encore !
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              {playerNames.map((name, index) => (
-                <div key={index} className="space-y-2">
-                  <Label htmlFor={`player-${index}`}>
-                    Joueur {index + 1} {aiPlayers[index] && <Badge variant="secondary">IA</Badge>}
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id={`player-${index}`}
-                      value={name}
-                      onChange={(e) => setPlayerName(index, e.target.value)}
-                      placeholder={`Nom du joueur ${index + 1}`}
-                      className="flex-1"
-                    />
-                    <Button
-                      variant={aiPlayers[index] ? 'default' : 'outline'}
-                      size="icon"
-                      onClick={() => toggleAIPlayer(index)}
-                    >
-                      {aiPlayers[index] ? (
-                        <Bot className="w-4 h-4" />
-                      ) : (
-                        <Users className="w-4 h-4" />
-                      )}
-                    </Button>
-                    <Select
-                      value={selectedBoards[index]}
-                      onValueChange={(value) => setSelectedBoard(index, value as BoardId)}
-                    >
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue>
-                          <BoardPreview
-                            size="small"
-                            board={getBoardConfiguration(selectedBoards[index])}
-                          />
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {BOARD_CONFIGURATIONS.map((preview) => (
-                          <SelectItem key={preview.id} value={preview.id}>
-                            <BoardPreview size="large" board={preview} />
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <Button onClick={handleGameSetup} className="w-full" variant="game" size="lg">
-              <Play className="w-4 h-4 mr-2" />
-              Commencer la partie
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <EncoreGameSetup
+        playerNames={playerNames}
+        aiPlayers={aiPlayers}
+        selectedBoards={selectedBoards}
+        setPlayerName={setPlayerName}
+        toggleAIPlayer={toggleAIPlayer}
+        setSelectedBoard={setSelectedBoard}
+        onStart={handleGameSetup}
+      />
     )
   }
 
@@ -568,7 +240,7 @@ export const EncoreGame = () => {
       if (jokersNeeded > currentPlayer.jokersRemaining) {
         return false
       }
-      return hasAnyPossibleMove(currentPlayer.board, color, number, isValidMove)
+      return hasAnyPossibleMove(currentPlayer.board, color, number)
     }),
   )
   const skipGlow = !actionsDisable && !hasAnyPlayableDiceSelection
