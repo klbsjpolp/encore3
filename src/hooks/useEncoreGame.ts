@@ -1,96 +1,33 @@
 import { useCallback, useEffect, useState } from 'react'
 
-import type { BoardConfiguration, BoardId } from '@/data/boardConfigurations'
+import type { BoardId } from '@/data/boardConfigurations'
 import { getBoardConfiguration, getDefaultBoardId } from '@/data/boardConfigurations'
-import { generateRandomBoard } from '@/data/randomBoardGenerator.ts'
-import { MAX_SELECTABLE_CELLS } from '@/lib/game-rules'
 import type { DiceResult, GameColor, GameState, Player, Square } from '@/types/game'
-import { DEFAULT_GAME_COLOR, DICE_COLOR_FACES, DICE_NUMBER_FACES } from '@/types/game'
+import { DEFAULT_GAME_COLOR } from '@/types/game'
 
+import { checkColorCompletion, createInitialBoard } from './encore-game/board'
+import { rollDice } from './encore-game/dice'
+import { isValidMoveSelection } from './encore-game/moveValidation'
+import { determineWinners,MAX_JOKERS } from './encore-game/scoring'
 import { useAIPlayer } from './useAIPlayer'
 
-export const COLUMN_FIRST_PLAYER_POINTS = [5, 3, 3, 3, 2, 2, 2, 1, 2, 2, 2, 3, 3, 3, 5]
-export const COLUMN_SECOND_PLAYER_POINTS = [3, 2, 2, 2, 1, 1, 1, 0, 1, 1, 1, 2, 2, 2, 3]
-export const FIRST_COLOR_COMPLETION_POINTS = 5
-export const SECOND_COLOR_COMPLETION_POINTS = 3
-export const BOARD_COLUMNS = Array.from('ABCDEFGHIJKLMNO')
-
-export const TOTAL_STARS = 15
-export const MAX_JOKERS = 8
-
-export const getColumnScoreBreakdown = (
-  player: Player,
-): { column: string; points: number | null; isFirst: boolean }[] => {
-  return BOARD_COLUMNS.map((column, index) => {
-    const firstPoints = player.completedColumnsFirst.includes(column)
-      ? COLUMN_FIRST_PLAYER_POINTS[index]
-      : null
-    const secondPoints =
-      firstPoints == null && player.completedColumnsNotFirst.includes(column)
-        ? COLUMN_SECOND_PLAYER_POINTS[index]
-        : null
-    return {
-      column,
-      points: firstPoints ?? secondPoints,
-      isFirst: firstPoints != null,
-    }
-  })
-}
-
-export const calculateColumnScore = (player: Player): number =>
-  getColumnScoreBreakdown(player).reduce((sum, { points }) => sum + (points ?? 0), 0)
-
-export const getColorCompletionPoints = (player: Player, color: GameColor): number => {
-  if (player.completedColorsFirst.includes(color)) {
-    return FIRST_COLOR_COMPLETION_POINTS
-  }
-  if (player.completedColorsNotFirst.includes(color)) {
-    return SECOND_COLOR_COMPLETION_POINTS
-  }
-  return 0
-}
-
-export const calculateColorsScore = (player: Player): number =>
-  player.completedColorsFirst.length * FIRST_COLOR_COMPLETION_POINTS +
-  player.completedColorsNotFirst.length * SECOND_COLOR_COMPLETION_POINTS
-
-export const calculateStarPenalty = (player: Player): number => {
-  return (TOTAL_STARS - player.starsCollected) * 2
-}
-
-export const calculateFinalScore = (
-  player: Player,
-): {
-  columnsScore: number
-  jokersScore: number
-  colorsScore: number
-  starPenalty: number
-  totalScore: number
-} => {
-  const columnsScore = calculateColumnScore(player)
-  const jokersScore = player.jokersRemaining
-  const colorsScore = calculateColorsScore(player)
-  const starPenalty = calculateStarPenalty(player)
-  const totalScore = columnsScore + jokersScore + colorsScore - starPenalty
-
-  return { columnsScore, jokersScore, colorsScore, starPenalty, totalScore }
-}
-
-export const determineWinners = (players: Player[]): Player[] => {
-  if (players.length === 0) {
-    return []
-  }
-
-  const maxScore = Math.max(...players.map((player) => calculateFinalScore(player).totalScore))
-  const topPlayers = players.filter((player) => calculateFinalScore(player).totalScore === maxScore)
-
-  if (topPlayers.length <= 1) {
-    return topPlayers
-  }
-
-  const maxJokers = Math.max(...topPlayers.map((player) => player.jokersRemaining))
-  return topPlayers.filter((player) => player.jokersRemaining === maxJokers)
-}
+export { findConnectedGroup } from './encore-game/board'
+export {
+  BOARD_COLUMNS,
+  calculateColorsScore,
+  calculateColumnScore,
+  calculateFinalScore,
+  calculateStarPenalty,
+  COLUMN_FIRST_PLAYER_POINTS,
+  COLUMN_SECOND_PLAYER_POINTS,
+  determineWinners,
+  FIRST_COLOR_COMPLETION_POINTS,
+  getColorCompletionPoints,
+  getColumnScoreBreakdown,
+  MAX_JOKERS,
+  SECOND_COLOR_COMPLETION_POINTS,
+  TOTAL_STARS,
+} from './encore-game/scoring'
 
 const getWinnerState = (players: Player[]) => {
   const winners = determineWinners(players)
@@ -99,109 +36,6 @@ const getWinnerState = (players: Player[]) => {
     winner: winners.length === 1 ? winners[0] : null,
     winners,
   }
-}
-
-const createInitialBoard = (boardConfiguration: BoardConfiguration): Square[][] => {
-  const { colorLayout, starPositions } =
-    boardConfiguration.id === 'random' ? generateRandomBoard() : boardConfiguration
-  const board: Square[][] = []
-  for (let row = 0; row < colorLayout.length; row++) {
-    const boardRow: Square[] = []
-    for (let col = 0; col < colorLayout[0].length; col++) {
-      boardRow.push({
-        color: colorLayout[row][col],
-        hasStar: starPositions.has(`${row},${col}`),
-        crossed: false,
-        column: String.fromCharCode(65 + col),
-        row,
-      })
-    }
-    board.push(boardRow)
-  }
-  return board
-}
-
-const generateDiceId = () => Math.random().toString(36).substr(2, 9)
-
-const rollDice = (): DiceResult[] => {
-  const dice: DiceResult[] = []
-  for (let i = 0; i < 3; i++) {
-    dice.push({
-      id: generateDiceId(),
-      type: 'color',
-      value: DICE_COLOR_FACES[Math.floor(Math.random() * DICE_COLOR_FACES.length)],
-      selected: false,
-    })
-  }
-  for (let i = 0; i < 3; i++) {
-    dice.push({
-      id: generateDiceId(),
-      type: 'number',
-      value: DICE_NUMBER_FACES[Math.floor(Math.random() * DICE_NUMBER_FACES.length)],
-      selected: false,
-    })
-  }
-  return dice
-}
-
-const checkColorCompletion = (board: Square[][], color: GameColor): boolean => {
-  return board.every((row) => row.every((square) => square.color !== color || square.crossed))
-}
-
-export const findConnectedGroup = (
-  startRow: number,
-  startCol: number,
-  color: GameColor,
-  board: Square[][],
-): { row: number; col: number }[] => {
-  if (
-    startRow < 0 ||
-    startRow >= board.length ||
-    startCol < 0 ||
-    startCol >= board[0].length ||
-    board[startRow][startCol].color !== color ||
-    board[startRow][startCol].crossed
-  ) {
-    return []
-  }
-
-  const group: { row: number; col: number }[] = []
-  const queue = [{ row: startRow, col: startCol }]
-  const visited = new Set<string>([`${startRow},${startCol}`])
-
-  while (queue.length > 0) {
-    const next = queue.shift()
-    if (!next) {
-      continue
-    }
-    const { row, col } = next
-    group.push({ row, col })
-
-    const neighbors = [
-      { r: row - 1, c: col },
-      { r: row + 1, c: col },
-      { r: row, c: col - 1 },
-      { r: row, c: col + 1 },
-    ]
-
-    for (const n of neighbors) {
-      const key = `${n.r},${n.c}`
-      if (
-        n.r >= 0 &&
-        n.r < board.length &&
-        n.c >= 0 &&
-        n.c < board[0].length &&
-        !visited.has(key) &&
-        board[n.r][n.c].color === color &&
-        !board[n.r][n.c].crossed
-      ) {
-        visited.add(key)
-        queue.push({ row: n.r, col: n.c })
-      }
-    }
-  }
-
-  return group
 }
 
 export const useEncoreGame = () => {
@@ -229,71 +63,7 @@ export const useEncoreGame = () => {
       color: GameColor,
       playerBoard: Square[][],
     ): boolean => {
-      if (squares.length === 0) {
-        return false
-      }
-      if (squares.length > MAX_SELECTABLE_CELLS) {
-        return false
-      }
-      if (
-        !squares.every(
-          ({ row, col }) => playerBoard[row][col].color === color && !playerBoard[row][col].crossed,
-        )
-      ) {
-        return false
-      }
-
-      if (squares.length > 1) {
-        const visited = new Set<string>()
-        const toVisit = [squares[0]]
-        visited.add(`${squares[0].row},${squares[0].col}`)
-        while (toVisit.length > 0) {
-          const current = toVisit.pop()
-          if (!current) {
-            continue
-          }
-          const neighbors = [
-            { r: current.row - 1, c: current.col },
-            { r: current.row + 1, c: current.col },
-            { r: current.row, c: current.col - 1 },
-            { r: current.row, c: current.col + 1 },
-          ]
-          for (const { r, c } of neighbors) {
-            const key = `${r},${c}`
-            if (!visited.has(key) && squares.some((s) => s.row === r && s.col === c)) {
-              visited.add(key)
-              toVisit.push({ row: r, col: c })
-            }
-          }
-        }
-        if (visited.size !== squares.length) {
-          return false
-        }
-      }
-
-      if (!squares.some(({ col }) => col === 7)) {
-        const hasAdjacency = squares.some(({ row, col }) => {
-          const neighbors = [
-            { r: row - 1, c: col },
-            { r: row + 1, c: col },
-            { r: row, c: col - 1 },
-            { r: row, c: col + 1 },
-          ]
-          return neighbors.some(
-            ({ r, c }) =>
-              r >= 0 &&
-              r < playerBoard.length &&
-              c >= 0 &&
-              c < playerBoard[0].length &&
-              playerBoard[r][c].crossed,
-          )
-        })
-        if (!hasAdjacency) {
-          return false
-        }
-      }
-
-      return true
+      return isValidMoveSelection(squares, color, playerBoard)
     },
     [],
   )
