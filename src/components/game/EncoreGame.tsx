@@ -556,17 +556,35 @@ export const EncoreGame = () => {
   const actionsDisable =
     isSwitching ||
     !(gameState.phase === 'active-selection' || gameState.phase === 'passive-selection')
-  const hasSelectedDice = !!gameState.selectedDice.color && !!gameState.selectedDice.number
   const confirmGlow = canMakeMove() && !actionsDisable
-  const skipGlow =
-    !actionsDisable &&
-    hasSelectedDice &&
-    !hasAnyPossibleMove(
-      currentPlayer.board,
-      gameState.selectedDice.color?.value,
-      gameState.selectedDice.number?.value,
-      isValidMove,
-    )
+  const availableColorValues = new Set<DiceColor>()
+  const availableNumberValues = new Set<DiceNumber>()
+  for (const die of gameState.dice) {
+    if (die.selected) {
+      continue
+    }
+    if (die.type === 'color') {
+      availableColorValues.add(die.value)
+    } else {
+      availableNumberValues.add(die.value)
+    }
+  }
+  const colorCandidates = gameState.selectedDice.color
+    ? [gameState.selectedDice.color.value]
+    : [...availableColorValues]
+  const numberCandidates = gameState.selectedDice.number
+    ? [gameState.selectedDice.number.value]
+    : [...availableNumberValues]
+  const hasAnyPlayableDiceSelection = colorCandidates.some((color) =>
+    numberCandidates.some((number) => {
+      const jokersNeeded = (color === 'wild' ? 1 : 0) + (number === 'wild' ? 1 : 0)
+      if (jokersNeeded > currentPlayer.jokersRemaining) {
+        return false
+      }
+      return hasAnyPossibleMove(currentPlayer.board, color, number, isValidMove)
+    }),
+  )
+  const skipGlow = !actionsDisable && !hasAnyPlayableDiceSelection
   const currentPlayerSummary = (
     <div className="bg-card rounded-lg p-3 sm:p-4 shadow-square">
       <div className="flex items-start justify-between gap-3">

@@ -230,4 +230,36 @@ describe('EncoreGame selection logic', () => {
       'before:ring-yellow-400',
     )
   })
+
+  it('highlights skip turn when no die is selected and no dice combination is playable', () => {
+    mockFindConnectedGroup.mockImplementation(() => [])
+
+    const gameState = createGameState(1, [
+      createPlayer('p1', 'Player 1', createBoard(true)),
+      createPlayer('p2', 'Player 2'),
+    ])
+    gameState.selectedDice = { color: null, number: null }
+    gameState.dice = [
+      { id: 'c1', type: 'color', value: 'orange', selected: false },
+      { id: 'n1', type: 'number', value: 1, selected: false },
+    ]
+
+    mockUseEncoreGame.mockReturnValue({
+      gameState,
+      initializeGame: vi.fn(),
+      rollNewDice: vi.fn(),
+      selectDice: vi.fn(),
+      makeMove: vi.fn(),
+      skipTurn: vi.fn(),
+      isValidMove: vi.fn(() => false),
+      completePlayerSwitch: vi.fn(),
+    })
+
+    render(<EncoreGame />)
+    fireEvent.click(screen.getByText('Commencer la partie'))
+
+    expect(screen.getByRole('button', { name: /passer le tour/i }).className).toContain(
+      'before:ring-yellow-400',
+    )
+  })
 })
