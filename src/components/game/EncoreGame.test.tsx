@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { BoardConfiguration } from '@/data/boardConfigurations'
@@ -9,6 +9,8 @@ import { EncoreGame } from './EncoreGame'
 
 const mockUseEncoreGame = vi.fn()
 const mockFindConnectedGroup = vi.fn()
+const GAME_SETUP_STORAGE_KEY = 'encore:game-setup:v1'
+let storageData: Record<string, string> = {}
 
 vi.mock('@/hooks/useEncoreGame', async (importOriginal) => {
   const actual = await importOriginal<typeof UseEncoreGameModule>()
@@ -113,6 +115,96 @@ const getSelectedSquares = () =>
 describe('EncoreGame selection logic', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    storageData = {}
+    mockFindConnectedGroup.mockImplementation(() => [])
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storageData[key] ?? null,
+        setItem: (key: string, value: string) => {
+          storageData[key] = value
+        },
+        removeItem: (key: string) => {
+          storageData = Object.fromEntries(
+            Object.entries(storageData).filter(([existingKey]) => existingKey !== key),
+          )
+        },
+      },
+    })
+  })
+
+  it('restores saved setup values before starting the game', () => {
+    const initializeGame = vi.fn()
+    window.localStorage.setItem(
+      GAME_SETUP_STORAGE_KEY,
+      JSON.stringify({
+        playerNames: ['Alice', 'Bob'],
+        aiPlayers: [true, false],
+        selectedBoards: ['blue', 'green'],
+      }),
+    )
+
+    mockUseEncoreGame.mockReturnValue({
+      gameState: createGameState(),
+      initializeGame,
+      rollNewDice: vi.fn(),
+      selectDice: vi.fn(),
+      makeMove: vi.fn(),
+      skipTurn: vi.fn(),
+      isValidMove: vi.fn(() => true),
+      completePlayerSwitch: vi.fn(),
+    })
+
+    render(<EncoreGame />)
+
+    expect(screen.getByDisplayValue('Alice')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Bob')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Commencer la partie'))
+
+    expect(initializeGame).toHaveBeenCalledWith(['Alice', 'Bob'], [true, false], ['blue', 'green'])
+  })
+
+  it('persists setup changes in localStorage', async () => {
+    mockUseEncoreGame.mockReturnValue({
+      gameState: createGameState(),
+      initializeGame: vi.fn(),
+      rollNewDice: vi.fn(),
+      selectDice: vi.fn(),
+      makeMove: vi.fn(),
+      skipTurn: vi.fn(),
+      isValidMove: vi.fn(() => true),
+      completePlayerSwitch: vi.fn(),
+    })
+
+    render(<EncoreGame />)
+
+    const firstPlayerNameInput = screen.getByDisplayValue('Joueur 1')
+    fireEvent.change(firstPlayerNameInput, {
+      target: { value: 'Alice' },
+    })
+
+    const firstPlayerControls = firstPlayerNameInput.parentElement
+    const firstPlayerAIModeButton = firstPlayerControls?.querySelector('button')
+    if (!firstPlayerAIModeButton) {
+      throw new Error('AI mode toggle button not found for player 1')
+    }
+    fireEvent.click(firstPlayerAIModeButton)
+
+    await waitFor(() => {
+      const stored = window.localStorage.getItem(GAME_SETUP_STORAGE_KEY)
+      expect(stored).toBeTruthy()
+
+      const parsed = JSON.parse(stored as string) as {
+        playerNames: [string, string]
+        aiPlayers: [boolean, boolean]
+        selectedBoards: [string, string]
+      }
+
+      expect(parsed.playerNames).toEqual(['Alice', 'Joueur 2'])
+      expect(parsed.aiPlayers).toEqual([true, true])
+      expect(parsed.selectedBoards).toHaveLength(2)
+    })
   })
 
   it('selects a hovered group on the first click when it matches the number die', () => {

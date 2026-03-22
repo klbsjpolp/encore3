@@ -15,13 +15,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { BoardId } from '@/data/boardConfigurations'
-import {
-  BOARD_CONFIGURATIONS,
-  getBoardConfiguration,
-  getDefaultBoardId,
-} from '@/data/boardConfigurations'
+import { BOARD_CONFIGURATIONS, getBoardConfiguration } from '@/data/boardConfigurations'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { findConnectedGroup, useEncoreGame } from '@/hooks/useEncoreGame'
+import { useStoredGameSetup } from '@/hooks/useStoredGameSetup'
 import { getSelectionLimit, MAX_SELECTABLE_CELLS } from '@/lib/game-rules'
 import { cn } from '@/lib/utils'
 import type { DiceColor, DiceNumber, GameColor, Square } from '@/types/game'
@@ -119,14 +116,16 @@ export const EncoreGame = () => {
     completePlayerSwitch,
   } = useEncoreGame()
   const isMobile = useIsMobile()
+  const {
+    playerNames,
+    aiPlayers,
+    selectedBoards,
+    setPlayerName,
+    toggleAIPlayer,
+    setSelectedBoard,
+  } = useStoredGameSetup()
   const [setupMode, setSetupMode] = useState(true)
   const [mobilePanel, setMobilePanel] = useState<'other' | 'scores'>('other')
-  const [playerNames, setPlayerNames] = useState(['Joueur 1', 'Joueur 2'])
-  const [aiPlayers, setAIPlayers] = useState([false, true])
-  const [selectedBoards, setSelectedBoards] = useState<[BoardId, BoardId]>([
-    getDefaultBoardId(),
-    getDefaultBoardId(),
-  ])
   const [selectedSquares, _setSelectedSquares] = useState<{ row: number; col: number }[]>([])
   const [hoveredSquares, setHoveredSquares] = useState<{ row: number; col: number }[]>([])
   const [isAnimating, setIsAnimating] = useState(false)
@@ -427,22 +426,14 @@ export const EncoreGame = () => {
                     <Input
                       id={`player-${index}`}
                       value={name}
-                      onChange={(e) => {
-                        const newNames = [...playerNames]
-                        newNames[index] = e.target.value
-                        setPlayerNames(newNames)
-                      }}
+                      onChange={(e) => setPlayerName(index, e.target.value)}
                       placeholder={`Nom du joueur ${index + 1}`}
                       className="flex-1"
                     />
                     <Button
                       variant={aiPlayers[index] ? 'default' : 'outline'}
                       size="icon"
-                      onClick={() => {
-                        const newAI = [...aiPlayers]
-                        newAI[index] = !newAI[index]
-                        setAIPlayers(newAI)
-                      }}
+                      onClick={() => toggleAIPlayer(index)}
                     >
                       {aiPlayers[index] ? (
                         <Bot className="w-4 h-4" />
@@ -452,11 +443,7 @@ export const EncoreGame = () => {
                     </Button>
                     <Select
                       value={selectedBoards[index]}
-                      onValueChange={(value) => {
-                        const newBoards = [...selectedBoards]
-                        newBoards[index] = value as BoardId
-                        setSelectedBoards(newBoards as [BoardId, BoardId])
-                      }}
+                      onValueChange={(value) => setSelectedBoard(index, value as BoardId)}
                     >
                       <SelectTrigger className="w-[140px]">
                         <SelectValue>
