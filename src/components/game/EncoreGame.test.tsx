@@ -120,6 +120,35 @@ describe('EncoreGame selection logic', () => {
     expect(getSelectedSquares()).toHaveLength(2);
   });
 
+  it('selects the matching group on the first tap without hover', () => {
+    mockFindConnectedGroup.mockImplementation((row: number, col: number) => [
+      { row, col },
+      { row, col: col + 1 },
+    ]);
+
+    setupGame(2);
+
+    const [square] = getMainBoardSquares();
+    fireEvent.click(square);
+
+    expect(getSelectedSquares()).toHaveLength(2);
+  });
+
+  it('selects the clicked matching group even when hover points to another group', () => {
+    mockFindConnectedGroup.mockImplementation((row: number, col: number) => [
+      { row, col },
+      { row, col: col + 1 },
+    ]);
+
+    setupGame(2);
+
+    const [first, , third] = getMainBoardSquares();
+    fireEvent.mouseEnter(first);
+    fireEvent.click(third);
+
+    expect(getSelectedSquares()).toHaveLength(2);
+  });
+
   it('deselects the same hovered group on the second click', () => {
     mockFindConnectedGroup.mockImplementation((row: number, col: number) => [
       { row, col },

@@ -159,6 +159,24 @@ export const EncoreGame = () => {
     const selectedColor = gameState.selectedDice.color?.value;
     const numberValue = gameState.selectedDice.number?.value;
     const colorMatches = !selectedColor || selectedColor === 'wild' || selectedColor === clickedColor;
+    const clickSelectableGroup = (() => {
+      if (!numberValue || !colorMatches) return null;
+
+      if (numberValue === 'wild') {
+        if (group.length <= MAX_SELECTABLE_CELLS && isValidMove(group, clickedColor, player.board)) {
+          return group;
+        }
+
+        return null;
+      }
+
+      if (group.length === numberValue && isValidMove(group, clickedColor, player.board)) {
+        return group;
+      }
+
+      return null;
+    })();
+
     const isClickOnValidHoveredGroup =
       hoveredSquares.length > 0 &&
       hoveredSquares.some(s => s.row === row && s.col === col) &&
@@ -167,12 +185,14 @@ export const EncoreGame = () => {
       (numberValue === 'wild' || hoveredSquares.length === numberValue) &&
       colorMatches;
 
-    if (isClickOnValidHoveredGroup) {
-      const isGroupAlreadySelected =
-        selectedSquares.length === hoveredSquares.length &&
-        hoveredSquares.every(hs => selectedSquares.some(ss => ss.row === hs.row && ss.col === hs.col));
+    const groupToSelect = isClickOnValidHoveredGroup ? hoveredSquares : clickSelectableGroup;
 
-      setSelectedSquares(isGroupAlreadySelected ? [] : [...hoveredSquares]);
+    if (groupToSelect) {
+      const isGroupAlreadySelected =
+        selectedSquares.length === groupToSelect.length &&
+        groupToSelect.every(candidate => selectedSquares.some(ss => ss.row === candidate.row && ss.col === candidate.col));
+
+      setSelectedSquares(isGroupAlreadySelected ? [] : [...groupToSelect]);
       return;
     }
 
@@ -185,7 +205,7 @@ export const EncoreGame = () => {
     if (selectedSquares.length >= maxNumber) return;
 
     setSelectedSquares([...selectedSquares, square]);
-  }, [gameState.currentPlayer, gameState.phase, gameState.players, gameState.selectedDice.color, gameState.selectedDice.number, hoveredSquares, selectedSquares, setSelectedSquares]);
+  }, [gameState.currentPlayer, gameState.phase, gameState.players, gameState.selectedDice.color, gameState.selectedDice.number, hoveredSquares, isValidMove, selectedSquares, setSelectedSquares]);
 
   const handleSquareHover = useCallback((row: number, col: number) => {
     if (gameState.phase !== 'active-selection' && gameState.phase !== 'passive-selection') return;
