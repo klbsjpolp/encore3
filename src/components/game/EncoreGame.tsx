@@ -4,6 +4,11 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  PLAYER_SWITCH_ANIMATION_DELAY_MS,
+  PLAYER_SWITCH_ANIMATION_DURATION_MS,
+  shouldAnimatePlayerSwitch,
+} from '@/hooks/encore-game/playerSwitch'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useEncoreGame } from '@/hooks/useEncoreGame'
 import { useStoredGameSetup } from '@/hooks/useStoredGameSetup'
@@ -12,41 +17,17 @@ import { cn } from '@/lib/utils'
 import type { DiceColor, DiceNumber } from '@/types/game'
 
 import { DicePanel } from './DicePanel'
+import { EncoreGameCurrentPlayerSummary } from './EncoreGameCurrentPlayerSummary'
+import { EncoreGameMoveControls } from './EncoreGameMoveControls'
 import { EncoreGameSetup } from './EncoreGameSetup'
+import { getGameStateMessage, getGameStatusLabel } from './encoreGameStatus'
 import { GameBoard } from './GameBoard'
 import { ScorePanel } from './ScorePanel'
 import { useEncoreSelection } from './useEncoreSelection'
 
-const COLOR_LABELS: Record<DiceColor, string> = {
-  yellow: 'Jaune',
-  green: 'Vert',
-  blue: 'Bleu',
-  red: 'Rouge',
-  orange: 'Orange',
-  wild: 'Joker',
-}
-
-function formatDiceValue(value?: DiceColor | DiceNumber) {
-  if (value == null) {
-    return 'Aucun'
-  }
-  if (typeof value === 'number') {
-    return value.toString()
-  }
-  return COLOR_LABELS[value] ?? value
-}
-
 export const EncoreGame = () => {
-  const {
-    gameState,
-    initializeGame,
-    rollNewDice,
-    selectDice,
-    makeMove,
-    skipTurn,
-    isValidMove,
-    completePlayerSwitch,
-  } = useEncoreGame()
+  const { gameState, initializeGame, rollNewDice, selectDice, makeMove, skipTurn, isValidMove } =
+    useEncoreGame()
   const isMobile = useIsMobile()
   const {
     playerNames,
@@ -86,6 +67,7 @@ export const EncoreGame = () => {
   })
 
   const isSwitching = gameState.phase === 'player-switching'
+  const shouldAnimateSwitch = !isMobile && shouldAnimatePlayerSwitch(gameState)
 
   useLayoutEffect(() => {
     if (
@@ -102,21 +84,30 @@ export const EncoreGame = () => {
   }, [isAnimating, isMobile])
 
   useEffect(() => {
-    if (!isMobile && isSwitching) {
-      const pauseTimer = setTimeout(() => {
-        setIsAnimating(true)
-      }, 500)
-
-      return () => clearTimeout(pauseTimer)
+    if (!shouldAnimateSwitch) {
+      return
     }
-  }, [isMobile, isSwitching])
+
+    let frameId: number | undefined
+    const timerId = window.setTimeout(() => {
+      frameId = requestAnimationFrame(() => {
+        setIsAnimating(true)
+      })
+    }, PLAYER_SWITCH_ANIMATION_DELAY_MS)
+
+    return () => {
+      window.clearTimeout(timerId)
+      if (frameId) {
+        cancelAnimationFrame(frameId)
+      }
+    }
+  }, [shouldAnimateSwitch])
 
   const handleTransitionEnd = useCallback(() => {
     if (isAnimating) {
-      completePlayerSwitch()
       setIsAnimating(false)
     }
-  }, [completePlayerSwitch, isAnimating])
+  }, [isAnimating])
 
   const handleGameSetup = useCallback(() => {
     if (playerNames.some((name) => !name.trim())) {
@@ -157,32 +148,8 @@ export const EncoreGame = () => {
   const selectionLimit = getSelectionLimit(gameState.selectedDice.number?.value)
   const boardDisabled =
     isSwitching || gameState.phase === 'rolling' || gameState.phase === 'game-over'
-  const state = isSwitching
-    ? 'Changement de joueur...'
-    : gameState.phase === 'game-over'
-      ? gameState.winners.length > 1
-        ? `🤝 Égalité : ${gameState.winners.map((player) => player.name).join(', ')}`
-        : `🎉 ${gameState.winner?.name} gagne ! 🎉`
-      : gameState.phase === 'rolling'
-        ? 'Lancer les dés'
-        : gameState.phase === 'active-selection'
-          ? 'Tour du joueur actif'
-          : gameState.phase === 'passive-selection'
-            ? 'Tour des joueurs passifs'
-            : null
-  const statusLabel = isSwitching
-    ? 'Changement...'
-    : gameState.phase === 'game-over'
-      ? gameState.winners.length > 1
-        ? 'Égalité'
-        : `${gameState.winner?.name} gagne !`
-      : gameState.phase === 'rolling'
-        ? 'Lancer dés'
-        : gameState.phase === 'active-selection'
-          ? 'Joueur actif'
-          : gameState.phase === 'passive-selection'
-            ? 'Joueurs passifs'
-            : 'En cours'
+  const state = getGameStateMessage(gameState)
+  const statusLabel = getGameStatusLabel(gameState)
 
   let mainBoardStyle: CSSProperties = {}
   let otherBoardStyle: CSSProperties = {}
@@ -195,7 +162,7 @@ export const EncoreGame = () => {
       const mainS = otherPos.width / mainPos.width
       mainBoardStyle = {
         transformOrigin: 'left top',
-        transition: 'transform 0.5s ease-in-out',
+        transition: `transform ${PLAYER_SWITCH_ANIMATION_DURATION_MS}ms ease-in-out`,
         transform: `translate(${mainTx}px, ${mainTy}px) scale(${mainS})`,
         zIndex: 20,
       }
@@ -205,7 +172,7 @@ export const EncoreGame = () => {
       const otherS = mainPos.width / otherPos.width
       otherBoardStyle = {
         transformOrigin: 'left top',
-        transition: 'transform 0.5s ease-in-out',
+        transition: `transform ${PLAYER_SWITCH_ANIMATION_DURATION_MS}ms ease-in-out`,
         transform: `translate(${otherTx}px, ${otherTy}px) scale(${otherS})`,
         zIndex: 20,
       }
@@ -245,71 +212,28 @@ export const EncoreGame = () => {
   )
   const skipGlow = !actionsDisable && !hasAnyPlayableDiceSelection
   const currentPlayerSummary = (
-    <div className="bg-card rounded-lg p-3 sm:p-4 shadow-square">
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1">
-          <p className="text-base sm:text-lg font-semibold">Tour actuel : {currentPlayer?.name}</p>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Couleur: {formatDiceValue(gameState.selectedDice.color?.value)} · Nombre:{' '}
-            {formatDiceValue(gameState.selectedDice.number?.value)}
-          </p>
-        </div>
-        <Badge
-          variant="default"
-          className="shrink-0 text-xs sm:text-sm px-2 py-0.5 sm:px-3 sm:py-1"
-        >
-          {statusLabel}
-        </Badge>
-      </div>
-      {isMobile && (
-        <div className="mt-3 flex items-center justify-between rounded-md bg-muted/70 px-3 py-2 text-xs text-muted-foreground">
-          <span>Sélection</span>
-          <span>
-            {selectedSquares.length}/{selectionLimit}
-          </span>
-        </div>
-      )}
-    </div>
+    <EncoreGameCurrentPlayerSummary
+      currentPlayerName={currentPlayer?.name}
+      selectedColor={gameState.selectedDice.color?.value}
+      selectedNumber={gameState.selectedDice.number?.value}
+      statusLabel={statusLabel}
+      isMobile={isMobile}
+      selectedCount={selectedSquares.length}
+      selectionLimit={selectionLimit}
+    />
   )
   const moveControls = (
-    <div className={cn('gap-2', isMobile ? 'grid grid-cols-3' : 'flex flex-col sm:flex-row')}>
-      <Button
-        onClick={handleConfirmMove}
-        disabled={!canMakeMove() || actionsDisable}
-        variant="game"
-        glow={confirmGlow}
-        className="flex-1 text-sm sm:text-base"
-      >
-        {isMobile ? (
-          <span>Confirmer ({selectedSquares.length})</span>
-        ) : (
-          <>
-            <span className="hidden sm:inline">
-              Confirmer le placement ({selectedSquares.length} cases)
-            </span>
-            <span className="sm:hidden">Confirmer ({selectedSquares.length})</span>
-          </>
-        )}
-      </Button>
-      <Button
-        onClick={() => setSelectedSquares([])}
-        variant="outline"
-        disabled={actionsDisable}
-        className="text-sm sm:text-base"
-      >
-        Effacer
-      </Button>
-      <Button
-        onClick={onSkipTurn}
-        variant="secondary"
-        disabled={actionsDisable}
-        glow={skipGlow}
-        className="text-sm sm:text-base"
-      >
-        <span className="hidden sm:inline">Passer le tour</span>
-        <span className="sm:hidden">Passer</span>
-      </Button>
-    </div>
+    <EncoreGameMoveControls
+      isMobile={isMobile}
+      selectedCount={selectedSquares.length}
+      canConfirm={canMakeMove()}
+      actionsDisabled={actionsDisable}
+      confirmGlow={confirmGlow}
+      skipGlow={skipGlow}
+      onConfirm={handleConfirmMove}
+      onClear={() => setSelectedSquares([])}
+      onSkip={onSkipTurn}
+    />
   )
   const mainBoard = (
     <div

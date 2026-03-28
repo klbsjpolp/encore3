@@ -1,10 +1,11 @@
 import { act, renderHook } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { BoardConfiguration } from '@/data/boardConfigurations'
 import type { GameColor, Player, Square } from '@/types/game'
 import { GAME_COLORS } from '@/types/game'
 
+import { PLAYER_SWITCH_DELAY_MS } from './encore-game/playerSwitch'
 import {
   calculateColumnScore,
   calculateFinalScore,
@@ -228,6 +229,14 @@ describe('findConnectedGroup', () => {
 })
 
 describe('useEncoreGame move limit', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('rejects moves with more than 5 cells', () => {
     const { result } = renderHook(() => useEncoreGame())
 
@@ -300,7 +309,13 @@ describe('useEncoreGame move limit', () => {
     expect(result.current.gameState.winner).toBeNull()
 
     act(() => {
-      result.current.completePlayerSwitch()
+      vi.advanceTimersByTime(PLAYER_SWITCH_DELAY_MS - 1)
+    })
+
+    expect(result.current.gameState.phase).toBe('player-switching')
+
+    act(() => {
+      vi.advanceTimersByTime(1)
     })
 
     expect(result.current.gameState.phase).toBe('passive-selection')
@@ -312,7 +327,7 @@ describe('useEncoreGame move limit', () => {
     expect(result.current.gameState.phase).toBe('player-switching')
 
     act(() => {
-      result.current.completePlayerSwitch()
+      vi.advanceTimersByTime(PLAYER_SWITCH_DELAY_MS)
     })
 
     expect(result.current.gameState.phase).toBe('game-over')

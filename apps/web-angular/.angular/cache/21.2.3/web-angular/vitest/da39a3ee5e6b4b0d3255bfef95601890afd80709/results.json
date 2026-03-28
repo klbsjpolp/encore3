@@ -1,0 +1,14 @@
+{
+  "version": "4.1.0",
+  "results": [
+    [
+      "web-angular:src/app/features/game/pages/game-page.component.spec.ts",
+      { "duration": 124.11645799999997, "failed": false }
+    ],
+    ["web-angular:src/app/app.spec.ts", { "duration": 23.573292000000038, "failed": false }],
+    [
+      "web-angular:src/app/features/game/store/game.store.spec.ts",
+      { "duration": 482.07500000000005, "failed": false }
+    ]
+  ]
+}

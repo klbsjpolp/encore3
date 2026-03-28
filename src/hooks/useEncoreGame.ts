@@ -5,11 +5,12 @@ import { getBoardConfiguration, getDefaultBoardId } from '@/data/boardConfigurat
 import type { DiceResult, GameColor, GameState, Player, Square } from '@/types/game'
 import { DEFAULT_GAME_COLOR } from '@/types/game'
 
+import { computeBestAIMove } from './encore-game/aiPlayer'
 import { checkColorCompletion, createInitialBoard } from './encore-game/board'
 import { rollDice } from './encore-game/dice'
 import { isValidMoveSelection } from './encore-game/moveValidation'
-import { determineWinners, MAX_JOKERS } from './encore-game/scoring'
-import { useAIPlayer } from './useAIPlayer'
+import { PLAYER_SWITCH_DELAY_MS, resolvePlayerSwitch } from './encore-game/playerSwitch'
+import { MAX_JOKERS } from './encore-game/scoring'
 
 export { findConnectedGroup } from './encore-game/board'
 export {
@@ -29,15 +30,6 @@ export {
   TOTAL_STARS,
 } from './encore-game/scoring'
 
-const getWinnerState = (players: Player[]) => {
-  const winners = determineWinners(players)
-
-  return {
-    winner: winners.length === 1 ? winners[0] : null,
-    winners,
-  }
-}
-
 export const useEncoreGame = () => {
   const [gameState, setGameState] = useState<GameState>({
     players: [],
@@ -55,8 +47,6 @@ export const useEncoreGame = () => {
     claimedFirstColorBonus: {},
     claimedSecondColorBonus: {},
   })
-  const { makeAIMove } = useAIPlayer()
-
   const isValidMove = useCallback(
     (
       squares: { row: number; col: number }[],
@@ -172,7 +162,7 @@ export const useEncoreGame = () => {
         let selectedFromJoker = prev.selectedFromJoker
 
         if (isAI) {
-          const aiDecision = makeAIMove(prev, isValidMove)
+          const aiDecision = computeBestAIMove(prev, isValidMove)
           if (aiDecision) {
             moveSquares = aiDecision.squares
             selectedDice = { color: aiDecision.color, number: aiDecision.number }
@@ -330,7 +320,7 @@ export const useEncoreGame = () => {
         }
       })
     },
-    [isValidMove, makeAIMove],
+    [isValidMove],
   )
 
   const skipTurn = useCallback(() => {
@@ -350,82 +340,23 @@ export const useEncoreGame = () => {
   }, [])
 
   const completePlayerSwitch = useCallback(() => {
-    setGameState((prev) => {
-      if (prev.phase !== 'player-switching') {
-        return prev
-      }
-      const { players, currentPlayer, activePlayer, lastPhase } = prev
-
-      if (lastPhase === 'active-selection' || lastPhase === 'active-selection-ai') {
-        const nextPlayerIndex = (activePlayer + 1) % players.length
-
-        if (nextPlayerIndex === activePlayer) {
-          if (prev.pendingGameOver) {
-            return {
-              ...prev,
-              phase: 'game-over',
-              pendingGameOver: false,
-              ...getWinnerState(players),
-            }
-          }
-
-          const newActivePlayer = activePlayer
-          const nextPlayer = players[newActivePlayer]
-          const nextPhase = nextPlayer.isAI ? 'rolling-ai' : 'rolling'
-          return {
-            ...prev,
-            phase: nextPhase,
-            currentPlayer: newActivePlayer,
-            activePlayer: newActivePlayer,
-          }
-        }
-
-        const nextPlayer = players[nextPlayerIndex]
-        const nextPhase = nextPlayer.isAI ? 'passive-selection-ai' : 'passive-selection'
-        return { ...prev, phase: nextPhase, currentPlayer: nextPlayerIndex }
-      }
-
-      if (lastPhase === 'passive-selection' || lastPhase === 'passive-selection-ai') {
-        const nextPlayerIndex = (currentPlayer + 1) % players.length
-
-        if (nextPlayerIndex === activePlayer) {
-          if (prev.pendingGameOver) {
-            return {
-              ...prev,
-              phase: 'game-over',
-              pendingGameOver: false,
-              ...getWinnerState(players),
-            }
-          }
-
-          const newActivePlayer = (activePlayer + 1) % players.length
-          const nextPlayer = players[newActivePlayer]
-          const nextPhase = nextPlayer.isAI ? 'rolling-ai' : 'rolling'
-          return {
-            ...prev,
-            phase: nextPhase,
-            currentPlayer: newActivePlayer,
-            activePlayer: newActivePlayer,
-          }
-        }
-
-        const nextPlayer = players[nextPlayerIndex]
-        const nextPhase = nextPlayer.isAI ? 'passive-selection-ai' : 'passive-selection'
-        return { ...prev, phase: nextPhase, currentPlayer: nextPlayerIndex }
-      }
-
-      return prev
-    })
+    setGameState((prev) => resolvePlayerSwitch(prev))
   }, [])
+  const phase = gameState.phase
 
   useEffect(() => {
-    const { phase } = gameState
-
-    if (phase === 'player-switching') {
-      const timer = setTimeout(() => completePlayerSwitch(), 200)
-      return () => clearTimeout(timer)
+    if (phase !== 'player-switching') {
+      return
     }
 
+    const timer = setTimeout(() => {
+      completePlayerSwitch()
+    }, PLAYER_SWITCH_DELAY_MS)
+
+    return () => clearTimeout(timer)
+  }, [phase, completePlayerSwitch])
+
+  useEffect(() => {
     if (!phase.includes('-ai')) {
       return
     }
@@ -442,7 +373,7 @@ export const useEncoreGame = () => {
         clearTimeout(timerId)
       }
     }
-  }, [gameState.phase, completePlayerSwitch, rollNewDice, makeMove, gameState])
+  }, [phase, rollNewDice, makeMove])
 
   return {
     gameState,

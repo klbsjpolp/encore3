@@ -1,0 +1,55 @@
+{
+  "hash": "cc4a80e7",
+  "configHash": "4dbdba3f",
+  "lockfileHash": "b18f4ef7",
+  "browserHash": "bb88a99c",
+  "optimized": {
+    "@angular/common": {
+      "src": "../../../../../../../../node_modules/.pnpm/@angular+common@21.2.5_@angular+core@21.2.5_@angular+compiler@21.2.5_rxjs@7.8.2__rxjs@7.8.2/node_modules/@angular/common/fesm2022/common.mjs",
+      "file": "@angular_common.js",
+      "fileHash": "9755967a",
+      "needsInterop": false
+    },
+    "@angular/core": {
+      "src": "../../../../../../../../node_modules/.pnpm/@angular+core@21.2.5_@angular+compiler@21.2.5_rxjs@7.8.2/node_modules/@angular/core/fesm2022/core.mjs",
+      "file": "@angular_core.js",
+      "fileHash": "a9aee302",
+      "needsInterop": false
+    },
+    "@angular/forms": {
+      "src": "../../../../../../../../node_modules/.pnpm/@angular+forms@21.2.5_@angular+common@21.2.5_@angular+core@21.2.5_@angular+compiler@21._fcca04ae9cbd96bbbd27f1d371ad15f0/node_modules/@angular/forms/fesm2022/forms.mjs",
+      "file": "@angular_forms.js",
+      "fileHash": "9f7b977e",
+      "needsInterop": false
+    },
+    "@angular/platform-browser": {
+      "src": "../../../../../../../../node_modules/.pnpm/@angular+platform-browser@21.2.5_@angular+common@21.2.5_@angular+core@21.2.5_@angular+c_af992145a1c90ee5c04a2c36d76ce65c/node_modules/@angular/platform-browser/fesm2022/platform-browser.mjs",
+      "file": "@angular_platform-browser.js",
+      "fileHash": "513f9551",
+      "needsInterop": false
+    },
+    "@angular/router": {
+      "src": "../../../../../../../../node_modules/.pnpm/@angular+router@21.2.5_@angular+common@21.2.5_@angular+core@21.2.5_@angular+compiler@21_b085c2611b254fdac93f13d655c429ae/node_modules/@angular/router/fesm2022/router.mjs",
+      "file": "@angular_router.js",
+      "fileHash": "c84893b4",
+      "needsInterop": false
+    },
+    "@angular/service-worker": {
+      "src": "../../../../../../../../node_modules/.pnpm/@angular+service-worker@21.2.5_@angular+core@21.2.5_@angular+compiler@21.2.5_rxjs@7.8.2__rxjs@7.8.2/node_modules/@angular/service-worker/fesm2022/service-worker.mjs",
+      "file": "@angular_service-worker.js",
+      "fileHash": "af2cfb91",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-Z2SPUNHJ": {
+      "file": "chunk-Z2SPUNHJ.js"
+    },
+    "chunk-RCDM5KLM": {
+      "file": "chunk-RCDM5KLM.js"
+    },
+    "chunk-LUQWJKX2": {
+      "file": "chunk-LUQWJKX2.js"
+    }
+  }
+}
