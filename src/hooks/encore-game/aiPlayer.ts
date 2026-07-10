@@ -9,6 +9,8 @@ import type {
 } from '@/types/game'
 import { GAME_COLORS } from '@/types/game'
 
+import { findConnectedGroup } from './board'
+
 export interface AIMove {
   color: ColorDiceResult
   number: NumberDiceResult
@@ -139,44 +141,68 @@ export const computeBestAIMove = (
 
         for (const component of components) {
           const candidateMoveSizes = getCandidateMoveSizes(numberDice, component.length)
+          if (candidateMoveSizes.length === 0) {
+            continue
+          }
 
-          for (const moveSize of candidateMoveSizes) {
-            const candidateSquares = component.slice(0, moveSize)
+          // A valid selection must touch the start column or a crossed square,
+          // so try a candidate anchored on each square of the component instead
+          // of only the component's scan-order prefix.
+          const seenCandidates = new Set<string>()
+          for (const startSquare of component) {
+            const orderedGroup = findConnectedGroup(
+              startSquare.row,
+              startSquare.col,
+              color,
+              currentPlayer.board,
+            )
 
-            if (!isValidMove(candidateSquares, color, currentPlayer.board)) {
-              continue
-            }
-
-            let score = moveSize
-
-            if (component.length === moveSize) {
-              score += 50
-            }
-
-            const uncrossedInColor = countUncrossedForColor(currentPlayer.board, color)
-            if (uncrossedInColor > 0 && uncrossedInColor <= moveSize) {
-              score += 200
-            }
-
-            const columnsInMove = [...new Set(candidateSquares.map((square) => square.col))]
-            for (const col of columnsInMove) {
-              const uncrossedInCol = countUncrossedInColumn(currentPlayer.board, col)
-              const markingInCol = candidateSquares.filter((square) => square.col === col).length
-              if (uncrossedInCol > 0 && uncrossedInCol <= markingInCol) {
-                score += 100
+            for (const moveSize of candidateMoveSizes) {
+              const candidateSquares = orderedGroup.slice(0, moveSize)
+              const candidateKey = candidateSquares
+                .map((square) => `${square.row},${square.col}`)
+                .sort()
+                .join('|')
+              if (seenCandidates.has(candidateKey)) {
+                continue
               }
-            }
+              seenCandidates.add(candidateKey)
 
-            if (colorDice.value === 'wild') {
-              score -= 5
-            }
+              if (!isValidMove(candidateSquares, color, currentPlayer.board)) {
+                continue
+              }
 
-            possibleMoves.push({
-              color: colorDice,
-              number: numberDice,
-              squares: candidateSquares,
-              score,
-            })
+              let score = moveSize
+
+              if (component.length === moveSize) {
+                score += 50
+              }
+
+              const uncrossedInColor = countUncrossedForColor(currentPlayer.board, color)
+              if (uncrossedInColor > 0 && uncrossedInColor <= moveSize) {
+                score += 200
+              }
+
+              const columnsInMove = [...new Set(candidateSquares.map((square) => square.col))]
+              for (const col of columnsInMove) {
+                const uncrossedInCol = countUncrossedInColumn(currentPlayer.board, col)
+                const markingInCol = candidateSquares.filter((square) => square.col === col).length
+                if (uncrossedInCol > 0 && uncrossedInCol <= markingInCol) {
+                  score += 100
+                }
+              }
+
+              if (colorDice.value === 'wild') {
+                score -= 5
+              }
+
+              possibleMoves.push({
+                color: colorDice,
+                number: numberDice,
+                squares: candidateSquares,
+                score,
+              })
+            }
           }
         }
       }
