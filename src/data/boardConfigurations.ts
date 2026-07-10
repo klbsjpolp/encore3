@@ -8,7 +8,7 @@ import type { BoardConfiguration } from './boards/types'
 import { BoardId } from './boards/types'
 
 export { BoardId }
-export type { BoardConfiguration, BoardId } from './boards/types'
+export type { BoardConfiguration } from './boards/types'
 
 export const BOARD_CONFIGURATIONS: BoardConfiguration[] = [
   CLASSIC_BOARD,
