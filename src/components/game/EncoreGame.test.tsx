@@ -92,7 +92,6 @@ const setupGame = (numberValue: DiceNumber = 2) => {
   })
 
   render(<EncoreGame />)
-  fireEvent.click(screen.getByText('Commencer la partie'))
 }
 
 const getMainBoardSquares = () =>
@@ -145,7 +144,7 @@ describe('EncoreGame selection logic', () => {
     )
 
     mockUseEncoreGame.mockReturnValue({
-      gameState: createGameState(),
+      gameState: { ...createGameState(), gameStarted: false },
       initializeGame,
       rollNewDice: vi.fn(),
       selectDice: vi.fn(),
@@ -167,7 +166,7 @@ describe('EncoreGame selection logic', () => {
 
   it('persists setup changes in localStorage', async () => {
     mockUseEncoreGame.mockReturnValue({
-      gameState: createGameState(),
+      gameState: { ...createGameState(), gameStarted: false },
       initializeGame: vi.fn(),
       rollNewDice: vi.fn(),
       selectDice: vi.fn(),
@@ -316,7 +315,6 @@ describe('EncoreGame selection logic', () => {
     })
 
     render(<EncoreGame />)
-    fireEvent.click(screen.getByText('Commencer la partie'))
 
     expect(screen.getByRole('button', { name: /passer le tour/i }).className).toContain(
       'before:ring-yellow-400',
@@ -348,7 +346,6 @@ describe('EncoreGame selection logic', () => {
     })
 
     render(<EncoreGame />)
-    fireEvent.click(screen.getByText('Commencer la partie'))
 
     expect(screen.getByRole('button', { name: /passer le tour/i }).className).toContain(
       'before:ring-yellow-400',
