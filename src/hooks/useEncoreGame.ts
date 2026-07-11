@@ -8,6 +8,12 @@ import { computeBestAIMove } from './encore-game/aiPlayer'
 import { applyMoveToState } from './encore-game/applyMove'
 import { createInitialBoard } from './encore-game/board'
 import { rollDice } from './encore-game/dice'
+import {
+  clearStoredGameState,
+  loadStoredGameState,
+  saveStoredGameState,
+  shouldPersistGameState,
+} from './encore-game/gameStatePersistence'
 import { isValidMoveSelection } from './encore-game/moveValidation'
 import { PLAYER_SWITCH_DELAY_MS, resolvePlayerSwitch } from './encore-game/playerSwitch'
 import { MAX_JOKERS } from './encore-game/scoring'
@@ -30,23 +36,40 @@ export {
   TOTAL_STARS,
 } from './encore-game/scoring'
 
+const createInitialGameState = (): GameState => ({
+  players: [],
+  currentPlayer: 0,
+  activePlayer: 0,
+  phase: 'rolling',
+  dice: [],
+  selectedDice: { color: null, number: null },
+  selectedFromJoker: { color: false, number: false },
+  gameStarted: false,
+  winner: null,
+  winners: [],
+  pendingGameOver: false,
+  claimedFirstColumnBonus: {},
+  claimedFirstColorBonus: {},
+  claimedSecondColorBonus: {},
+})
+
 export const useEncoreGame = () => {
-  const [gameState, setGameState] = useState<GameState>({
-    players: [],
-    currentPlayer: 0,
-    activePlayer: 0,
-    phase: 'rolling',
-    dice: [],
-    selectedDice: { color: null, number: null },
-    selectedFromJoker: { color: false, number: false },
-    gameStarted: false,
-    winner: null,
-    winners: [],
-    pendingGameOver: false,
-    claimedFirstColumnBonus: {},
-    claimedFirstColorBonus: {},
-    claimedSecondColorBonus: {},
-  })
+  const [gameState, setGameState] = useState<GameState>(
+    () => loadStoredGameState() ?? createInitialGameState(),
+  )
+
+  useEffect(() => {
+    if (shouldPersistGameState(gameState)) {
+      saveStoredGameState(gameState)
+    } else {
+      clearStoredGameState()
+    }
+  }, [gameState])
+
+  const abandonGame = useCallback(() => {
+    setGameState(createInitialGameState())
+  }, [])
+
   const initializeGame = useCallback(
     (playerNames: string[], aiPlayers: boolean[] = [], boardIds: BoardId[] = []) => {
       const players: Player[] = playerNames.map((name, index) => {
@@ -263,6 +286,7 @@ export const useEncoreGame = () => {
   return {
     gameState,
     initializeGame,
+    abandonGame,
     rollNewDice,
     selectDice,
     makeMove,

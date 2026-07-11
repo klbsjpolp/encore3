@@ -42,4 +42,6 @@ resizeWindow(1024, 768)
 afterEach(() => {
   cleanup()
   resizeWindow(1024, 768)
+  // Some tests replace window.localStorage with a partial mock.
+  window.localStorage.clear?.()
 })

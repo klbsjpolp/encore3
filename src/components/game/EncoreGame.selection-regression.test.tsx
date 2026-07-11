@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { BoardConfiguration } from '@/data/boardConfigurations'
@@ -102,7 +102,6 @@ const setupGame = () => {
 
   const { container } = render(<EncoreGame />)
   testContainer = container
-  fireEvent.click(screen.getByText('Commencer la partie'))
 }
 
 const hoverAndClick = (element: HTMLElement) => {

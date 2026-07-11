@@ -5,6 +5,7 @@ import type { BoardConfiguration } from '@/data/boardConfigurations'
 import type { GameColor, Player, Square } from '@/types/game'
 import { GAME_COLORS } from '@/types/game'
 
+import { GAME_STATE_STORAGE_KEY } from './encore-game/gameStatePersistence'
 import { PLAYER_SWITCH_DELAY_MS } from './encore-game/playerSwitch'
 import {
   calculateColumnScore,
@@ -225,6 +226,32 @@ describe('findConnectedGroup', () => {
         { row: 2, col: 2 },
       ].sort((a, b) => a.row - b.row || a.col - b.col),
     )
+  })
+})
+
+describe('useEncoreGame persistence', () => {
+  it('restores a stored in-progress game and clears it when abandoned', () => {
+    const { result: original } = renderHook(() => useEncoreGame())
+    act(() => {
+      original.current.initializeGame(['Player 1', 'Player 2'])
+    })
+    expect(window.localStorage.getItem(GAME_STATE_STORAGE_KEY)).not.toBeNull()
+
+    const { result: restored } = renderHook(() => useEncoreGame())
+    expect(restored.current.gameState.gameStarted).toBe(true)
+    expect(restored.current.gameState.players.map((player) => player.name)).toEqual([
+      'Player 1',
+      'Player 2',
+    ])
+    expect(restored.current.gameState.players[0].boardConfiguration.starPositions).toBeInstanceOf(
+      Set,
+    )
+
+    act(() => {
+      restored.current.abandonGame()
+    })
+    expect(restored.current.gameState.gameStarted).toBe(false)
+    expect(window.localStorage.getItem(GAME_STATE_STORAGE_KEY)).toBeNull()
   })
 })
 

@@ -106,7 +106,6 @@ const setupGame = async (overrides?: Partial<ReturnType<typeof mockUseEncoreGame
 
   const { container } = render(<EncoreGame />)
   testContainer = container
-  fireEvent.click(screen.getByText('Commencer la partie'))
 
   await screen.findByTestId('compact-dice-row')
 }

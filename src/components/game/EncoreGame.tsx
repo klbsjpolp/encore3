@@ -26,8 +26,16 @@ import { ScorePanel } from './ScorePanel'
 import { useEncoreSelection } from './useEncoreSelection'
 
 export const EncoreGame = () => {
-  const { gameState, initializeGame, rollNewDice, selectDice, makeMove, skipTurn, isValidMove } =
-    useEncoreGame()
+  const {
+    gameState,
+    initializeGame,
+    abandonGame,
+    rollNewDice,
+    selectDice,
+    makeMove,
+    skipTurn,
+    isValidMove,
+  } = useEncoreGame()
   const isMobile = useIsMobile()
   const {
     playerNames,
@@ -37,7 +45,8 @@ export const EncoreGame = () => {
     toggleAIPlayer,
     setSelectedBoard,
   } = useStoredGameSetup()
-  const [setupMode, setSetupMode] = useState(true)
+  // Resume a stored in-progress game instead of showing the setup screen.
+  const [setupMode, setSetupMode] = useState(() => !gameState.gameStarted)
   const [mobilePanel, setMobilePanel] = useState<'other' | 'scores'>('other')
   const [isAnimating, setIsAnimating] = useState(false)
   const {
@@ -120,10 +129,11 @@ export const EncoreGame = () => {
   }, [aiPlayers, initializeGame, playerNames, selectedBoards])
 
   const resetGame = useCallback(() => {
+    abandonGame()
     setSetupMode(true)
     setMobilePanel('other')
     clearSelection()
-  }, [clearSelection])
+  }, [abandonGame, clearSelection])
 
   if (setupMode) {
     return (
