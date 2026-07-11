@@ -94,6 +94,7 @@ const DiceDisplay = ({
   isSelected,
   hideUsedMarks = false,
   isRolling = false,
+  isSwitching = false,
   compact = false,
   displayValue,
 }: {
@@ -103,6 +104,7 @@ const DiceDisplay = ({
   isSelected?: boolean
   hideUsedMarks?: boolean
   isRolling?: boolean
+  isSwitching?: boolean
   compact?: boolean
   displayValue?: DiceColor | DiceNumber
 }) => {
@@ -146,7 +148,13 @@ const DiceDisplay = ({
             ? 'ring-2 ring-ring shadow-glow scale-105'
             : 'ring-4 ring-ring shadow-glow scale-110'),
         isUsed && 'opacity-50 cursor-not-allowed',
-        isInteractable ? 'hover:scale-105 active:scale-95' : 'cursor-not-allowed opacity-30',
+        isInteractable
+          ? 'hover:scale-105 active:scale-95'
+          : // During a player switch keep the dice steady instead of dimming
+            // them to 30% and back, which reads as a flash between turns.
+            isSwitching
+            ? 'cursor-not-allowed'
+            : 'cursor-not-allowed opacity-30',
         isRolling && 'animate-spin duration-500 blur-xs opacity-30',
       )}
       style={{ animationDelay }}
@@ -236,6 +244,7 @@ export const DicePanel = ({
   }, [dice, isRolling])
 
   const disabled = phase.includes('-ai')
+  const isSwitching = phase === 'player-switching'
   const finalCanRoll = canRoll && !disabled
   const finalCanSelect = canSelect && !disabled
   const placeholderSrc = `${import.meta.env.BASE_URL}placeholder.svg`
@@ -312,6 +321,7 @@ export const DicePanel = ({
                     }
                     hideUsedMarks={false}
                     isRolling={isRolling}
+                    isSwitching={isSwitching}
                     compact={true}
                     displayValue={isRolling ? rollingValues[die.id] : undefined}
                   />
@@ -334,6 +344,7 @@ export const DicePanel = ({
                       isSelected={selectedColorDice?.id === die.id}
                       hideUsedMarks={false}
                       isRolling={isRolling}
+                      isSwitching={isSwitching}
                       displayValue={isRolling ? rollingValues[die.id] : undefined}
                     />
                   ))}
@@ -354,6 +365,7 @@ export const DicePanel = ({
                       isSelected={selectedNumberDice?.id === die.id}
                       hideUsedMarks={false}
                       isRolling={isRolling}
+                      isSwitching={isSwitching}
                       displayValue={isRolling ? rollingValues[die.id] : undefined}
                     />
                   ))}
