@@ -112,11 +112,18 @@ export const EncoreGame = () => {
     }
   }, [shouldAnimateSwitch])
 
-  const handleTransitionEnd = useCallback(() => {
-    if (isAnimating) {
-      setIsAnimating(false)
+  // Clear the animation flag once the switch resolves. The transform itself is
+  // released atomically with the content swap (see the `isSwitching` guard on
+  // the styles below); this just lets the boards be re-measured and re-arms the
+  // hold delay for the next transition. Deferred to a frame to avoid a
+  // synchronous state update inside the effect body.
+  useEffect(() => {
+    if (isSwitching) {
+      return
     }
-  }, [isAnimating])
+    const frameId = requestAnimationFrame(() => setIsAnimating(false))
+    return () => cancelAnimationFrame(frameId)
+  }, [isSwitching])
 
   const handleGameSetup = useCallback(() => {
     if (playerNames.some((name) => !name.trim())) {
@@ -164,7 +171,7 @@ export const EncoreGame = () => {
   let mainBoardStyle: CSSProperties = {}
   let otherBoardStyle: CSSProperties = {}
 
-  if (!isMobile && isAnimating) {
+  if (!isMobile && isAnimating && isSwitching) {
     const { main: mainPos, other: otherPos } = positions
     if (mainPos && otherPos) {
       const mainTx = otherPos.left - mainPos.left
@@ -246,12 +253,7 @@ export const EncoreGame = () => {
     />
   )
   const mainBoard = (
-    <div
-      className="@container"
-      ref={mainBoardContainerRef}
-      style={mainBoardStyle}
-      onTransitionEnd={handleTransitionEnd}
-    >
+    <div className="@container" ref={mainBoardContainerRef} style={mainBoardStyle}>
       <GameBoard
         board={currentPlayer?.board || []}
         boardConfiguration={currentPlayer?.boardConfiguration}

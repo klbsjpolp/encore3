@@ -4,8 +4,14 @@ import { determineWinners } from './scoring'
 
 export const PLAYER_SWITCH_ANIMATION_DELAY_MS = 400
 export const PLAYER_SWITCH_ANIMATION_DURATION_MS = 200
+// Small margin so the swap animation visibly reaches its end position before the
+// state advances. The boards rest at their end position (which matches the new
+// layout) during this window, so the handoff stays seamless instead of snapping.
+export const PLAYER_SWITCH_ANIMATION_SETTLE_MS = 80
 export const PLAYER_SWITCH_DELAY_MS =
-  PLAYER_SWITCH_ANIMATION_DELAY_MS + PLAYER_SWITCH_ANIMATION_DURATION_MS
+  PLAYER_SWITCH_ANIMATION_DELAY_MS +
+  PLAYER_SWITCH_ANIMATION_DURATION_MS +
+  PLAYER_SWITCH_ANIMATION_SETTLE_MS
 
 const getWinnerState = (players: Player[]) => {
   const winners = determineWinners(players)

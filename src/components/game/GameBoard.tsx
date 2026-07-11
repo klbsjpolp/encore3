@@ -133,7 +133,11 @@ export const GameBoard = ({
                 onMouseEnter={() => !disabled && onSquareHover?.(rowIndex, colIndex)}
                 disabled={disabled || square.crossed}
                 className={cn(
-                  'aspect-square relative transition-all duration-200',
+                  // Animate only interaction affordances (selection/hover), not
+                  // the fill colour: otherwise every cell cross-fades its colour
+                  // when the board content swaps on a player switch, which reads
+                  // as a shimmer/flicker.
+                  'aspect-square relative transition-[transform,box-shadow,border-color,outline-color] duration-200',
                   compact
                     ? 'rounded-[3px] border'
                     : 'rounded-[3px] @lg:rounded-md border-1 @lg:border-2',

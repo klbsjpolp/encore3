@@ -3,7 +3,14 @@ import { describe, expect, it } from 'vitest'
 import type { BoardConfiguration } from '@/data/boardConfigurations'
 import type { GameColor, GameState, Player, Square } from '@/types/game'
 
-import { resolvePlayerSwitch, shouldAnimatePlayerSwitch } from './playerSwitch'
+import {
+  PLAYER_SWITCH_ANIMATION_DELAY_MS,
+  PLAYER_SWITCH_ANIMATION_DURATION_MS,
+  PLAYER_SWITCH_ANIMATION_SETTLE_MS,
+  PLAYER_SWITCH_DELAY_MS,
+  resolvePlayerSwitch,
+  shouldAnimatePlayerSwitch,
+} from './playerSwitch'
 
 const makeBoard = (colors: GameColor[][]): Square[][] =>
   colors.map((row, rowIndex) =>
@@ -62,6 +69,19 @@ const createSwitchingState = (overrides: Partial<GameState> = {}): GameState => 
   claimedFirstColorBonus: {},
   claimedSecondColorBonus: {},
   ...overrides,
+})
+
+describe('player switch timing', () => {
+  it('advances only after the hold, the swap animation and a settle margin', () => {
+    expect(PLAYER_SWITCH_DELAY_MS).toBe(
+      PLAYER_SWITCH_ANIMATION_DELAY_MS +
+        PLAYER_SWITCH_ANIMATION_DURATION_MS +
+        PLAYER_SWITCH_ANIMATION_SETTLE_MS,
+    )
+    // The settle margin must be positive so the boards reach their end position
+    // before the state advances, keeping the handoff seamless.
+    expect(PLAYER_SWITCH_ANIMATION_SETTLE_MS).toBeGreaterThan(0)
+  })
 })
 
 describe('resolvePlayerSwitch', () => {

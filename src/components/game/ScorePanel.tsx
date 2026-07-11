@@ -167,10 +167,7 @@ export const ScorePanel = ({
             {player.name}
             <Badge
               variant="default"
-              className={cn(
-                'transition-all duration-300',
-                (gameComplete || !isCurrentPlayer) && 'invisible',
-              )}
+              className={cn((gameComplete || !isCurrentPlayer) && 'invisible')}
             >
               Actuel
             </Badge>

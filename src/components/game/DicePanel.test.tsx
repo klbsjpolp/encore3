@@ -79,6 +79,18 @@ describe('DicePanel Component', () => {
     expect(onDiceSelect).not.toHaveBeenCalled()
   })
 
+  it('dims non-interactable dice while waiting for another turn', () => {
+    render(<DicePanel dice={mockDice} phase="passive-selection" canSelect={false} />)
+
+    expect(screen.getByText('R').closest('button')).toHaveClass('opacity-30')
+  })
+
+  it('keeps the dice steady during a player switch instead of dimming them', () => {
+    render(<DicePanel dice={mockDice} phase="player-switching" canSelect={false} />)
+
+    expect(screen.getByText('R').closest('button')).not.toHaveClass('opacity-30')
+  })
+
   it('shows selected state for dice', () => {
     render(
       <DicePanel
