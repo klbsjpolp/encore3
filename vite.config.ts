@@ -29,6 +29,8 @@ export default defineConfig(({ mode }) => {
           'game-image.svg',
           'pwa-192x192.png',
           'pwa-512x512.png',
+          'pwa-maskable-512x512.png',
+          'apple-touch-icon.png',
         ],
         manifest: {
           name: 'Encore Roll and Write',
@@ -53,7 +55,7 @@ export default defineConfig(({ mode }) => {
               purpose: 'any',
             },
             {
-              src: 'pwa-512x512.png',
+              src: 'pwa-maskable-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
