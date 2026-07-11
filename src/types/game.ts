@@ -56,11 +56,7 @@ export interface Player {
 }
 
 export type GamePhase =
-  | 'rolling'
-  | 'active-selection'
-  | 'passive-selection'
-  | 'player-switching'
-  | 'game-over'
+  'rolling' | 'active-selection' | 'passive-selection' | 'player-switching' | 'game-over'
 
 export type AIPhase = 'rolling-ai' | 'active-selection-ai' | 'passive-selection-ai'
 
