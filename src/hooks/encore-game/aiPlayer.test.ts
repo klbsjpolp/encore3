@@ -3,29 +3,38 @@ import { describe, expect, it } from 'vitest'
 import type { GameColor, GameState, Player, Square } from '@/types/game'
 
 import { computeBestAIMove } from './aiPlayer'
-import { isValidMoveSelection } from './moveValidation'
 
-const orangeOnlyBoard: Square[][] = [
-  [
-    {
-      color: 'orange',
-      hasStar: false,
-      crossed: false,
-      column: 'A',
-      row: 0,
-    },
-  ],
+const createSingleRowBoard = (colors: GameColor[]): Square[][] => [
+  colors.map((color, col) => ({
+    color,
+    hasStar: false,
+    crossed: false,
+    column: String.fromCharCode(65 + col),
+    row: 0,
+  })),
+]
+
+// A single orange square sitting on the start column (index 7).
+const orangeOnStartColumnColors: GameColor[] = [
+  'yellow',
+  'yellow',
+  'yellow',
+  'yellow',
+  'yellow',
+  'yellow',
+  'yellow',
+  'orange',
 ]
 
 const createAIPlayer = (overrides: Partial<Player> = {}): Player => ({
   id: 'player-0',
   name: 'AI',
   isAI: true,
-  board: orangeOnlyBoard,
+  board: createSingleRowBoard(orangeOnStartColumnColors),
   boardConfiguration: {
     id: 'classic',
     fillClass: 'mock',
-    colorLayout: [['orange']],
+    colorLayout: [orangeOnStartColumnColors],
     starPositions: new Set<string>(),
   },
   starsCollected: 0,
@@ -62,14 +71,10 @@ describe('computeBestAIMove', () => {
         { id: 'color-wild', type: 'color', value: 'wild', selected: false },
         { id: 'number-1', type: 'number', value: 1, selected: false },
       ]),
-      (squares, color, board) =>
-        color === 'orange' &&
-        squares.length === 1 &&
-        board[squares[0].row][squares[0].col].color === 'orange',
     )
 
     expect(move).not.toBeNull()
-    expect(move?.squares).toEqual([{ row: 0, col: 0 }])
+    expect(move?.squares).toEqual([{ row: 0, col: 7 }])
   })
 
   it('ignores double-joker combinations when the AI lacks jokers', () => {
@@ -78,21 +83,10 @@ describe('computeBestAIMove', () => {
         { id: 'color-wild', type: 'color', value: 'wild', selected: false },
         { id: 'number-wild', type: 'number', value: 'wild', selected: false },
       ]),
-      () => true,
     )
 
     expect(move).toBeNull()
   })
-
-  const createSingleRowBoard = (colors: GameColor[]): Square[][] => [
-    colors.map((color, col) => ({
-      color,
-      hasStar: false,
-      crossed: false,
-      column: String.fromCharCode(65 + col),
-      row: 0,
-    })),
-  ]
 
   // The start column (index 7) sits at the far end of the red component, so
   // the component's scan-order prefix is not a valid selection by itself.
@@ -114,7 +108,6 @@ describe('computeBestAIMove', () => {
         { id: 'color-red', type: 'color', value: 'red', selected: false },
         { id: 'number-1', type: 'number', value: 1, selected: false },
       ]),
-      isValidMoveSelection,
     )
 
     expect(move?.squares).toEqual([{ row: 0, col: 7 }])
@@ -126,7 +119,6 @@ describe('computeBestAIMove', () => {
         { id: 'color-red', type: 'color', value: 'red', selected: false },
         { id: 'number-2', type: 'number', value: 2, selected: false },
       ]),
-      isValidMoveSelection,
     )
 
     expect(move).not.toBeNull()
@@ -150,7 +142,6 @@ describe('computeBestAIMove', () => {
         { id: 'color-red', type: 'color', value: 'red', selected: false },
         { id: 'number-2', type: 'number', value: 2, selected: false },
       ]),
-      isValidMoveSelection,
     )
 
     expect(move).toBeNull()

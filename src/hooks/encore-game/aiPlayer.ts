@@ -10,6 +10,7 @@ import type {
 import { GAME_COLORS } from '@/types/game'
 
 import { findConnectedGroup } from './board'
+import { isValidMoveSelection } from './moveValidation'
 
 export interface AIMove {
   color: ColorDiceResult
@@ -30,39 +31,10 @@ const findConnectedComponents = (
   for (let r = 0; r < board.length; r++) {
     for (let c = 0; c < board[0].length; c++) {
       if (board[r][c].color === color && !board[r][c].crossed && !visited.has(`${r},${c}`)) {
-        const component: { row: number; col: number }[] = []
-        const queue = [{ row: r, col: c }]
-        visited.add(`${r},${c}`)
-
-        let head = 0
-        while (head < queue.length) {
-          const current = queue[head++]
-          component.push(current)
-
-          const neighbors = [
-            { row: current.row - 1, col: current.col },
-            { row: current.row + 1, col: current.col },
-            { row: current.row, col: current.col - 1 },
-            { row: current.row, col: current.col + 1 },
-          ]
-
-          for (const neighbor of neighbors) {
-            const key = `${neighbor.row},${neighbor.col}`
-            if (
-              neighbor.row >= 0 &&
-              neighbor.row < board.length &&
-              neighbor.col >= 0 &&
-              neighbor.col < board[0].length &&
-              !visited.has(key) &&
-              board[neighbor.row][neighbor.col].color === color &&
-              !board[neighbor.row][neighbor.col].crossed
-            ) {
-              visited.add(key)
-              queue.push(neighbor)
-            }
-          }
+        const component = findConnectedGroup(r, c, color, board)
+        for (const square of component) {
+          visited.add(`${square.row},${square.col}`)
         }
-
         components.push(component)
       }
     }
@@ -107,14 +79,7 @@ const getCandidateMoveSizes = (number: NumberDiceResult, componentSize: number):
   return Array.from({ length: maxSelection }, (_, index) => index + 1)
 }
 
-export const computeBestAIMove = (
-  gameState: GameState,
-  isValidMove: (
-    squares: { row: number; col: number }[],
-    color: GameColor,
-    playerBoard: Square[][],
-  ) => boolean,
-): AIMove | null => {
+export const computeBestAIMove = (gameState: GameState): AIMove | null => {
   const currentPlayer = gameState.players[gameState.currentPlayer]
   if (!currentPlayer.isAI) {
     return null
@@ -168,7 +133,7 @@ export const computeBestAIMove = (
               }
               seenCandidates.add(candidateKey)
 
-              if (!isValidMove(candidateSquares, color, currentPlayer.board)) {
+              if (!isValidMoveSelection(candidateSquares, color, currentPlayer.board)) {
                 continue
               }
 
