@@ -55,11 +55,10 @@ function getDiceDisplayValue(value: DiceColor | DiceNumber): string {
   if (value === 'wild') {
     return 'Joker'
   }
-  const display = displayMap[value]
-  if (display) {
-    return display
+  if (typeof value === 'number') {
+    return value.toString()
   }
-  return value.toString()
+  return displayMap[value]
 }
 
 function getDiceShortDisplayValue(value: DiceColor | DiceNumber): string {
