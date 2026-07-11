@@ -19,8 +19,8 @@ export const BOARD_CONFIGURATIONS: BoardConfiguration[] = [
   RANDOM_BOARD_TEMPLATE,
 ]
 
-export const getBoardConfiguration = (id: BoardId): BoardConfiguration | undefined => {
-  return BOARD_CONFIGURATIONS.find((config) => config.id === id)
+export const getBoardConfiguration = (id: BoardId): BoardConfiguration => {
+  return BOARD_CONFIGURATIONS.find((config) => config.id === id) ?? CLASSIC_BOARD
 }
 
 export const getDefaultBoardId = (): BoardId => CLASSIC_BOARD.id

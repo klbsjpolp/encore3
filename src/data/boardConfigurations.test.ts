@@ -39,8 +39,8 @@ describe('boardConfigurations', () => {
     }
   })
 
-  it('returns undefined for an unknown board id', () => {
-    expect(getBoardConfiguration('unknown' as never)).toBeUndefined()
+  it('falls back to the classic board for an unknown board id', () => {
+    expect(getBoardConfiguration('unknown' as never).id).toBe('classic')
   })
 
   it('returns classic as default board id', () => {
