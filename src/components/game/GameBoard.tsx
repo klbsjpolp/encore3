@@ -59,9 +59,9 @@ function ColumnPoint({
     <div
       className={cn(
         'aspect-square bg-secondary flex items-center justify-center',
-        compact ? 'rounded-[3px]' : 'rounded-xs @lg:rounded-md',
-        isClaimedByMe && 'ring-2 @lg:ring-3 ring-yellow-400',
-        compact ? 'text-[0.45rem] font-semibold' : 'text-xs @lg:text-lg font-semibold',
+        compact ? 'rounded-[3px]' : 'rounded-[1cqw]',
+        isClaimedByMe && 'ring-[0.5cqw] ring-yellow-400',
+        compact ? 'text-[0.45rem] font-semibold' : 'text-[3cqw] font-semibold',
         isStartingColumn(index) && 'text-destructive font-black',
         isClaimedByOther && 'line-through text-muted-foreground bg-secondary/80',
       )}
@@ -100,12 +100,16 @@ export const GameBoard = ({
     <div
       className={cn(
         'shadow-square',
-        compact ? 'rounded-md p-1' : 'rounded-sm @lg:rounded-xl p-2 @lg:p-4',
+        // Own container so the proportional `cqw` sizing below scales with the
+        // board's own width. This keeps the small "other" board an exact scaled
+        // copy of the large board, so the player-switch swap is one continuous
+        // scale with no layout jump on arrival.
+        compact ? 'rounded-md p-1' : '@container rounded-[2cqw] p-[2.67cqw]',
         boardConfiguration?.fillClass,
       )}
       onMouseLeave={() => !disabled && onSquareLeave?.()}
     >
-      <div className={cn('grid grid-cols-15', compact ? 'gap-px' : 'gap-1')}>
+      <div className={cn('grid grid-cols-15', compact ? 'gap-px' : 'gap-[0.67cqw]')}>
         {COLUMNS.map((col, colIndex) => (
           <ColumnPoint
             key={col}
@@ -119,12 +123,12 @@ export const GameBoard = ({
       </div>
 
       <div
-        className={cn(compact ? 'space-y-0 mt-px mb-px' : 'space-y-1 mt-1 @lg:mt-3 mb-1 @lg:mb-3')}
+        className={cn(compact ? 'space-y-0 mt-px mb-px' : 'space-y-[0.67cqw] mt-[2cqw] mb-[2cqw]')}
       >
         {board.map((row, rowIndex) => (
           <div
             key={rowIndex}
-            className={cn('grid grid-cols-15', compact ? 'gap-0' : 'gap-0.5 @lg:gap-1')}
+            className={cn('grid grid-cols-15', compact ? 'gap-0' : 'gap-[0.67cqw]')}
           >
             {row.map((square, colIndex) => (
               <button
@@ -138,9 +142,7 @@ export const GameBoard = ({
                   // when the board content swaps on a player switch, which reads
                   // as a shimmer/flicker.
                   'aspect-square relative transition-[transform,box-shadow,border-color,outline-color] duration-200',
-                  compact
-                    ? 'rounded-[3px] border'
-                    : 'rounded-[3px] @lg:rounded-md border-1 @lg:border-2',
+                  compact ? 'rounded-[3px] border' : 'rounded-[1cqw] border-[0.33cqw]',
                   getColorClass(square.color),
                   square.crossed && 'opacity-30 cursor-not-allowed',
                   isSquareSelected(rowIndex, colIndex) &&
@@ -154,7 +156,7 @@ export const GameBoard = ({
                   isStartingColumn(colIndex) && !isSquareSelected(rowIndex, colIndex)
                     ? compact
                       ? 'outline-solid outline-1 outline-border'
-                      : 'outline-solid outline-1 @lg:outline-2 outline-border'
+                      : 'outline-solid outline-[0.33cqw] outline-border'
                     : '',
                   !disabled && !square.crossed && 'cursor-pointer',
                 )}
@@ -165,7 +167,7 @@ export const GameBoard = ({
                     className={cn(
                       compact
                         ? 'absolute inset-0 m-auto w-full h-full max-h-3 max-w-3'
-                        : 'absolute inset-0 m-auto w-full h-full max-h-6 max-w-6',
+                        : 'absolute inset-0 m-auto w-full h-full max-h-[4cqw] max-w-[4cqw]',
                       square.crossed ? 'text-muted-foreground' : 'text-black drop-shadow-md',
                     )}
                   />
@@ -173,14 +175,24 @@ export const GameBoard = ({
                   <div
                     className={cn(
                       'absolute opacity-25 bg-white rounded-full',
-                      compact ? 'inset-[1px]' : 'inset-[0.5px] @lg:inset-0.25 w-11/12 h-11/12',
+                      compact ? 'inset-[1px]' : 'inset-[0.08cqw] w-11/12 h-11/12',
                     )}
                   />
                 )}
                 {square.crossed && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full h-0.5 bg-foreground transform rotate-45" />
-                    <div className="w-full h-0.5 bg-foreground transform -rotate-45 absolute" />
+                    <div
+                      className={cn(
+                        'w-full bg-foreground transform rotate-45',
+                        compact ? 'h-0.5' : 'h-[0.33cqw]',
+                      )}
+                    />
+                    <div
+                      className={cn(
+                        'w-full bg-foreground transform -rotate-45 absolute',
+                        compact ? 'h-0.5' : 'h-[0.33cqw]',
+                      )}
+                    />
                   </div>
                 )}
               </button>
@@ -190,7 +202,7 @@ export const GameBoard = ({
       </div>
 
       {showColumnScores && (
-        <div className={cn('grid grid-cols-15', compact ? 'gap-px' : 'gap-1')}>
+        <div className={cn('grid grid-cols-15', compact ? 'gap-px' : 'gap-[0.67cqw]')}>
           {COLUMN_FIRST_PLAYER_POINTS.map((points, index) => {
             const isClaimedByMe = iClaimedFirstBonus.includes(COLUMNS[index])
             const isClaimedByOther = firstBonusClaimed.includes(COLUMNS[index]) && !isClaimedByMe
