@@ -11,6 +11,15 @@ import { GAME_COLORS } from '@/types/game'
 
 import { findConnectedGroup } from './board'
 import { isValidMoveSelection } from './moveValidation'
+import { MAX_JOKERS } from './scoring'
+
+// Base opportunity cost of spending one joker on a move. Kept below the
+// column (+100) and color (+200) completion bonuses so the AI still spends a
+// joker to finish those, but above the value of marking a few extra squares.
+const JOKER_USAGE_PENALTY = 15
+// Extra cost added per joker already spent, so the AI guards its last jokers
+// harder and stops burning them early in the game.
+const JOKER_SCARCITY_PENALTY = 5
 
 export interface AIMove {
   color: ColorDiceResult
@@ -157,8 +166,11 @@ export const computeBestAIMove = (gameState: GameState): AIMove | null => {
                 }
               }
 
-              if (colorDice.value === 'wild') {
-                score -= 5
+              if (jokersNeededForCombo > 0) {
+                const jokersAlreadySpent = MAX_JOKERS - currentPlayer.jokersRemaining
+                score -=
+                  jokersNeededForCombo *
+                  (JOKER_USAGE_PENALTY + jokersAlreadySpent * JOKER_SCARCITY_PENALTY)
               }
 
               possibleMoves.push({

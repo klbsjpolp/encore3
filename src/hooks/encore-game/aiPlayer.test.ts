@@ -14,6 +14,17 @@ const createSingleRowBoard = (colors: GameColor[]): Square[][] => [
   })),
 ]
 
+const createBoard = (rows: GameColor[][]): Square[][] =>
+  rows.map((colors, row) =>
+    colors.map((color, col) => ({
+      color,
+      hasStar: false,
+      crossed: false,
+      column: String.fromCharCode(65 + col),
+      row,
+    })),
+  )
+
 // A single orange square sitting on the start column (index 7).
 const orangeOnStartColumnColors: GameColor[] = [
   'yellow',
@@ -145,5 +156,38 @@ describe('computeBestAIMove', () => {
     )
 
     expect(move).toBeNull()
+  })
+
+  // Two reds on the start column, reachable with either the real "2" die or the
+  // wild number die. A second row keeps the columns from completing so the two
+  // moves are otherwise equivalent; the AI should keep its joker.
+  const twoRedBoard = createBoard([
+    ['yellow', 'yellow', 'yellow', 'yellow', 'yellow', 'yellow', 'red', 'red'],
+    ['yellow', 'yellow', 'yellow', 'yellow', 'yellow', 'yellow', 'yellow', 'yellow'],
+  ])
+
+  it('prefers the real number die over the wild one for an equivalent move', () => {
+    const move = computeBestAIMove(
+      createGameState(createAIPlayer({ board: twoRedBoard }), [
+        { id: 'color-red', type: 'color', value: 'red', selected: false },
+        { id: 'number-wild', type: 'number', value: 'wild', selected: false },
+        { id: 'number-2', type: 'number', value: 2, selected: false },
+      ]),
+    )
+
+    expect(move?.number.value).toBe(2)
+    expect(new Set(move?.squares.map((square) => square.col))).toEqual(new Set([6, 7]))
+  })
+
+  it('still spends a joker when it is the only way to move', () => {
+    const move = computeBestAIMove(
+      createGameState(createAIPlayer({ board: twoRedBoard }), [
+        { id: 'color-red', type: 'color', value: 'red', selected: false },
+        { id: 'number-wild', type: 'number', value: 'wild', selected: false },
+      ]),
+    )
+
+    expect(move?.number.value).toBe('wild')
+    expect(new Set(move?.squares.map((square) => square.col))).toEqual(new Set([6, 7]))
   })
 })
