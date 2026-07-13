@@ -1,5 +1,6 @@
 import { Bot, Gamepad2, Play, Users } from 'lucide-react'
 
+import { AppVersion } from '@/components/AppVersion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -96,6 +97,10 @@ export const EncoreGameSetup = ({
             <Play className="w-4 h-4 mr-2" />
             Commencer la partie
           </Button>
+
+          <div className="text-center">
+            <AppVersion />
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,4 +1,4 @@
-# Build and Deploy Vite React App to GitHub Pages
+# Validate, deploy to GitHub Pages, and publish a release — all from main.
 name: Deploy Vite App to Pages
 
 on:
@@ -22,9 +22,43 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Validation gate: deploy and release only proceed when this passes.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run format check
+        run: pnpm format:check
+
+      - name: Run lint
+        run: pnpm lint
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Run typecheck
+        run: pnpm typecheck
+
   # Build job
   build:
     runs-on: ubuntu-latest
+    needs: test
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -65,3 +99,32 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+  # Publish a GitHub release tagged with the package.json version.
+  # Bumping the version in package.json produces a new release automatically;
+  # pushes that keep the same version are skipped (the tag already exists).
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version tag
+        id: version
+        run: echo "tag=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Create release if the version is new
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag='${{ steps.version.outputs.tag }}'
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "Release $tag already exists — skipping."
+          else
+            gh release create "$tag" --title "$tag" --target '${{ github.sha }}' --generate-notes
+          fi

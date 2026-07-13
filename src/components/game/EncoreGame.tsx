@@ -2,6 +2,7 @@ import { Gamepad2, RotateCcw } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
+import { AppVersion } from '@/components/AppVersion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -326,6 +327,7 @@ export const EncoreGame = () => {
                 {state}
               </Badge>
             )}
+            <AppVersion />
           </div>
           <Button onClick={resetGame} variant="outline" size="sm" className="w-full sm:w-auto">
             <RotateCcw className="w-4 h-4 sm:mr-2" />
