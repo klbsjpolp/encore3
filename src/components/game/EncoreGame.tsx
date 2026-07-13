@@ -341,6 +341,7 @@ export const EncoreGame = () => {
             {gameState.phase !== 'game-over' && currentPlayerSummary}
             <DicePanel
               phase={gameState.phase}
+              lastPhase={gameState.lastPhase}
               dice={gameState.dice}
               onDiceSelect={selectDice}
               onRollDice={rollNewDice}
@@ -390,6 +391,7 @@ export const EncoreGame = () => {
             <div className="flex flex-col gap-2">
               <DicePanel
                 phase={gameState.phase}
+                lastPhase={gameState.lastPhase}
                 dice={gameState.dice}
                 onDiceSelect={selectDice}
                 onRollDice={rollNewDice}

@@ -16,6 +16,7 @@ import { DICE_COLOR_FACES, DICE_NUMBER_FACES } from '@/types/game'
 interface DicePanelProps {
   dice: DiceResult[]
   phase: GameState['phase']
+  lastPhase?: GameState['lastPhase']
   onDiceSelect?: (dice: DiceResult) => void
   onRollDice?: () => void
   canRoll?: boolean
@@ -178,6 +179,7 @@ const DiceDisplay = ({
 export const DicePanel = ({
   dice,
   phase,
+  lastPhase,
   onDiceSelect,
   onRollDice,
   canRoll = false,
@@ -243,8 +245,14 @@ export const DicePanel = ({
     }
   }, [dice, isRolling])
 
-  const disabled = phase.includes('-ai')
   const isSwitching = phase === 'player-switching'
+  // A player switch that follows an AI phase is still part of the AI's play, so
+  // keep the dice dimmed like an AI turn instead of flashing them to the
+  // "active" look, which reads as the human's turn starting early.
+  const isAiSwitch = isSwitching && (lastPhase?.includes('-ai') ?? false)
+  const disabled = phase.includes('-ai') || isAiSwitch
+  // Only keep the dice steady (no dimming) for human-to-human switches.
+  const steadySwitch = isSwitching && !isAiSwitch
   const finalCanRoll = canRoll && !disabled
   const finalCanSelect = canSelect && !disabled
   const placeholderSrc = `${import.meta.env.BASE_URL}placeholder.svg`
@@ -321,7 +329,7 @@ export const DicePanel = ({
                     }
                     hideUsedMarks={false}
                     isRolling={isRolling}
-                    isSwitching={isSwitching}
+                    isSwitching={steadySwitch}
                     compact={true}
                     displayValue={isRolling ? rollingValues[die.id] : undefined}
                   />
@@ -344,7 +352,7 @@ export const DicePanel = ({
                       isSelected={selectedColorDice?.id === die.id}
                       hideUsedMarks={false}
                       isRolling={isRolling}
-                      isSwitching={isSwitching}
+                      isSwitching={steadySwitch}
                       displayValue={isRolling ? rollingValues[die.id] : undefined}
                     />
                   ))}
@@ -365,7 +373,7 @@ export const DicePanel = ({
                       isSelected={selectedNumberDice?.id === die.id}
                       hideUsedMarks={false}
                       isRolling={isRolling}
-                      isSwitching={isSwitching}
+                      isSwitching={steadySwitch}
                       displayValue={isRolling ? rollingValues[die.id] : undefined}
                     />
                   ))}
