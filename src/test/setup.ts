@@ -37,6 +37,35 @@ Object.defineProperty(window, 'resizeTo', {
   value: resizeWindow,
 })
 
+// Node exposes a global `localStorage` that shadows jsdom's Storage but lacks a
+// usable API, so provide a simple in-memory implementation for tests.
+const createLocalStorage = (): Storage => {
+  let store = new Map<string, string>()
+
+  return {
+    get length() {
+      return store.size
+    },
+    clear: () => {
+      store = new Map<string, string>()
+    },
+    getItem: (key: string) => store.get(key) ?? null,
+    key: (index: number) => [...store.keys()][index] ?? null,
+    removeItem: (key: string) => {
+      store.delete(key)
+    },
+    setItem: (key: string, value: string) => {
+      store.set(key, String(value))
+    },
+  }
+}
+
+Object.defineProperty(window, 'localStorage', {
+  configurable: true,
+  writable: true,
+  value: createLocalStorage(),
+})
+
 resizeWindow(1024, 768)
 
 afterEach(() => {
