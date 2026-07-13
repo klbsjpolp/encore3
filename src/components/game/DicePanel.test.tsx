@@ -91,6 +91,19 @@ describe('DicePanel Component', () => {
     expect(screen.getByText('R').closest('button')).not.toHaveClass('opacity-30')
   })
 
+  it('keeps the dice dimmed during a player switch that follows an AI turn', () => {
+    render(
+      <DicePanel
+        dice={mockDice}
+        phase="player-switching"
+        lastPhase="active-selection-ai"
+        canSelect={false}
+      />,
+    )
+
+    expect(screen.getByText('R').closest('button')).toHaveClass('opacity-30')
+  })
+
   it('shows selected state for dice', () => {
     render(
       <DicePanel
