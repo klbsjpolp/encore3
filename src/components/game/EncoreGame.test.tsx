@@ -206,6 +206,68 @@ describe('EncoreGame selection logic', () => {
     })
   })
 
+  it('does not start the game while a player name is blank', () => {
+    const initializeGame = vi.fn()
+
+    mockUseEncoreGame.mockReturnValue({
+      gameState: { ...createGameState(), gameStarted: false },
+      initializeGame,
+      rollNewDice: vi.fn(),
+      selectDice: vi.fn(),
+      makeMove: vi.fn(),
+      skipTurn: vi.fn(),
+      isValidMove: vi.fn(() => true),
+      completePlayerSwitch: vi.fn(),
+    })
+
+    render(<EncoreGame />)
+
+    fireEvent.change(screen.getByDisplayValue('Joueur 1'), { target: { value: '   ' } })
+    fireEvent.click(screen.getByText('Commencer la partie'))
+
+    expect(initializeGame).not.toHaveBeenCalled()
+  })
+
+  it('abandons the game and returns to the setup screen', () => {
+    const abandonGame = vi.fn()
+
+    mockUseEncoreGame.mockReturnValue({
+      gameState: createGameState(),
+      initializeGame: vi.fn(),
+      abandonGame,
+      rollNewDice: vi.fn(),
+      selectDice: vi.fn(),
+      makeMove: vi.fn(),
+      skipTurn: vi.fn(),
+      isValidMove: vi.fn(() => true),
+      completePlayerSwitch: vi.fn(),
+    })
+
+    render(<EncoreGame />)
+
+    fireEvent.click(screen.getByRole('button', { name: /nouvelle partie/i }))
+
+    expect(abandonGame).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('Commencer la partie')).toBeInTheDocument()
+  })
+
+  it('clears the current selection with the clear button', () => {
+    mockFindConnectedGroup.mockImplementation((row: number, col: number) => [
+      { row, col },
+      { row, col: col + 1 },
+    ])
+
+    setupGame(2)
+
+    const [square] = getMainBoardSquares()
+    fireEvent.click(square)
+    expect(getSelectedSquares()).toHaveLength(2)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Effacer' }))
+
+    expect(getSelectedSquares()).toHaveLength(0)
+  })
+
   it('selects a hovered group on the first click when it matches the number die', () => {
     mockFindConnectedGroup.mockImplementation((row: number, col: number) => [
       { row, col },
