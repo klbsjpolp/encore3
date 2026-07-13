@@ -120,6 +120,76 @@ describe('resolvePlayerSwitch', () => {
     expect(nextState.activePlayer).toBe(1)
   })
 
+  it('returns the state unchanged outside the switching phase', () => {
+    const state = createSwitchingState({ phase: 'rolling' })
+
+    expect(resolvePlayerSwitch(state)).toBe(state)
+    expect(shouldAnimatePlayerSwitch(state)).toBe(false)
+  })
+
+  it('returns the state unchanged when the previous phase is not a selection', () => {
+    const state = createSwitchingState({ lastPhase: 'rolling' })
+
+    expect(resolvePlayerSwitch(state)).toBe(state)
+  })
+
+  it('goes straight back to rolling in a single-player game', () => {
+    const nextState = resolvePlayerSwitch(
+      createSwitchingState({ players: [makePlayer('p1', 'Solo')] }),
+    )
+
+    expect(nextState.phase).toBe('rolling')
+    expect(nextState.currentPlayer).toBe(0)
+    expect(nextState.activePlayer).toBe(0)
+  })
+
+  it('routes to the AI passive phase when the next player is an AI', () => {
+    const nextState = resolvePlayerSwitch(
+      createSwitchingState({
+        players: [makePlayer('p1', 'Player 1'), makePlayer('p2', 'Robot', true)],
+      }),
+    )
+
+    expect(nextState.phase).toBe('passive-selection-ai')
+    expect(nextState.currentPlayer).toBe(1)
+  })
+
+  it('chains passive players before returning to the next roller', () => {
+    const players = [
+      makePlayer('p1', 'Player 1'),
+      makePlayer('p2', 'Player 2'),
+      makePlayer('p3', 'Player 3'),
+    ]
+
+    const nextState = resolvePlayerSwitch(
+      createSwitchingState({
+        players,
+        currentPlayer: 1,
+        activePlayer: 0,
+        lastPhase: 'passive-selection',
+      }),
+    )
+
+    expect(nextState.phase).toBe('passive-selection')
+    expect(nextState.currentPlayer).toBe(2)
+    expect(nextState.activePlayer).toBe(0)
+  })
+
+  it('hands the roll to an AI with the AI rolling phase', () => {
+    const nextState = resolvePlayerSwitch(
+      createSwitchingState({
+        players: [makePlayer('p1', 'Player 1'), makePlayer('p2', 'Robot', true)],
+        currentPlayer: 1,
+        activePlayer: 0,
+        lastPhase: 'passive-selection',
+      }),
+    )
+
+    expect(nextState.phase).toBe('rolling-ai')
+    expect(nextState.currentPlayer).toBe(1)
+    expect(nextState.activePlayer).toBe(1)
+  })
+
   it('finishes the game when the pending game-over flag is set', () => {
     const players = [makePlayer('p1', 'Player 1'), makePlayer('p2', 'Player 2')]
     players[0].completedColorsFirst = ['red']

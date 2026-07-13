@@ -5,14 +5,17 @@ import path from 'path'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// Version shown in the UI. semantic-release bumps package.json and commits it
-// back to the repo, so this value stays in sync with the GitHub release tag.
+import { resolveBuildVersion } from './src/lib/buildVersion'
+
+// Version shown in the UI. On a release build the version computed by
+// semantic-release is threaded in via VITE_APP_VERSION (see deploy.yml); outside
+// of that (local builds) we fall back to the version in package.json.
 const resolveAppVersion = () => {
   const { version } = JSON.parse(
     readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'),
   ) as { version: string }
 
-  return `v${version}`
+  return resolveBuildVersion(process.env.VITE_APP_VERSION, version)
 }
 
 // https://vitejs.dev/config/

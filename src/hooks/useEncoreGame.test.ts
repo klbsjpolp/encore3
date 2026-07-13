@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { BoardConfiguration } from '@/data/boardConfigurations'
-import type { GameColor, Player, Square } from '@/types/game'
+import type { ColorDiceResult, GameColor, NumberDiceResult, Player, Square } from '@/types/game'
 import { GAME_COLORS } from '@/types/game'
 
 import { GAME_STATE_STORAGE_KEY } from './encore-game/gameStatePersistence'
@@ -252,6 +252,221 @@ describe('useEncoreGame persistence', () => {
     })
     expect(restored.current.gameState.gameStarted).toBe(false)
     expect(window.localStorage.getItem(GAME_STATE_STORAGE_KEY)).toBeNull()
+  })
+})
+
+const colorDie = (value: ColorDiceResult['value'], selected = false): ColorDiceResult => ({
+  id: `color-${value}`,
+  type: 'color',
+  value,
+  selected,
+})
+
+const numberDie = (value: NumberDiceResult['value'], selected = false): NumberDiceResult => ({
+  id: `number-${value}`,
+  type: 'number',
+  value,
+  selected,
+})
+
+describe('useEncoreGame dice rolling', () => {
+  it('rolls 3 color and 3 number dice and moves to active selection', () => {
+    const { result } = renderHook(() => useEncoreGame())
+
+    act(() => {
+      result.current.initializeGame(['Player 1', 'Player 2'])
+      result.current.rollNewDice()
+    })
+
+    expect(result.current.gameState.phase).toBe('active-selection')
+    const dice = result.current.gameState.dice
+    expect(dice).toHaveLength(6)
+    expect(dice.filter((die) => die.type === 'color')).toHaveLength(3)
+    expect(dice.filter((die) => die.type === 'number')).toHaveLength(3)
+    expect(dice.every((die) => !die.selected)).toBe(true)
+  })
+
+  it('ignores a roll outside the rolling phase', () => {
+    const { result } = renderHook(() => useEncoreGame())
+
+    act(() => {
+      result.current.initializeGame(['Player 1', 'Player 2'])
+      result.current.rollNewDice()
+    })
+
+    const diceAfterFirstRoll = result.current.gameState.dice
+
+    act(() => {
+      result.current.rollNewDice()
+    })
+
+    expect(result.current.gameState.dice).toBe(diceAfterFirstRoll)
+    expect(result.current.gameState.phase).toBe('active-selection')
+  })
+})
+
+describe('useEncoreGame dice selection', () => {
+  const setupActiveSelection = () => {
+    const { result } = renderHook(() => useEncoreGame())
+    act(() => {
+      result.current.initializeGame(['Player 1', 'Player 2'])
+      result.current.rollNewDice()
+    })
+    return result
+  }
+
+  it('stores the chosen color and number dice', () => {
+    const result = setupActiveSelection()
+
+    act(() => {
+      result.current.selectDice(colorDie('red'))
+      result.current.selectDice(numberDie(3))
+    })
+
+    expect(result.current.gameState.selectedDice.color?.value).toBe('red')
+    expect(result.current.gameState.selectedDice.number?.value).toBe(3)
+    expect(result.current.gameState.selectedFromJoker).toEqual({ color: false, number: false })
+  })
+
+  it('marks wild dice as joker selections', () => {
+    const result = setupActiveSelection()
+
+    act(() => {
+      result.current.selectDice(colorDie('wild'))
+      result.current.selectDice(numberDie('wild'))
+    })
+
+    expect(result.current.gameState.selectedFromJoker).toEqual({ color: true, number: true })
+  })
+
+  it('rejects a wild selection when the player has no joker left', () => {
+    const result = setupActiveSelection()
+    result.current.gameState.players[0].jokersRemaining = 0
+
+    act(() => {
+      result.current.selectDice(colorDie('wild'))
+    })
+
+    expect(result.current.gameState.selectedDice.color).toBeNull()
+    expect(result.current.gameState.selectedFromJoker.color).toBe(false)
+  })
+
+  it('rejects dice already used by the active player during passive selection', () => {
+    const result = setupActiveSelection()
+    result.current.gameState.phase = 'passive-selection'
+
+    act(() => {
+      result.current.selectDice(colorDie('red', true))
+    })
+
+    expect(result.current.gameState.selectedDice.color).toBeNull()
+  })
+
+  it('ignores selections outside the selection phases', () => {
+    const { result } = renderHook(() => useEncoreGame())
+
+    act(() => {
+      result.current.initializeGame(['Player 1', 'Player 2'])
+      result.current.selectDice(colorDie('red'))
+    })
+
+    expect(result.current.gameState.selectedDice.color).toBeNull()
+  })
+
+  it('ignores manual selections during AI phases', () => {
+    const result = setupActiveSelection()
+    result.current.gameState.phase = 'active-selection-ai'
+
+    act(() => {
+      result.current.selectDice(colorDie('red'))
+    })
+
+    expect(result.current.gameState.selectedDice.color).toBeNull()
+  })
+})
+
+describe('useEncoreGame guards', () => {
+  it('ignores a move without a complete dice selection', () => {
+    const { result } = renderHook(() => useEncoreGame())
+
+    act(() => {
+      result.current.initializeGame(['Player 1', 'Player 2'])
+      result.current.rollNewDice()
+    })
+
+    const before = result.current.gameState
+
+    act(() => {
+      result.current.makeMove([{ row: 0, col: 7 }])
+    })
+
+    expect(result.current.gameState).toBe(before)
+  })
+
+  it('ignores skipping outside the selection phases', () => {
+    const { result } = renderHook(() => useEncoreGame())
+
+    act(() => {
+      result.current.initializeGame(['Player 1', 'Player 2'])
+    })
+
+    const before = result.current.gameState
+
+    act(() => {
+      result.current.skipTurn()
+    })
+
+    expect(result.current.gameState).toBe(before)
+    expect(result.current.gameState.phase).toBe('rolling')
+  })
+})
+
+describe('useEncoreGame AI turns', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('starts in the AI rolling phase when the first player is an AI', () => {
+    const { result } = renderHook(() => useEncoreGame())
+
+    act(() => {
+      result.current.initializeGame(['Robot', 'Player 2'], [true, false])
+    })
+
+    expect(result.current.gameState.phase).toBe('rolling-ai')
+  })
+
+  it('rolls and plays automatically during an AI turn', () => {
+    const { result } = renderHook(() => useEncoreGame())
+
+    act(() => {
+      result.current.initializeGame(['Robot', 'Player 2'], [true, false])
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+
+    expect(result.current.gameState.dice).toHaveLength(6)
+    expect(result.current.gameState.phase).toBe('active-selection-ai')
+
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+
+    // Whether the AI plays a move or skips, the turn always hands over.
+    expect(result.current.gameState.phase).toBe('player-switching')
+
+    act(() => {
+      vi.advanceTimersByTime(PLAYER_SWITCH_DELAY_MS)
+    })
+
+    expect(result.current.gameState.phase).toBe('passive-selection')
+    expect(result.current.gameState.currentPlayer).toBe(1)
   })
 })
 
