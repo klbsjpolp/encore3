@@ -10,6 +10,8 @@ export default mergeConfig(
       environment: 'jsdom',
       setupFiles: './src/test/setup.ts',
       include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      // A broken glob or an empty suite must fail the build, not pass silently.
+      passWithNoTests: false,
     },
   }),
 )
