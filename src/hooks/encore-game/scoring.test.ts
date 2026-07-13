@@ -4,10 +4,14 @@ import type { BoardConfiguration } from '@/data/boardConfigurations'
 import type { GameColor, Player, Square } from '@/types/game'
 
 import {
+  calculateColorsScore,
   calculateColumnScore,
   calculateFinalScore,
   calculateStarPenalty,
   determineWinners,
+  FIRST_COLOR_COMPLETION_POINTS,
+  getColorCompletionPoints,
+  SECOND_COLOR_COMPLETION_POINTS,
   TOTAL_STARS,
 } from './scoring'
 
@@ -85,6 +89,32 @@ describe('encore-game/scoring', () => {
     const player = makePlayer({ starsCollected: 13 })
 
     expect(calculateStarPenalty(player)).toBe(4)
+  })
+
+  it('awards color completion points based on finishing order', () => {
+    const player = makePlayer({
+      completedColorsFirst: ['red'],
+      completedColorsNotFirst: ['blue'],
+    })
+
+    expect(getColorCompletionPoints(player, 'red')).toBe(FIRST_COLOR_COMPLETION_POINTS)
+    expect(getColorCompletionPoints(player, 'blue')).toBe(SECOND_COLOR_COMPLETION_POINTS)
+    expect(getColorCompletionPoints(player, 'green')).toBe(0)
+  })
+
+  it('sums color completion points for the colors score', () => {
+    const player = makePlayer({
+      completedColorsFirst: ['red', 'blue'],
+      completedColorsNotFirst: ['green'],
+    })
+
+    expect(calculateColorsScore(player)).toBe(
+      2 * FIRST_COLOR_COMPLETION_POINTS + SECOND_COLOR_COMPLETION_POINTS,
+    )
+  })
+
+  it('returns no winner for an empty player list', () => {
+    expect(determineWinners([])).toEqual([])
   })
 
   it('breaks ties by remaining jokers', () => {
