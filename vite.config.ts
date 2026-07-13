@@ -1,7 +1,18 @@
+import { readFileSync } from 'node:fs'
+
 import react from '@vitejs/plugin-react-swc'
 import path from 'path'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+
+// Version shown in the UI, kept in sync with the GitHub release tag (v<version>).
+const resolveAppVersion = () => {
+  const { version } = JSON.parse(
+    readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'),
+  ) as { version: string }
+
+  return `v${version}`
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -15,6 +26,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     base,
+    define: {
+      __APP_VERSION__: JSON.stringify(resolveAppVersion()),
+    },
     server: {
       host: '::',
       port: 8080,

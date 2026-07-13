@@ -1,8 +1,8 @@
 name: CI
 
+# Validation for pull requests. Pushes to main are validated by the deploy
+# workflow (its `test` job gates the Pages deploy and the release).
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
 
