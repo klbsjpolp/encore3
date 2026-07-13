@@ -25,6 +25,7 @@ import { getGameStateMessage, getGameStatusLabel } from './encoreGameStatus'
 import { GameBoard } from './GameBoard'
 import { ScorePanel } from './ScorePanel'
 import { useEncoreSelection } from './useEncoreSelection'
+import { useSpacebarShortcut } from './useSpacebarShortcut'
 
 export const EncoreGame = () => {
   const {
@@ -67,6 +68,17 @@ export const EncoreGame = () => {
     makeMove,
     skipTurn,
     isValidMove,
+  })
+
+  // Spacebar triggers the highlighted primary action: roll the dice while
+  // rolling, or confirm the placement while a valid move is selected.
+  useSpacebarShortcut({
+    canRoll: gameState.phase === 'rolling',
+    onRoll: rollNewDice,
+    canConfirm:
+      (gameState.phase === 'active-selection' || gameState.phase === 'passive-selection') &&
+      canMakeMove(),
+    onConfirm: handleConfirmMove,
   })
 
   const mainBoardContainerRef = useRef<HTMLDivElement>(null)
