@@ -1,6 +1,7 @@
 # Validate, publish a semantic-release, then deploy to GitHub Pages — all from main.
-# Flow: test -> release (semantic-release computes the next version, creates the
-# git tag + GitHub release) -> build (injects that tag as the UI version) -> deploy.
+# Flow: test -> release (semantic-release computes the next version, bumps and
+# commits package.json, creates the git tag + GitHub release) -> build (reads the
+# committed version) -> deploy.
 name: Deploy Vite App to Pages
 
 on:
@@ -57,9 +58,9 @@ jobs:
       - name: Run typecheck
         run: pnpm typecheck
 
-  # Determine the next version from the conventional commits and publish a
-  # GitHub release + git tag. Does not commit back to main (avoids conflicting
-  # with branch protection); the tag is the single source of truth for versions.
+  # Determine the next version from the conventional commits, bump and commit
+  # package.json back to main, and publish a GitHub release + git tag. The bump
+  # commit carries [skip ci] so it does not re-trigger this workflow.
   release:
     runs-on: ubuntu-latest
     needs: test
@@ -75,6 +76,10 @@ jobs:
 
       - name: Run semantic-release
         uses: cycjimmy/semantic-release-action@v4
+        with:
+          # @semantic-release/git is not bundled with semantic-release.
+          extra_plugins: |
+            @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -86,8 +91,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          # Full history so the latest release tag is available to git describe.
-          fetch-depth: 0
+          # Check out the branch tip so the release commit (bumped package.json)
+          # is included in the build.
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -103,16 +109,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Resolve version from latest tag
-        id: version
-        run: echo "version=$(git describe --tags --abbrev=0 2>/dev/null || echo)" >> "$GITHUB_OUTPUT"
-
       - name: Build
         run: pnpm build
         env:
           NODE_ENV: production
           VITE_BASE_PATH: ${{ format('/{0}/', github.event.repository.name) }}
-          APP_VERSION: ${{ steps.version.outputs.version }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
