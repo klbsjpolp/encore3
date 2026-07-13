@@ -1,4 +1,6 @@
-# Validate, deploy to GitHub Pages, and publish a release — all from main.
+# Validate, publish a semantic-release, then deploy to GitHub Pages — all from main.
+# Flow: test -> release (semantic-release computes the next version, creates the
+# git tag + GitHub release) -> build (injects that tag as the UI version) -> deploy.
 name: Deploy Vite App to Pages
 
 on:
@@ -22,7 +24,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Validation gate: deploy and release only proceed when this passes.
+  # Validation gate: release and deploy only proceed when this passes.
   test:
     runs-on: ubuntu-latest
     steps:
@@ -55,13 +57,37 @@ jobs:
       - name: Run typecheck
         run: pnpm typecheck
 
-  # Build job
-  build:
+  # Determine the next version from the conventional commits and publish a
+  # GitHub release + git tag. Does not commit back to main (avoids conflicting
+  # with branch protection); the tag is the single source of truth for versions.
+  release:
     runs-on: ubuntu-latest
     needs: test
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Run semantic-release
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Build job
+  build:
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Full history so the latest release tag is available to git describe.
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -77,11 +103,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Resolve version from latest tag
+        id: version
+        run: echo "version=$(git describe --tags --abbrev=0 2>/dev/null || echo)" >> "$GITHUB_OUTPUT"
+
       - name: Build
         run: pnpm build
         env:
           NODE_ENV: production
           VITE_BASE_PATH: ${{ format('/{0}/', github.event.repository.name) }}
+          APP_VERSION: ${{ steps.version.outputs.version }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
@@ -99,32 +130,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
-
-  # Publish a GitHub release tagged with the package.json version.
-  # Bumping the version in package.json produces a new release automatically;
-  # pushes that keep the same version are skipped (the tag already exists).
-  release:
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Resolve version tag
-        id: version
-        run: echo "tag=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
-
-      - name: Create release if the version is new
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          tag='${{ steps.version.outputs.tag }}'
-          if gh release view "$tag" > /dev/null 2>&1; then
-            echo "Release $tag already exists — skipping."
-          else
-            gh release create "$tag" --title "$tag" --target '${{ github.sha }}' --generate-notes
-          fi
