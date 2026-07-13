@@ -79,29 +79,25 @@ describe('generateRandomBoard', () => {
     expect(board.starPositions).toEqual(expectedStars)
   })
 
-  it('can pick any official board as template', () => {
-    mockRandomSequence([
-      (BOARD_CONFIGURATIONS.length - 1) / BOARD_CONFIGURATIONS.length + 0.01,
-      0.9,
-      0.9,
-      0.9,
-      ...IDENTITY_SHUFFLE,
-    ])
-    const template = BOARD_CONFIGURATIONS[BOARD_CONFIGURATIONS.length - 1]
+  it('never uses the checkerboard placeholder as template', () => {
+    const templates = BOARD_CONFIGURATIONS.filter((board) => board.id !== 'random')
+    // A first value close to 1 picks the last entry of the template pool; it
+    // must be the last real board, not the checkerboard placeholder.
+    mockRandomSequence([0.99, 0.9, 0.9, 0.9, ...IDENTITY_SHUFFLE])
+    const template = templates[templates.length - 1]
 
     const board = generateRandomBoard()
 
+    expect(template.id).not.toBe('random')
     expect(board.colorLayout).toEqual(template.colorLayout)
   })
 
-  it('always produces a board satisfying the official constraints', () => {
+  it('always produces a board satisfying every official constraint', () => {
     for (let i = 0; i < 20; i++) {
       const board = generateRandomBoard()
       const result = validateBoard({ ...board, id: 'random', fillClass: '' })
-      // The checkerboard random template may be picked as source; it only
-      // deviates on group sizes, so every other constraint must always hold.
-      const errors = result.errors.filter((error) => !error.includes('groups of sizes'))
-      expect(errors).toEqual([])
+      expect(result.errors).toEqual([])
+      expect(result.valid).toBe(true)
     }
   })
 })

@@ -12,8 +12,11 @@ import { BOARD_CONFIGURATIONS } from './boardConfigurations'
  * - Random color mapping
  */
 export function generateRandomBoard(): Omit<BoardConfiguration, 'id' | 'fillClass'> {
-  // Pick a random official board as template
-  const template = BOARD_CONFIGURATIONS[Math.floor(Math.random() * BOARD_CONFIGURATIONS.length)]
+  // Pick a random official board as template. The checkerboard placeholder used
+  // for the "random" preview is excluded: it only has single-cell groups, so a
+  // transformed copy would stay a checkerboard instead of a playable board.
+  const templates = BOARD_CONFIGURATIONS.filter((board) => board.id !== 'random')
+  const template = templates[Math.floor(Math.random() * templates.length)]
 
   // Create a transformed copy
   let board = template.colorLayout.map((row) => [...row])
