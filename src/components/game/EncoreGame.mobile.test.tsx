@@ -150,19 +150,45 @@ describe('EncoreGame mobile layout', () => {
 
     fireEvent.click(first)
     await waitFor(() => {
-      expect(confirmButton).toHaveTextContent('Confirmer (1)')
+      expect(confirmButton).toHaveTextContent('Confirmer (1/2)')
     })
 
     fireEvent.click(second)
     await waitFor(() => {
-      expect(confirmButton).toHaveTextContent('Confirmer (2)')
+      expect(confirmButton).toHaveTextContent('Confirmer (2/2)')
     })
 
     fireEvent.click(second)
     await waitFor(() => {
-      expect(confirmButton).toHaveTextContent('Confirmer (1)')
+      expect(confirmButton).toHaveTextContent('Confirmer (1/2)')
     })
   }, 10000)
+
+  it('disables the clear button while nothing is selected', async () => {
+    await setupGame()
+
+    const clearButton = screen.getByRole('button', { name: /^effacer$/i })
+    expect(clearButton).toBeDisabled()
+
+    const [first] = getMainBoardSquares()
+    fireEvent.click(first)
+
+    await waitFor(() => {
+      expect(clearButton).not.toBeDisabled()
+    })
+  })
+
+  it('shows the roll action in the sticky bar during the rolling phase', async () => {
+    await setupGame({
+      gameState: {
+        ...createGameState(),
+        phase: 'rolling',
+      },
+    })
+
+    expect(screen.getByRole('button', { name: /lancer les dés/i })).not.toBeDisabled()
+    expect(screen.queryByRole('button', { name: /confirmer/i })).not.toBeInTheDocument()
+  })
 
   it('does not rely on desktop animation to show switching state on mobile', async () => {
     await setupGame({
