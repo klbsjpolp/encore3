@@ -66,7 +66,9 @@ export const ScorePanel = ({
         <span>+</span>
         <span>{finalScore.jokersScore}</span>
         <span>=</span>
-        <span className="font-bold">{finalScore.totalScore}</span>
+        <span className={cn('font-bold', finalScore.totalScore < 0 && 'text-destructive')}>
+          {finalScore.totalScore}
+        </span>
       </div>
     )
   }
@@ -222,7 +224,7 @@ export const ScorePanel = ({
                 className={cn(
                   'w-4 h-4',
                   i < player.starsCollected ? 'text-yellow-800' : 'text-black',
-                  i < player.starsCollected ? 'fill-yellow-500' : 'fill-(--color-muted)',
+                  i < player.starsCollected ? 'fill-yellow-500' : 'fill-muted',
                 )}
               />
             ))}
