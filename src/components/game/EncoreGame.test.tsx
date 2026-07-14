@@ -287,6 +287,32 @@ describe('EncoreGame selection logic', () => {
     vi.useRealTimers()
   })
 
+  it('cancels the pending abandon confirmation when focus leaves the button', () => {
+    const abandonGame = vi.fn()
+
+    mockUseEncoreGame.mockReturnValue({
+      gameState: createGameState(),
+      initializeGame: vi.fn(),
+      abandonGame,
+      rollNewDice: vi.fn(),
+      selectDice: vi.fn(),
+      makeMove: vi.fn(),
+      skipTurn: vi.fn(),
+      isValidMove: vi.fn(() => true),
+      completePlayerSwitch: vi.fn(),
+    })
+
+    render(<EncoreGame />)
+
+    fireEvent.click(screen.getByRole('button', { name: /nouvelle partie/i }))
+    const confirmButton = screen.getByRole('button', { name: /abandonner la partie/i })
+
+    fireEvent.blur(confirmButton)
+
+    expect(abandonGame).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: /nouvelle partie/i })).toBeInTheDocument()
+  })
+
   it('starts a new game without confirmation once the game is over', () => {
     const abandonGame = vi.fn()
 
