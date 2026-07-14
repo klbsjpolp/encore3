@@ -170,6 +170,10 @@ export const EncoreGame = () => {
     return () => window.clearTimeout(timerId)
   }, [confirmingReset])
 
+  // A pending confirmation no longer applies once the game ends (the reset
+  // becomes non-destructive), so ignore it instead of showing a stale state.
+  const showResetConfirm = confirmingReset && gameState.phase !== 'game-over'
+
   const handleResetClick = useCallback(() => {
     if (gameState.phase !== 'game-over' && !confirmingReset) {
       setConfirmingReset(true)
@@ -369,13 +373,13 @@ export const EncoreGame = () => {
           <Button
             onClick={handleResetClick}
             onBlur={() => setConfirmingReset(false)}
-            variant={confirmingReset ? 'destructive' : 'outline'}
+            variant={showResetConfirm ? 'destructive' : 'outline'}
             size="sm"
             className="shrink-0"
-            aria-label={confirmingReset ? 'Abandonner la partie ?' : 'Nouvelle partie'}
+            aria-label={showResetConfirm ? undefined : 'Nouvelle partie'}
           >
             <RotateCcw className="w-4 h-4 sm:mr-2" />
-            {confirmingReset ? (
+            {showResetConfirm ? (
               <>
                 <span className="sm:hidden">Abandonner ?</span>
                 <span className="hidden sm:inline">Abandonner la partie ?</span>
