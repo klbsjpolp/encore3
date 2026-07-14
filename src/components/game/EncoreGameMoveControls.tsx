@@ -73,6 +73,11 @@ export const EncoreGameMoveControls = ({
           <>
             <span className="hidden sm:inline">Confirmer le placement ({selectedCount} cases)</span>
             <span className="sm:hidden">Confirmer ({selectedCount})</span>
+            {canConfirm && !actionsDisabled && (
+              <kbd className="pointer-events-none hidden rounded border border-current px-1 font-mono text-[10px] font-normal opacity-75 lg:inline-block">
+                Espace
+              </kbd>
+            )}
           </>
         )}
       </Button>
