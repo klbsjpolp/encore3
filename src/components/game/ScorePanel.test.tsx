@@ -67,7 +67,7 @@ describe('ScorePanel', () => {
     expect(screen.queryByText('Total :')).not.toBeInTheDocument()
   })
 
-  it('expands the column breakdown on demand', () => {
+  it('expands and collapses the column breakdown on demand', () => {
     const player = makePlayer({
       completedColumnsFirst: ['A'],
       completedColumnsNotFirst: ['B'],
@@ -75,13 +75,23 @@ describe('ScorePanel', () => {
 
     render(<ScorePanel player={player} isCurrentPlayer />)
 
-    fireEvent.click(screen.getByRole('button', { name: /détail des scores/i }))
+    const toggle = screen.getByRole('button', { name: 'Afficher le détail des scores' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(toggle)
 
     // A first (5 points), B second (2 points), other columns not completed.
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: 'Masquer le détail des scores' })).toBe(toggle)
     expect(screen.getByText('A: 5')).toBeInTheDocument()
     expect(screen.getByText('B: 2')).toBeInTheDocument()
     expect(screen.getByText('C: -')).toBeInTheDocument()
-    expect(screen.getByText(/Colonnes \(total: 7 points\)/)).toBeInTheDocument()
+    expect(screen.getByText(/Détail des colonnes/)).toBeInTheDocument()
+
+    fireEvent.click(toggle)
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText('A: 5')).not.toBeInTheDocument()
   })
 
   it('shows completed color points based on finishing order', () => {
