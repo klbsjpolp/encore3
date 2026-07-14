@@ -376,7 +376,10 @@ export const EncoreGame = () => {
           >
             <RotateCcw className="w-4 h-4 sm:mr-2" />
             {confirmingReset ? (
-              <span>Abandonner la partie ?</span>
+              <>
+                <span className="sm:hidden">Abandonner ?</span>
+                <span className="hidden sm:inline">Abandonner la partie ?</span>
+              </>
             ) : (
               <span className="hidden sm:inline">Nouvelle partie</span>
             )}
