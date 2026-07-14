@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import type { BoardConfiguration } from '@/data/boardConfigurations'
@@ -45,7 +45,29 @@ const makePlayer = (overrides: Partial<Player> = {}): Player => {
 }
 
 describe('ScorePanel', () => {
-  it('shows the current player badge and column breakdown during the game', () => {
+  it('shows the current player badge and a condensed summary during the game', () => {
+    const player = makePlayer({
+      completedColumnsFirst: ['A'],
+      completedColumnsNotFirst: ['B'],
+      starsCollected: 3,
+      jokersRemaining: 6,
+    })
+
+    render(<ScorePanel player={player} isCurrentPlayer />)
+
+    expect(screen.getByText('Alice')).toBeInTheDocument()
+    expect(screen.getByText('Actuel')).not.toHaveClass('invisible')
+    // Condensed summary: columns total, stars, jokers.
+    expect(screen.getByText('7')).toBeInTheDocument()
+    expect(screen.getByText('3/15')).toBeInTheDocument()
+    expect(screen.getByText('6/8')).toBeInTheDocument()
+    // The detailed breakdown stays collapsed by default.
+    expect(screen.queryByText('A: 5')).not.toBeInTheDocument()
+    // No final score while the game is running.
+    expect(screen.queryByText('Total :')).not.toBeInTheDocument()
+  })
+
+  it('expands the column breakdown on demand', () => {
     const player = makePlayer({
       completedColumnsFirst: ['A'],
       completedColumnsNotFirst: ['B'],
@@ -53,15 +75,13 @@ describe('ScorePanel', () => {
 
     render(<ScorePanel player={player} isCurrentPlayer />)
 
-    expect(screen.getByText('Alice')).toBeInTheDocument()
-    expect(screen.getByText('Actuel')).not.toHaveClass('invisible')
+    fireEvent.click(screen.getByRole('button', { name: /détail des scores/i }))
+
     // A first (5 points), B second (2 points), other columns not completed.
     expect(screen.getByText('A: 5')).toBeInTheDocument()
     expect(screen.getByText('B: 2')).toBeInTheDocument()
     expect(screen.getByText('C: -')).toBeInTheDocument()
     expect(screen.getByText(/Colonnes \(total: 7 points\)/)).toBeInTheDocument()
-    // No final score while the game is running.
-    expect(screen.queryByText('Total :')).not.toBeInTheDocument()
   })
 
   it('shows completed color points based on finishing order', () => {
@@ -72,6 +92,8 @@ describe('ScorePanel', () => {
     })
 
     render(<ScorePanel player={player} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /détail des scores/i }))
 
     expect(screen.getByText('+5')).toBeInTheDocument()
     expect(screen.getByText('+3')).toBeInTheDocument()
