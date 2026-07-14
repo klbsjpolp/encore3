@@ -219,79 +219,79 @@ export const ScorePanel = ({
           </span>
         </div>
 
-        {expanded && (
-          <div id={detailsId} className="space-y-4">
-            <div>
-              <p className="text-sm font-medium mb-2">Détail des colonnes : </p>
-              <div className="grid grid-cols-5 gap-0.5">
-                {columnScores.map(({ column, points, isFirst }) => (
-                  <Badge
-                    key={column}
-                    variant={points == null ? 'outline' : isFirst ? 'default' : 'secondary'}
-                    className="whitespace-nowrap px-1.5 tabular-nums justify-center"
-                  >
-                    {`${column}: ${points ?? '-'}`}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-row gap-2 items-center mb-2">
-              <span className="text-sm font-medium">Couleurs complétées : </span>
-              {colorScores.map(({ color, points }) => (
-                <div
-                  key={color}
-                  className={cn(
-                    'w-6 h-6 rounded border-2 flex items-center justify-center text-[10px] font-bold',
-                    getColorBadgeClasses(color),
-                  )}
+        {/* Always mounted so aria-controls points at a real element; the
+            hidden attribute drives visibility. */}
+        <div id={detailsId} className="space-y-4" hidden={!expanded}>
+          <div>
+            <p className="text-sm font-medium mb-2">Détail des colonnes : </p>
+            <div className="grid grid-cols-5 gap-0.5">
+              {columnScores.map(({ column, points, isFirst }) => (
+                <Badge
+                  key={column}
+                  variant={points == null ? 'outline' : isFirst ? 'default' : 'secondary'}
+                  className="whitespace-nowrap px-1.5 tabular-nums justify-center"
                 >
-                  {points > 0 ? `+${points}` : '0'}
-                </div>
+                  {`${column}: ${points ?? '-'}`}
+                </Badge>
               ))}
-              {Array.from({ length: Math.max(0, 2 - colorScores.length) }, (_, i) => (
-                <div key={i} className="w-6 h-6 rounded border-2 bg-muted" />
-              ))}
-            </div>
-
-            <div>
-              <p className="text-sm font-medium mb-2">
-                Étoiles collectées ({player.starsCollected}/{TOTAL_STARS}) :{' '}
-              </p>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: TOTAL_STARS }, (_, i) => (
-                  <Star
-                    key={i}
-                    className={cn(
-                      'w-4 h-4',
-                      i < player.starsCollected ? 'text-yellow-800' : 'text-black',
-                      i < player.starsCollected ? 'fill-yellow-500' : 'fill-(--color-muted)',
-                    )}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-row gap-2 items-baseline mb-2">
-              <span className="text-sm font-medium">
-                Jokers ({player.jokersRemaining}/{MAX_JOKERS})
-              </span>
-              <span className="flex font-mono">
-                {Array.from({ length: MAX_JOKERS }, (_, i) => (
-                  <span
-                    key={i}
-                    className={cn(
-                      'text-xs border rounded-full',
-                      i >= MAX_JOKERS - player.jokersRemaining && 'border-primary',
-                    )}
-                  >
-                    {i >= MAX_JOKERS - player.jokersRemaining ? '❗' : '❕'}
-                  </span>
-                ))}
-              </span>
             </div>
           </div>
-        )}
+
+          <div className="flex flex-row gap-2 items-center mb-2">
+            <span className="text-sm font-medium">Couleurs complétées : </span>
+            {colorScores.map(({ color, points }) => (
+              <div
+                key={color}
+                className={cn(
+                  'w-6 h-6 rounded border-2 flex items-center justify-center text-[10px] font-bold',
+                  getColorBadgeClasses(color),
+                )}
+              >
+                {points > 0 ? `+${points}` : '0'}
+              </div>
+            ))}
+            {Array.from({ length: Math.max(0, 2 - colorScores.length) }, (_, i) => (
+              <div key={i} className="w-6 h-6 rounded border-2 bg-muted" />
+            ))}
+          </div>
+
+          <div>
+            <p className="text-sm font-medium mb-2">
+              Étoiles collectées ({player.starsCollected}/{TOTAL_STARS}) :{' '}
+            </p>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: TOTAL_STARS }, (_, i) => (
+                <Star
+                  key={i}
+                  className={cn(
+                    'w-4 h-4',
+                    i < player.starsCollected ? 'text-yellow-800' : 'text-black',
+                    i < player.starsCollected ? 'fill-yellow-500' : 'fill-(--color-muted)',
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-row gap-2 items-baseline mb-2">
+            <span className="text-sm font-medium">
+              Jokers ({player.jokersRemaining}/{MAX_JOKERS})
+            </span>
+            <span className="flex font-mono">
+              {Array.from({ length: MAX_JOKERS }, (_, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    'text-xs border rounded-full',
+                    i >= MAX_JOKERS - player.jokersRemaining && 'border-primary',
+                  )}
+                >
+                  {i >= MAX_JOKERS - player.jokersRemaining ? '❗' : '❕'}
+                </span>
+              ))}
+            </span>
+          </div>
+        </div>
 
         {renderScorePanel('text-lg border-t pt-2')}
       </CardContent>
