@@ -65,13 +65,12 @@ export const EncoreGameSetup = ({
                     onChange={(e) => setPlayerName(index, e.target.value)}
                     placeholder={`Nom du joueur ${index + 1}`}
                     className="flex-1"
-                    aria-label="Nom du joueur"
                   />
                   <Button
                     variant={aiPlayers[index] ? 'default' : 'outline'}
                     size="icon"
                     onClick={() => toggleAIPlayer(index)}
-                    aria-label={getAiToggleLabel(aiPlayers[index])}
+                    aria-label={getAiToggleLabel(aiPlayers[index]) + index}
                     title={getAiToggleLabel(aiPlayers[index])}
                   >
                     {aiPlayers[index] ? <Bot className="w-4 h-4" /> : <Users className="w-4 h-4" />}
