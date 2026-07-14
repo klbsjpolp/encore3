@@ -190,7 +190,7 @@ export const GameBoard = ({
                   <div
                     className={cn(
                       'absolute opacity-25 bg-white rounded-full',
-                      compact ? 'inset-[1px]' : 'inset-[0.08cqw] w-11/12 h-11/12',
+                      compact ? 'inset-px' : 'inset-[0.08cqw] w-11/12 h-11/12',
                     )}
                   />
                 )}

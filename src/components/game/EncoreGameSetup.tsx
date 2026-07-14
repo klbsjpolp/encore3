@@ -65,6 +65,7 @@ export const EncoreGameSetup = ({
                     onChange={(e) => setPlayerName(index, e.target.value)}
                     placeholder={`Nom du joueur ${index + 1}`}
                     className="flex-1"
+                    aria-label="Nom du joueur"
                   />
                   <Button
                     variant={aiPlayers[index] ? 'default' : 'outline'}
