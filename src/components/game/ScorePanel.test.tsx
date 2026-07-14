@@ -62,7 +62,7 @@ describe('ScorePanel', () => {
     expect(screen.getByText('3/15')).toBeInTheDocument()
     expect(screen.getByText('6/8')).toBeInTheDocument()
     // The detailed breakdown stays collapsed by default.
-    expect(screen.queryByText('A: 5')).not.toBeInTheDocument()
+    expect(screen.getByText('A: 5')).not.toBeVisible()
     // No final score while the game is running.
     expect(screen.queryByText('Total :')).not.toBeInTheDocument()
   })
@@ -83,15 +83,15 @@ describe('ScorePanel', () => {
     // A first (5 points), B second (2 points), other columns not completed.
     expect(toggle).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('button', { name: 'Masquer le détail des scores' })).toBe(toggle)
-    expect(screen.getByText('A: 5')).toBeInTheDocument()
-    expect(screen.getByText('B: 2')).toBeInTheDocument()
-    expect(screen.getByText('C: -')).toBeInTheDocument()
-    expect(screen.getByText(/Détail des colonnes/)).toBeInTheDocument()
+    expect(screen.getByText('A: 5')).toBeVisible()
+    expect(screen.getByText('B: 2')).toBeVisible()
+    expect(screen.getByText('C: -')).toBeVisible()
+    expect(screen.getByText(/Détail des colonnes/)).toBeVisible()
 
     fireEvent.click(toggle)
 
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByText('A: 5')).not.toBeInTheDocument()
+    expect(screen.getByText('A: 5')).not.toBeVisible()
   })
 
   it('shows completed color points based on finishing order', () => {
