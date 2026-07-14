@@ -1,5 +1,5 @@
 import type { BoardConfiguration } from '@/data/boardConfigurations'
-import { generateRandomBoard } from '@/data/randomBoardGenerator.ts'
+import { generateRandomBoard } from '@/data/randomBoardGenerator'
 import type { GameColor, Square } from '@/types/game'
 
 export const createInitialBoard = (boardConfiguration: BoardConfiguration): Square[][] => {

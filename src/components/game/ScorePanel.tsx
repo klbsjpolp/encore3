@@ -10,7 +10,7 @@ import {
   getColumnScoreBreakdown,
   MAX_JOKERS,
   TOTAL_STARS,
-} from '@/hooks/useEncoreGame.ts'
+} from '@/hooks/useEncoreGame'
 import { cn } from '@/lib/utils'
 import type { Player } from '@/types/game'
 

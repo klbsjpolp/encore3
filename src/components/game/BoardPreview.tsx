@@ -1,7 +1,7 @@
 import { Star } from 'lucide-react'
 import { useMemo } from 'react'
 
-import type { BoardConfiguration } from '@/data/boardConfigurations.ts'
+import type { BoardConfiguration } from '@/data/boardConfigurations'
 import { cn } from '@/lib/utils'
 import type { GameColor, Square } from '@/types/game'
 

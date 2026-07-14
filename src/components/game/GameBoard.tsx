@@ -1,7 +1,7 @@
 import { Star } from 'lucide-react'
 
-import type { BoardConfiguration } from '@/data/boardConfigurations.ts'
-import { COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS } from '@/hooks/useEncoreGame.ts'
+import type { BoardConfiguration } from '@/data/boardConfigurations'
+import { COLUMN_FIRST_PLAYER_POINTS, COLUMN_SECOND_PLAYER_POINTS } from '@/hooks/useEncoreGame'
 import { cn } from '@/lib/utils'
 import type { GameColor, Square } from '@/types/game'
 
