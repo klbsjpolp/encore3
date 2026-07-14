@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import type { GameColor, Square } from '@/types/game'
 
 interface BoardPreviewProps {
-  size: 'small' | 'medium' | 'large'
+  size: 'medium' | 'large'
   board: BoardConfiguration
 }
 
@@ -42,9 +42,9 @@ export const BoardPreview = ({ size, board }: BoardPreviewProps) => {
     return previewBoard
   }, [board])
 
-  const squareSize = size === 'small' ? 'w-1 h-1' : size === 'medium' ? 'w-1.5 h-1.5' : 'w-2 h-2'
+  const squareSize = size === 'medium' ? 'w-1.5 h-1.5' : 'w-2 h-2'
   const gap = 'gap-0'
-  const starSize = size === 'small' ? 'w-0.75 h-0.75' : 'w-1 h-1'
+  const starSize = 'w-1 h-1'
 
   return (
     <div className={cn('relative h-full', size === 'large' ? 'p-2' : 'p-1', board.fillClass)}>
@@ -71,11 +71,7 @@ export const BoardPreview = ({ size, board }: BoardPreviewProps) => {
         <span
           className={cn(
             'absolute inset-0 text-shadow-black text-shadow-md text-white font-bold flex w-full items-center justify-center',
-            size === 'small'
-              ? 'text-[0.5rem]'
-              : size === 'medium'
-                ? 'text-[0.65rem]'
-                : 'text-[1rem]',
+            size === 'medium' ? 'text-[0.65rem]' : 'text-[1rem]',
           )}
         >
           Différent à chaque fois!

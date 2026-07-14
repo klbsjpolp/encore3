@@ -43,6 +43,24 @@ describe('GameBoard compact selection', () => {
     expect(selectedStartingSquare).toHaveClass('outline-slate-900')
     expect(adjacentSelectedSquare).toHaveClass('ring-ring')
   })
+
+  it('exposes the selection state through aria-pressed', () => {
+    render(
+      <GameBoard
+        board={createBoard()}
+        boardConfiguration={getBoardConfiguration('classic')}
+        selectedSquares={[{ row: 0, col: 7 }]}
+        compact={true}
+        firstBonusClaimed={[]}
+        iClaimedFirstBonus={[]}
+        iClaimedSecondBonus={[]}
+      />,
+    )
+
+    const boardSquares = screen.getAllByRole('button')
+    expect(boardSquares[7]).toHaveAttribute('aria-pressed', 'true')
+    expect(boardSquares[8]).toHaveAttribute('aria-pressed', 'false')
+  })
 })
 
 describe('GameBoard accessibility', () => {
