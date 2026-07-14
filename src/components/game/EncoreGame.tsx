@@ -27,6 +27,8 @@ import { ScorePanel } from './ScorePanel'
 import { useEncoreSelection } from './useEncoreSelection'
 import { useSpacebarShortcut } from './useSpacebarShortcut'
 
+export const RESET_CONFIRM_TIMEOUT_MS = 4000
+
 export const EncoreGame = () => {
   const {
     gameState,
@@ -154,6 +156,27 @@ export const EncoreGame = () => {
     setMobilePanel('other')
     clearSelection()
   }, [abandonGame, clearSelection])
+
+  // Abandoning a game in progress is destructive, so the reset button asks
+  // for a second click; the pending confirmation expires on its own.
+  const [confirmingReset, setConfirmingReset] = useState(false)
+
+  useEffect(() => {
+    if (!confirmingReset) {
+      return
+    }
+    const timerId = window.setTimeout(() => setConfirmingReset(false), RESET_CONFIRM_TIMEOUT_MS)
+    return () => window.clearTimeout(timerId)
+  }, [confirmingReset])
+
+  const handleResetClick = useCallback(() => {
+    if (gameState.phase !== 'game-over' && !confirmingReset) {
+      setConfirmingReset(true)
+      return
+    }
+    setConfirmingReset(false)
+    resetGame()
+  }, [confirmingReset, gameState.phase, resetGame])
 
   if (setupMode) {
     return (
@@ -343,14 +366,18 @@ export const EncoreGame = () => {
             <AppVersion />
           </div>
           <Button
-            onClick={resetGame}
-            variant="outline"
+            onClick={handleResetClick}
+            variant={confirmingReset ? 'destructive' : 'outline'}
             size="sm"
             className="shrink-0"
-            aria-label="Nouvelle partie"
+            aria-label={confirmingReset ? 'Abandonner la partie ?' : 'Nouvelle partie'}
           >
             <RotateCcw className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Nouvelle partie</span>
+            {confirmingReset ? (
+              <span>Abandonner la partie ?</span>
+            ) : (
+              <span className="hidden sm:inline">Nouvelle partie</span>
+            )}
           </Button>
         </div>
 

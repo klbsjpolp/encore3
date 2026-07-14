@@ -1,11 +1,11 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { BoardConfiguration } from '@/data/boardConfigurations'
 import type * as UseEncoreGameModule from '@/hooks/useEncoreGame'
 import type { DiceNumber, GameState, Player, Square } from '@/types/game'
 
-import { EncoreGame } from './EncoreGame'
+import { EncoreGame, RESET_CONFIRM_TIMEOUT_MS } from './EncoreGame'
 
 const mockUseEncoreGame = vi.fn()
 const mockFindConnectedGroup = vi.fn()
@@ -228,11 +228,70 @@ describe('EncoreGame selection logic', () => {
     expect(initializeGame).not.toHaveBeenCalled()
   })
 
-  it('abandons the game and returns to the setup screen', () => {
+  it('asks for confirmation before abandoning a game in progress', () => {
     const abandonGame = vi.fn()
 
     mockUseEncoreGame.mockReturnValue({
       gameState: createGameState(),
+      initializeGame: vi.fn(),
+      abandonGame,
+      rollNewDice: vi.fn(),
+      selectDice: vi.fn(),
+      makeMove: vi.fn(),
+      skipTurn: vi.fn(),
+      isValidMove: vi.fn(() => true),
+      completePlayerSwitch: vi.fn(),
+    })
+
+    render(<EncoreGame />)
+
+    fireEvent.click(screen.getByRole('button', { name: /nouvelle partie/i }))
+
+    expect(abandonGame).not.toHaveBeenCalled()
+    const confirmButton = screen.getByRole('button', { name: /abandonner la partie/i })
+
+    fireEvent.click(confirmButton)
+
+    expect(abandonGame).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('Commencer la partie')).toBeInTheDocument()
+  })
+
+  it('cancels the pending abandon confirmation after a delay', () => {
+    vi.useFakeTimers()
+    const abandonGame = vi.fn()
+
+    mockUseEncoreGame.mockReturnValue({
+      gameState: createGameState(),
+      initializeGame: vi.fn(),
+      abandonGame,
+      rollNewDice: vi.fn(),
+      selectDice: vi.fn(),
+      makeMove: vi.fn(),
+      skipTurn: vi.fn(),
+      isValidMove: vi.fn(() => true),
+      completePlayerSwitch: vi.fn(),
+    })
+
+    render(<EncoreGame />)
+
+    fireEvent.click(screen.getByRole('button', { name: /nouvelle partie/i }))
+    expect(screen.getByRole('button', { name: /abandonner la partie/i })).toBeInTheDocument()
+
+    act(() => {
+      vi.advanceTimersByTime(RESET_CONFIRM_TIMEOUT_MS)
+    })
+
+    expect(abandonGame).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: /nouvelle partie/i })).toBeInTheDocument()
+
+    vi.useRealTimers()
+  })
+
+  it('starts a new game without confirmation once the game is over', () => {
+    const abandonGame = vi.fn()
+
+    mockUseEncoreGame.mockReturnValue({
+      gameState: { ...createGameState(), phase: 'game-over' },
       initializeGame: vi.fn(),
       abandonGame,
       rollNewDice: vi.fn(),
