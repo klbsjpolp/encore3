@@ -1,5 +1,5 @@
 import { ChevronDown, Star, Trophy } from 'lucide-react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -42,6 +42,7 @@ export const ScorePanel = ({
 }: ScorePanelProps) => {
   // Desktop panels start condensed; the full breakdown is a glance away.
   const [expanded, setExpanded] = useState(false)
+  const detailsId = useId()
   const columnsScore = calculateColumnScore(player)
   const winners = allPlayers.length > 0 ? determineWinners(allPlayers) : []
   const isWinner = winners.some((winner) => winner.id === player.id)
@@ -188,7 +189,10 @@ export const ScorePanel = ({
               className="h-8 w-8"
               onClick={() => setExpanded((value) => !value)}
               aria-expanded={expanded}
-              aria-label="Afficher le détail des scores"
+              aria-controls={detailsId}
+              aria-label={
+                expanded ? 'Masquer le détail des scores' : 'Afficher le détail des scores'
+              }
             >
               <ChevronDown className={cn('transition-transform', expanded && 'rotate-180')} />
             </Button>
@@ -216,9 +220,9 @@ export const ScorePanel = ({
         </div>
 
         {expanded && (
-          <>
+          <div id={detailsId} className="space-y-4">
             <div>
-              <p className="text-sm font-medium mb-2">Colonnes (total: {columnsScore} points) : </p>
+              <p className="text-sm font-medium mb-2">Détail des colonnes : </p>
               <div className="grid grid-cols-5 gap-0.5">
                 {columnScores.map(({ column, points, isFirst }) => (
                   <Badge
@@ -286,7 +290,7 @@ export const ScorePanel = ({
                 ))}
               </span>
             </div>
-          </>
+          </div>
         )}
 
         {renderScorePanel('text-lg border-t pt-2')}
