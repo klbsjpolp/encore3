@@ -356,7 +356,9 @@ export const EncoreGame = () => {
         isMobile ? 'px-1 pb-28 pt-2' : 'p-4 overflow-hidden',
       )}
     >
-      <div className={cn('max-w-7xl mx-auto', isMobile ? 'space-y-3' : 'space-y-6')}>
+      <div
+        className={cn('max-w-7xl 2xl:max-w-[1600px] mx-auto', isMobile ? 'space-y-3' : 'space-y-6')}
+      >
         <div className="flex flex-row items-center justify-between gap-2 sm:gap-4">
           <div className="flex flex-row items-center gap-2 sm:gap-4 min-w-0">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground flex items-center gap-2">
@@ -435,8 +437,8 @@ export const EncoreGame = () => {
             </div>
           </>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-2 flex flex-col gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 2xl:grid-cols-5 gap-6">
+            <div className="lg:col-span-2 2xl:col-span-3 flex flex-col gap-4">
               {gameState.phase !== 'game-over' && currentPlayerSummary}
               {mainBoard}
               {moveControls}
