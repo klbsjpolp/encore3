@@ -1,6 +1,7 @@
 import { HelpCircle, Shuffle } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { KeyboardHint } from '@/components/game/KeyboardHint.tsx'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type {
@@ -327,11 +328,7 @@ export const DicePanel = ({
               <Shuffle className="w-4 h-4" />
               <span className="hidden sm:inline">Lancer les dés</span>
               <span className="sm:hidden">Lancer</span>
-              {finalCanRoll && (
-                <kbd className="pointer-events-none hidden rounded border border-current px-1 font-mono text-[10px] font-normal opacity-75 lg:inline-block">
-                  Espace
-                </kbd>
-              )}
+              {finalCanRoll && <KeyboardHint />}
             </Button>
           </div>
           <div>

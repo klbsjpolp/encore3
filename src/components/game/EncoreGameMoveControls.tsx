@@ -1,5 +1,6 @@
 import { Shuffle } from 'lucide-react'
 
+import { KeyboardHint } from '@/components/game/KeyboardHint.tsx'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -73,11 +74,7 @@ export const EncoreGameMoveControls = ({
           <>
             <span className="hidden sm:inline">Confirmer le placement ({selectedCount} cases)</span>
             <span className="sm:hidden">Confirmer ({selectedCount})</span>
-            {canConfirm && !actionsDisabled && (
-              <kbd className="pointer-events-none hidden rounded border border-current px-1 font-mono text-[10px] font-normal opacity-75 lg:inline-block">
-                Espace
-              </kbd>
-            )}
+            {canConfirm && !actionsDisabled && <KeyboardHint />}
           </>
         )}
       </Button>
