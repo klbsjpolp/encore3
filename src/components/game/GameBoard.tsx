@@ -24,6 +24,19 @@ interface GameBoardProps {
 
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O']
 
+const COLOR_NAMES: Record<GameColor, string> = {
+  yellow: 'jaune',
+  green: 'verte',
+  blue: 'bleue',
+  red: 'rouge',
+  orange: 'orange',
+}
+
+const getSquareLabel = (square: Square, rowIndex: number, colIndex: number): string =>
+  `Case ${COLUMNS[colIndex]}${rowIndex + 1}, ${COLOR_NAMES[square.color]}${
+    square.hasStar ? ', étoile' : ''
+  }${square.crossed ? ', cochée' : ''}`
+
 const getColorClass = (color: GameColor): string => {
   const colorMap = {
     yellow: 'bg-game-yellow border-yellow-800',
@@ -136,6 +149,7 @@ export const GameBoard = ({
                 onClick={() => !disabled && onSquareClick?.(rowIndex, colIndex)}
                 onMouseEnter={() => !disabled && onSquareHover?.(rowIndex, colIndex)}
                 disabled={disabled || square.crossed}
+                aria-label={getSquareLabel(square, rowIndex, colIndex)}
                 className={cn(
                   // Animate only interaction affordances (selection/hover), not
                   // the fill colour: otherwise every cell cross-fades its colour

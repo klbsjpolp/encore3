@@ -42,4 +42,29 @@ describe('EncoreGameSetup', () => {
     fireEvent.click(screen.getByText('Commencer la partie'))
     expect(onStart).toHaveBeenCalledTimes(1)
   })
+
+  it('labels the AI toggle and the board selector for each player', () => {
+    render(
+      <EncoreGameSetup
+        playerNames={['Alice', 'Bob']}
+        aiPlayers={[false, true]}
+        selectedBoards={['classic', 'blue']}
+        setPlayerName={vi.fn()}
+        toggleAIPlayer={vi.fn()}
+        setSelectedBoard={vi.fn()}
+        onStart={vi.fn()}
+      />,
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'Joueur humain — cliquer pour un joueur IA' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: "Joueur contrôlé par l'IA — cliquer pour un joueur humain",
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Planche du joueur 1' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Planche du joueur 2' })).toBeInTheDocument()
+  })
 })

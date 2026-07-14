@@ -44,3 +44,25 @@ describe('GameBoard compact selection', () => {
     expect(adjacentSelectedSquare).toHaveClass('ring-ring')
   })
 })
+
+describe('GameBoard accessibility', () => {
+  it('labels squares with their position, color and state', () => {
+    const board = createBoard()
+    board[0][0].hasStar = true
+    board[1][2].crossed = true
+
+    render(
+      <GameBoard
+        board={board}
+        boardConfiguration={getBoardConfiguration('classic')}
+        firstBonusClaimed={[]}
+        iClaimedFirstBonus={[]}
+        iClaimedSecondBonus={[]}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Case A1, bleue, étoile' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Case C2, bleue, cochée' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Case B1, bleue' })).toBeInTheDocument()
+  })
+})

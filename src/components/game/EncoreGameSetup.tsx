@@ -65,6 +65,16 @@ export const EncoreGameSetup = ({
                     variant={aiPlayers[index] ? 'default' : 'outline'}
                     size="icon"
                     onClick={() => toggleAIPlayer(index)}
+                    aria-label={
+                      aiPlayers[index]
+                        ? "Joueur contrôlé par l'IA — cliquer pour un joueur humain"
+                        : 'Joueur humain — cliquer pour un joueur IA'
+                    }
+                    title={
+                      aiPlayers[index]
+                        ? "Joueur contrôlé par l'IA — cliquer pour un joueur humain"
+                        : 'Joueur humain — cliquer pour un joueur IA'
+                    }
                   >
                     {aiPlayers[index] ? <Bot className="w-4 h-4" /> : <Users className="w-4 h-4" />}
                   </Button>
@@ -72,10 +82,13 @@ export const EncoreGameSetup = ({
                     value={selectedBoards[index]}
                     onValueChange={(value) => setSelectedBoard(index, value as BoardId)}
                   >
-                    <SelectTrigger className="w-[140px]">
+                    <SelectTrigger
+                      className="h-auto w-[140px]"
+                      aria-label={`Planche du joueur ${index + 1}`}
+                    >
                       <SelectValue>
                         <BoardPreview
-                          size="small"
+                          size="medium"
                           board={getBoardConfiguration(selectedBoards[index])}
                         />
                       </SelectValue>
