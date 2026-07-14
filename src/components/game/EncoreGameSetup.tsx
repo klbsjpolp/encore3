@@ -18,6 +18,11 @@ import { BOARD_CONFIGURATIONS, getBoardConfiguration } from '@/data/boardConfigu
 
 import { BoardPreview } from './BoardPreview'
 
+const getAiToggleLabel = (isAI: boolean) =>
+  isAI
+    ? "Joueur contrôlé par l'IA — cliquer pour un joueur humain"
+    : 'Joueur humain — cliquer pour un joueur IA'
+
 interface EncoreGameSetupProps {
   playerNames: string[]
   aiPlayers: boolean[]
@@ -65,16 +70,8 @@ export const EncoreGameSetup = ({
                     variant={aiPlayers[index] ? 'default' : 'outline'}
                     size="icon"
                     onClick={() => toggleAIPlayer(index)}
-                    aria-label={
-                      aiPlayers[index]
-                        ? "Joueur contrôlé par l'IA — cliquer pour un joueur humain"
-                        : 'Joueur humain — cliquer pour un joueur IA'
-                    }
-                    title={
-                      aiPlayers[index]
-                        ? "Joueur contrôlé par l'IA — cliquer pour un joueur humain"
-                        : 'Joueur humain — cliquer pour un joueur IA'
-                    }
+                    aria-label={getAiToggleLabel(aiPlayers[index])}
+                    title={getAiToggleLabel(aiPlayers[index])}
                   >
                     {aiPlayers[index] ? <Bot className="w-4 h-4" /> : <Users className="w-4 h-4" />}
                   </Button>

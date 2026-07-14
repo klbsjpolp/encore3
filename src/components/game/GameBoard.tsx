@@ -150,6 +150,7 @@ export const GameBoard = ({
                 onMouseEnter={() => !disabled && onSquareHover?.(rowIndex, colIndex)}
                 disabled={disabled || square.crossed}
                 aria-label={getSquareLabel(square, rowIndex, colIndex)}
+                aria-pressed={isSquareSelected(rowIndex, colIndex)}
                 className={cn(
                   // Animate only interaction affordances (selection/hover), not
                   // the fill colour: otherwise every cell cross-fades its colour
