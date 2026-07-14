@@ -283,38 +283,14 @@ export const DicePanel = ({
         disabled && 'opacity-50 pointer-events-none',
       )}
     >
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-        <h3
-          className={cn(
-            'font-semibold text-foreground',
-            compact ? 'text-sm' : 'text-base sm:text-lg',
-          )}
-        >
-          Dés
-        </h3>
-        <Button
-          onClick={onRollDice}
-          size="sm"
-          variant="game"
-          glow={flashRoll}
-          className={cn('gap-2 transition-all', compact ? 'w-full' : 'w-full sm:w-auto')}
-          disabled={!finalCanRoll}
-        >
-          <Shuffle className="w-4 h-4" />
-          {compact ? (
-            <span>Lancer</span>
-          ) : (
-            <>
-              <span className="hidden sm:inline">Lancer les dés</span>
-              <span className="sm:hidden">Lancer</span>
-            </>
-          )}
-        </Button>
-      </div>
-
       {compact ? (
+        // The roll action lives in the mobile bottom action bar, so the compact
+        // panel only shows the dice themselves.
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Couleur puis nombre</p>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-foreground">Dés</h3>
+            <p className="text-xs font-medium text-muted-foreground">Couleur puis nombre</p>
+          </div>
           <div className="grid grid-cols-6 gap-2" data-testid="compact-dice-row">
             {orderedDice.length === 0
               ? renderPlaceholders(6)
@@ -338,6 +314,21 @@ export const DicePanel = ({
         </div>
       ) : (
         <div className="space-y-3 sm:space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <h3 className="font-semibold text-foreground text-base sm:text-lg">Dés</h3>
+            <Button
+              onClick={onRollDice}
+              size="sm"
+              variant="game"
+              glow={flashRoll}
+              className="gap-2 transition-all w-full sm:w-auto"
+              disabled={!finalCanRoll}
+            >
+              <Shuffle className="w-4 h-4" />
+              <span className="hidden sm:inline">Lancer les dés</span>
+              <span className="sm:hidden">Lancer</span>
+            </Button>
+          </div>
           <div>
             <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">Couleur</p>
             <div className="flex gap-1.5 sm:gap-2 flex-wrap">

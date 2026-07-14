@@ -247,19 +247,20 @@ export const EncoreGame = () => {
       selectedColor={gameState.selectedDice.color?.value}
       selectedNumber={gameState.selectedDice.number?.value}
       statusLabel={statusLabel}
-      isMobile={isMobile}
-      selectedCount={selectedSquares.length}
-      selectionLimit={selectionLimit}
     />
   )
   const moveControls = (
     <EncoreGameMoveControls
       isMobile={isMobile}
       selectedCount={selectedSquares.length}
+      selectionLimit={selectionLimit}
       canConfirm={canMakeMove()}
       actionsDisabled={actionsDisable}
       confirmGlow={confirmGlow}
       skipGlow={skipGlow}
+      showRoll={gameState.phase === 'rolling' || gameState.phase === 'rolling-ai'}
+      canRoll={canRoll}
+      onRoll={rollNewDice}
       onConfirm={handleConfirmMove}
       onClear={() => setSelectedSquares([])}
       onSkip={onSkipTurn}
@@ -324,12 +325,12 @@ export const EncoreGame = () => {
     <div
       className={cn(
         'min-h-screen bg-gradient-board',
-        isMobile ? 'px-2 pb-28 pt-2' : 'p-4 overflow-hidden',
+        isMobile ? 'px-1 pb-28 pt-2' : 'p-4 overflow-hidden',
       )}
     >
       <div className={cn('max-w-7xl mx-auto', isMobile ? 'space-y-3' : 'space-y-6')}>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+        <div className="flex flex-row items-center justify-between gap-2 sm:gap-4">
+          <div className="flex flex-row items-center gap-2 sm:gap-4 min-w-0">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground flex items-center gap-2">
               <Gamepad2 className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" />
               Encore !
@@ -341,10 +342,15 @@ export const EncoreGame = () => {
             )}
             <AppVersion />
           </div>
-          <Button onClick={resetGame} variant="outline" size="sm" className="w-full sm:w-auto">
+          <Button
+            onClick={resetGame}
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            aria-label="Nouvelle partie"
+          >
             <RotateCcw className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Nouvelle partie</span>
-            <span className="sm:hidden">Nouvelle</span>
           </Button>
         </div>
 

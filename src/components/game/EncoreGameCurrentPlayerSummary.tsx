@@ -27,9 +27,6 @@ interface EncoreGameCurrentPlayerSummaryProps {
   selectedColor?: DiceColor
   selectedNumber?: DiceNumber
   statusLabel: string
-  isMobile: boolean
-  selectedCount: number
-  selectionLimit: number
 }
 
 export const EncoreGameCurrentPlayerSummary = ({
@@ -37,9 +34,6 @@ export const EncoreGameCurrentPlayerSummary = ({
   selectedColor,
   selectedNumber,
   statusLabel,
-  isMobile,
-  selectedCount,
-  selectionLimit,
 }: EncoreGameCurrentPlayerSummaryProps) => {
   return (
     <div className="bg-card rounded-lg p-3 shadow-square sm:p-4">
@@ -57,14 +51,6 @@ export const EncoreGameCurrentPlayerSummary = ({
           {statusLabel}
         </Badge>
       </div>
-      {isMobile && (
-        <div className="mt-3 flex items-center justify-between rounded-md bg-muted/70 px-3 py-2 text-xs text-muted-foreground">
-          <span>Sélection</span>
-          <span>
-            {selectedCount}/{selectionLimit}
-          </span>
-        </div>
-      )}
     </div>
   )
 }
