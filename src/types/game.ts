@@ -1,4 +1,4 @@
-import type { BoardConfiguration, BoardId } from '@/data/boardConfigurations.ts'
+import type { BoardConfiguration, BoardId } from '@/data/boardConfigurations'
 
 export const GAME_COLORS = ['yellow', 'green', 'blue', 'red', 'orange'] as const
 export type GameColor = (typeof GAME_COLORS)[number]
