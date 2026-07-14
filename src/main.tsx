@@ -2,7 +2,7 @@ import './index.css'
 
 import { createRoot } from 'react-dom/client'
 
-import App from './App.tsx'
+import App from './App'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { shouldRegisterServiceWorker } from './lib/pwa'
 

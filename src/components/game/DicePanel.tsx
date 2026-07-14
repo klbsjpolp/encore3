@@ -1,7 +1,7 @@
 import { HelpCircle, Shuffle } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { KeyboardHint } from '@/components/game/KeyboardHint.tsx'
+import { KeyboardHint } from '@/components/game/KeyboardHint'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type {

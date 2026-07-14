@@ -58,7 +58,7 @@ export const EncoreGameSetup = ({
                 <Label htmlFor={`player-${index}`}>
                   Joueur {index + 1} {aiPlayers[index] && <Badge variant="secondary">IA</Badge>}
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <Input
                     id={`player-${index}`}
                     value={name}
@@ -80,7 +80,7 @@ export const EncoreGameSetup = ({
                     onValueChange={(value) => setSelectedBoard(index, value as BoardId)}
                   >
                     <SelectTrigger
-                      className="h-auto w-[140px]"
+                      className="h-auto w-35"
                       aria-label={`Planche du joueur ${index + 1}`}
                     >
                       <SelectValue>

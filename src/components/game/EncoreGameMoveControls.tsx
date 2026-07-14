@@ -1,6 +1,6 @@
 import { Shuffle } from 'lucide-react'
 
-import { KeyboardHint } from '@/components/game/KeyboardHint.tsx'
+import { KeyboardHint } from '@/components/game/KeyboardHint'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
