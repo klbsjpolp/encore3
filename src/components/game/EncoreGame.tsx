@@ -158,7 +158,8 @@ export const EncoreGame = () => {
   }, [abandonGame, clearSelection])
 
   // Abandoning a game in progress is destructive, so the reset button asks
-  // for a second click; the pending confirmation expires on its own.
+  // for a second click; the pending confirmation expires on its own or as
+  // soon as the player interacts elsewhere (button blur).
   const [confirmingReset, setConfirmingReset] = useState(false)
 
   useEffect(() => {
@@ -367,6 +368,7 @@ export const EncoreGame = () => {
           </div>
           <Button
             onClick={handleResetClick}
+            onBlur={() => setConfirmingReset(false)}
             variant={confirmingReset ? 'destructive' : 'outline'}
             size="sm"
             className="shrink-0"
