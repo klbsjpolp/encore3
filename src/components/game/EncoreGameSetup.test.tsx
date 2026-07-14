@@ -57,11 +57,11 @@ describe('EncoreGameSetup', () => {
     )
 
     expect(
-      screen.getByRole('button', { name: 'Joueur humain — cliquer pour un joueur IA' }),
+      screen.getByRole('button', { name: 'Joueur humain — cliquer pour un joueur IA0' }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', {
-        name: "Joueur contrôlé par l'IA — cliquer pour un joueur humain",
+        name: "Joueur contrôlé par l'IA — cliquer pour un joueur humain1",
       }),
     ).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Planche du joueur 1' })).toBeInTheDocument()
