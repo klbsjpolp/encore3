@@ -1,6 +1,8 @@
 import { MAX_SELECTABLE_CELLS } from '@/lib/game-rules'
-import type { ColorDiceResult, DiceResult, GameColor, NumberDiceResult } from '@/types/game'
+import type { ColorDiceResult, DiceResult, GameColor, NumberDiceResult, Square } from '@/types/game'
 import { DICE_COLOR_FACES, DICE_NUMBER_FACES } from '@/types/game'
+
+import { findConnectedGroup } from './board'
 
 const generateDiceId = () => Math.random().toString(36).substr(2, 9)
 
@@ -74,6 +76,82 @@ export const findDicePairForGroup = (
     return null
   }
   return { color: colorDice, number: numberDice }
+}
+
+export interface ForcedSelection {
+  // 'move': a single legal placement exists, so both dice and its cells are
+  // pre-selected. 'dice': several placements exist but they all use the same
+  // dice pair, so only the dice are pre-selected (the player picks the cells).
+  mode: 'move' | 'dice'
+  color: ColorDiceResult
+  number: NumberDiceResult
+  squares: { row: number; col: number }[]
+}
+
+// Scans the board for whole-group moves that can be played with the currently
+// available dice. Returns a selection to apply when the turn is effectively
+// decided: exactly one placement, or a single affordable dice pair shared by
+// every placement. Subset plays are not enumerated (they are ambiguous), so a
+// null result simply means nothing is pre-selected.
+export const findForcedSelection = (
+  dice: DiceResult[],
+  board: Square[][],
+  jokersRemaining: number,
+  isValidMove: (
+    squares: { row: number; col: number }[],
+    color: GameColor,
+    board: Square[][],
+  ) => boolean,
+): ForcedSelection | null => {
+  const placements: { color: ColorDiceResult; number: NumberDiceResult; squares: Square[] }[] = []
+  const seenGroups = new Set<string>()
+
+  for (let row = 0; row < board.length; row++) {
+    for (let col = 0; col < board[row].length; col++) {
+      const cell = board[row][col]
+      if (cell.crossed) {
+        continue
+      }
+      const group = findConnectedGroup(row, col, cell.color, board)
+      if (group.length === 0 || group.length > MAX_SELECTABLE_CELLS) {
+        continue
+      }
+      const groupKey = group
+        .map((c) => `${c.row},${c.col}`)
+        .sort()
+        .join(';')
+      if (seenGroups.has(groupKey)) {
+        continue
+      }
+      seenGroups.add(groupKey)
+      if (!isValidMove(group, cell.color, board)) {
+        continue
+      }
+      const pair = findDicePairForGroup(dice, cell.color, group.length, jokersRemaining)
+      if (pair) {
+        placements.push({ color: pair.color, number: pair.number, squares: group })
+      }
+    }
+  }
+
+  if (placements.length === 0) {
+    return null
+  }
+
+  const first = placements[0]
+  if (placements.length === 1) {
+    return { mode: 'move', color: first.color, number: first.number, squares: first.squares }
+  }
+
+  // Several placements: only pre-select the dice if every placement needs the
+  // very same dice pair (by face value), leaving the cell choice to the player.
+  const pairKey = (p: (typeof placements)[number]) => `${p.color.value}|${p.number.value}`
+  const key = pairKey(first)
+  if (placements.every((p) => pairKey(p) === key)) {
+    return { mode: 'dice', color: first.color, number: first.number, squares: [] }
+  }
+
+  return null
 }
 
 interface ResolveAutoDiceSelectionArgs {
