@@ -59,7 +59,7 @@ export const EncoreGame = () => {
   const [prevPhase, setPrevPhase] = useState(gameState.phase)
   if (gameState.phase !== prevPhase) {
     setPrevPhase(gameState.phase)
-    if (gameState.phase === 'game-over') {
+    if (gameState.phase === 'game-over' && isMobile) {
       setMobilePanel('scores')
     }
   }
