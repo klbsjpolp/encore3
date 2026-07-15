@@ -500,6 +500,32 @@ describe('useEncoreSelection', () => {
       expect(selectDice).not.toHaveBeenCalled()
     })
 
+    it('selects the dice the active player left unused during passive-selection', () => {
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          phase: 'passive-selection',
+          dice: [
+            { id: 'c-used', type: 'color', value: 'orange', selected: true },
+            { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            { id: 'n-used', type: 'number', value: 2, selected: true },
+            { id: 'n-2', type: 'number', value: 2, selected: false },
+          ],
+        }),
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice).toHaveBeenCalledTimes(2)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-2' }))
+      expect(result.current.selectedSquares).toEqual([
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+      ])
+    })
+
     it('ignores dice already used by the active player', () => {
       const { result, selectDice } = renderSelection(
         createAutoSelectState({
