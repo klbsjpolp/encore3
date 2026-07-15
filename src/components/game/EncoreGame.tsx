@@ -53,6 +53,16 @@ export const EncoreGame = () => {
   const [setupMode, setSetupMode] = useState(() => !gameState.gameStarted)
   const [mobilePanel, setMobilePanel] = useState<'other' | 'scores'>('other')
   const [isAnimating, setIsAnimating] = useState(false)
+  // Surface the scores directly once the game ends, instead of leaving the
+  // player on whichever mobile panel they last had open. Adjusted during
+  // render (rather than an effect) to avoid an extra commit.
+  const [prevPhase, setPrevPhase] = useState(gameState.phase)
+  if (gameState.phase !== prevPhase) {
+    setPrevPhase(gameState.phase)
+    if (gameState.phase === 'game-over') {
+      setMobilePanel('scores')
+    }
+  }
   const {
     selectedSquares,
     hoveredSquares,

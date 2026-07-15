@@ -204,4 +204,37 @@ describe('EncoreGame mobile layout', () => {
 
     expect(screen.getByRole('button', { name: 'Autre joueur' })).toBeInTheDocument()
   })
+
+  it('automatically switches to the scores panel once the game ends', async () => {
+    window.resizeTo(390, 844)
+
+    const buildMockGame = (gameState: GameState) => ({
+      gameState,
+      initializeGame: vi.fn(),
+      rollNewDice: vi.fn(),
+      selectDice: vi.fn(),
+      makeMove: vi.fn(),
+      skipTurn: vi.fn(),
+      isValidMove: vi.fn(() => true),
+      completePlayerSwitch: vi.fn(),
+    })
+
+    mockUseEncoreGame.mockReturnValue(buildMockGame(createGameState()))
+    mockFindConnectedGroup.mockImplementation((row: number, col: number) => [{ row, col }])
+
+    const { rerender } = render(<EncoreGame />)
+    await screen.findByTestId('compact-dice-row')
+
+    expect(screen.getByRole('button', { name: 'Autre joueur' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    mockUseEncoreGame.mockReturnValue(buildMockGame({ ...createGameState(), phase: 'game-over' }))
+    rerender(<EncoreGame />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Scores' })).toHaveAttribute('aria-pressed', 'true')
+    })
+  })
 })
