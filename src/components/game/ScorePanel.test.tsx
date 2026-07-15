@@ -60,7 +60,8 @@ describe('ScorePanel', () => {
     // Condensed summary: columns total, stars, jokers.
     expect(screen.getByText('7')).toBeInTheDocument()
     expect(screen.getByText('3/15')).toBeInTheDocument()
-    expect(screen.getByText('6/8')).toBeInTheDocument()
+    const jokers = screen.getAllByText('6/8')
+    expect(jokers[0]).toBeVisible()
     // The detailed breakdown stays collapsed by default.
     expect(screen.getByText('A: 5')).not.toBeVisible()
     // No final score while the game is running.
