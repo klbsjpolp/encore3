@@ -553,7 +553,7 @@ describe('useEncoreSelection', () => {
       expect(result.current.selectedSquares).toEqual([{ row: 0, col: 0 }])
     })
 
-    it('completes the number die when a matching color die is already selected', () => {
+    it('completes the group and number die when a matching color die is already selected', () => {
       const { result, selectDice } = renderSelection(
         createAutoSelectState({
           selectedDice: {
@@ -567,12 +567,14 @@ describe('useEncoreSelection', () => {
         result.current.handleSquareClick(0, 0)
       })
 
-      expect(selectDice).toHaveBeenCalledTimes(1)
       expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-2' }))
-      expect(result.current.selectedSquares).toHaveLength(2)
+      expect(result.current.selectedSquares).toEqual([
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+      ])
     })
 
-    it('completes the color die when a matching number die is already selected', () => {
+    it('completes the group and color die when a matching number die is already selected', () => {
       const { result, selectDice } = renderSelection(
         createAutoSelectState({
           selectedDice: {
@@ -586,12 +588,14 @@ describe('useEncoreSelection', () => {
         result.current.handleSquareClick(0, 0)
       })
 
-      expect(selectDice).toHaveBeenCalledTimes(1)
       expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
-      expect(result.current.selectedSquares).toHaveLength(2)
+      expect(result.current.selectedSquares).toEqual([
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+      ])
     })
 
-    it('does nothing automatically when both dice are already selected', () => {
+    it('re-selects the clicked group even when both dice are already selected', () => {
       const { result, selectDice } = renderSelection(
         createAutoSelectState({
           selectedDice: {
@@ -605,11 +609,15 @@ describe('useEncoreSelection', () => {
         result.current.handleSquareClick(0, 0)
       })
 
-      expect(selectDice).not.toHaveBeenCalled()
-      expect(result.current.selectedSquares).toHaveLength(2)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-2' }))
+      expect(result.current.selectedSquares).toEqual([
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+      ])
     })
 
-    it('does nothing automatically when cells are already selected', () => {
+    it('switches to the clicked valid group even when other cells are selected', () => {
       const { result, selectDice } = renderSelection(createAutoSelectState())
 
       act(() => {
@@ -619,7 +627,93 @@ describe('useEncoreSelection', () => {
         result.current.handleSquareClick(0, 0)
       })
 
-      expect(selectDice).not.toHaveBeenCalled()
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-2' }))
+      expect(result.current.selectedSquares).toEqual([
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+      ])
+    })
+
+    it('accumulates cells instead of switching while a number die is committed', () => {
+      // A "1" number die is available, but the committed "2" die means the
+      // player is placing two cells: clicks build the selection, they do not
+      // switch to the one-cell group under the pointer.
+      const { result } = renderSelection(
+        createAutoSelectState({
+          selectedDice: {
+            color: { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            number: { id: 'n-2', type: 'number', value: 2, selected: false },
+          },
+          dice: [
+            { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            { id: 'n-1', type: 'number', value: 1, selected: false },
+            { id: 'n-2', type: 'number', value: 2, selected: false },
+          ],
+        }),
+        { isValidMove: vi.fn((squares: { row: number; col: number }[]) => squares.length <= 2) },
+      )
+
+      act(() => {
+        result.current.setSelectedSquares([{ row: 0, col: 0 }])
+      })
+      act(() => {
+        result.current.handleSquareClick(1, 0)
+      })
+
+      expect(result.current.selectedSquares).toEqual([
+        { row: 0, col: 0 },
+        { row: 1, col: 0 },
+      ])
+    })
+
+    it('auto-selects the matching dice once a manual subset forms a valid move', () => {
+      // No dice chosen yet; the clicked colour has a 6-cell group that cannot
+      // be played whole, so the player builds a 3-cell subset by hand. Once the
+      // subset is valid and a "3" die is available, that die is auto-selected.
+      const sixCells = Array.from({ length: 6 }, (_, col) => ({ row: 0, col }))
+      const board: Square[][] = [
+        sixCells.map((c) => ({
+          color: 'orange' as const,
+          hasStar: false,
+          crossed: false,
+          column: String.fromCharCode(65 + c.col),
+          row: 0,
+        })),
+      ]
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          players: [{ ...createPlayer(), board }],
+          selectedDice: { color: null, number: null },
+          dice: [
+            { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            { id: 'n-3', type: 'number', value: 3, selected: false },
+          ],
+        }),
+        {
+          isValidMove: vi.fn(
+            (squares: { row: number; col: number }[]) => squares.length >= 1 && squares.length <= 5,
+          ),
+        },
+      )
+
+      // First click: the 6-group is too big to play whole, so only the clicked
+      // cell and the colour die are selected.
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
+      expect(result.current.selectedSquares).toEqual([{ row: 0, col: 0 }])
+
+      act(() => {
+        result.current.handleSquareClick(0, 1)
+      })
+      act(() => {
+        result.current.handleSquareClick(0, 2)
+      })
+
+      expect(result.current.selectedSquares).toHaveLength(3)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-3' }))
     })
 
     it('selects the dice the active player left unused during passive-selection', () => {

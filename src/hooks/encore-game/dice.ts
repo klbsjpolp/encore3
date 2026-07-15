@@ -52,6 +52,30 @@ export const findAutoNumberDice = (
   )
 }
 
+// Best affordable dice pair to play a whole group of `size` cells of `color`,
+// ignoring any current selection (exact preferred, joker fallback in budget).
+// Returns null when the group cannot be fully played.
+export const findDicePairForGroup = (
+  dice: DiceResult[],
+  color: GameColor,
+  size: number,
+  jokersRemaining: number,
+): { color: ColorDiceResult; number: NumberDiceResult } | null => {
+  if (size < 1 || size > MAX_SELECTABLE_CELLS) {
+    return null
+  }
+  const colorDice = findAutoColorDice(dice, color, jokersRemaining)
+  if (!colorDice) {
+    return null
+  }
+  const jokersAfterColor = jokersRemaining - (colorDice.value === 'wild' ? 1 : 0)
+  const numberDice = findAutoNumberDice(dice, size, jokersAfterColor)
+  if (!numberDice) {
+    return null
+  }
+  return { color: colorDice, number: numberDice }
+}
+
 interface ResolveAutoDiceSelectionArgs {
   dice: DiceResult[]
   selectedColor: ColorDiceResult | null
