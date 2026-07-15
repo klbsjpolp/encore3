@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 
-import { resolveAutoDiceSelection } from '@/hooks/encore-game/dice'
+import { findDicePairForGroup, resolveAutoDiceSelection } from '@/hooks/encore-game/dice'
 import { findConnectedGroup } from '@/hooks/useEncoreGame'
 import { getSelectionLimit, MAX_SELECTABLE_CELLS } from '@/lib/game-rules'
 import type { DiceColor, DiceNumber, DiceResult, GameColor, GameState, Square } from '@/types/game'
@@ -51,11 +51,35 @@ export const useEncoreSelection = ({
       const clickedColor = player.board[row][col].color
       const group = findConnectedGroup(row, col, clickedColor, player.board)
       const square = { row, col }
+      const isSelected = selectedSquares.some((s) => s.row === row && s.col === col)
 
-      // With no cells selected and at most one die selected, a click can
-      // complete the dice selection automatically: the whole group plus the
-      // missing dice when everything matches, or the clicked cell plus the
-      // color die when only the color matches.
+      // Clicking a fresh cell whose whole group forms a valid, playable move
+      // switches to it: the matching dice and cells are selected regardless of
+      // what was selected before. Clicks inside the current selection fall
+      // through so toggling a cell off / building a subset still works. A
+      // committed number die means the player is placing that many cells, so
+      // only switch when the group matches it — otherwise clicks accumulate.
+      const committedNumber = gameState.selectedDice.number?.value
+      const groupMatchesCommittedNumber =
+        !committedNumber || committedNumber === 'wild' || committedNumber === group.length
+      if (!isSelected && groupMatchesCommittedNumber) {
+        const pair = findDicePairForGroup(
+          gameState.dice,
+          clickedColor,
+          group.length,
+          player.jokersRemaining,
+        )
+        if (pair && isValidMove(group, clickedColor, player.board)) {
+          selectDice(pair.color)
+          selectDice(pair.number)
+          setSelectedSquares(group)
+          return
+        }
+      }
+
+      // With no cells selected, a click can also partially complete the dice:
+      // the clicked cell plus the color die when only the color matches (the
+      // group is too large or otherwise not directly playable in full).
       if (selectedSquares.length === 0) {
         const autoSelection = resolveAutoDiceSelection({
           dice: gameState.dice,
@@ -75,7 +99,6 @@ export const useEncoreSelection = ({
         }
       }
 
-      const isSelected = selectedSquares.some((s) => s.row === row && s.col === col)
       const isSubsetSelection = isSelected && group.length > selectedSquares.length
 
       if (isSubsetSelection) {
@@ -141,7 +164,27 @@ export const useEncoreSelection = ({
         return
       }
 
-      setSelectedSquares([...selectedSquares, square])
+      const nextSelection = [...selectedSquares, square]
+      setSelectedSquares(nextSelection)
+
+      // Once a manually built subset forms a valid move, select the dice that
+      // match it (fills the still-missing color/number slot).
+      if (isValidMove(nextSelection, clickedColor, player.board)) {
+        const fill = resolveAutoDiceSelection({
+          dice: gameState.dice,
+          selectedColor: gameState.selectedDice.color,
+          selectedNumber: gameState.selectedDice.number,
+          groupColor: clickedColor,
+          groupSize: nextSelection.length,
+          jokersRemaining: player.jokersRemaining,
+          isGroupMoveValid: true,
+        })
+        if (fill?.selectGroup) {
+          for (const die of fill.diceToSelect) {
+            selectDice(die)
+          }
+        }
+      }
     },
     [
       gameState.currentPlayer,
