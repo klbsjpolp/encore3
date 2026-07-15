@@ -1,6 +1,7 @@
 import { ChevronDown, Star, Trophy } from 'lucide-react'
 import { useId, useState } from 'react'
 
+import { Jokers } from '@/components/game/Jokers.tsx'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,6 +33,26 @@ const getColorBadgeClasses = (color: string) =>
     color === 'red' && 'bg-game-red border-red-700 text-white',
     color === 'orange' && 'bg-game-orange border-orange-700 text-black',
   )
+
+const Colors = ({ colorScores }: { colorScores: { color: string; points: number }[] }) => (
+  <div className="flex flex-row gap-2 items-center">
+    <span className="text-sm font-medium">Couleurs complétées : </span>
+    {colorScores.map(({ color, points }) => (
+      <div
+        key={color}
+        className={cn(
+          'w-6 h-6 rounded border-2 flex items-center justify-center text-[10px] font-bold',
+          getColorBadgeClasses(color),
+        )}
+      >
+        {points > 0 ? `+${points}` : '0'}
+      </div>
+    ))}
+    {Array.from({ length: Math.max(0, 2 - colorScores.length) }, (_, i) => (
+      <div key={i} className="w-6 h-6 rounded border-2 bg-muted" />
+    ))}
+  </div>
+)
 
 export const ScorePanel = ({
   player,
@@ -201,7 +222,10 @@ export const ScorePanel = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+        <div
+          className="flex flex-wrap items-center justify-between gap-2 text-sm"
+          hidden={expanded}
+        >
           <span className="whitespace-nowrap">
             Colonnes : <span className="font-bold">{columnsScore}</span> pts
           </span>
@@ -211,12 +235,8 @@ export const ScorePanel = ({
               {player.starsCollected}/{TOTAL_STARS}
             </span>
           </span>
-          <span className="whitespace-nowrap">
-            Jokers :{' '}
-            <span className="font-bold">
-              {player.jokersRemaining}/{MAX_JOKERS}
-            </span>
-          </span>
+          {!!colorScores.length && <Colors colorScores={colorScores} />}
+          <Jokers jokersRemaining={player.jokersRemaining} />
         </div>
 
         {/* Always mounted so aria-controls points at a real element; the
@@ -236,25 +256,9 @@ export const ScorePanel = ({
               ))}
             </div>
           </div>
-
-          <div className="flex flex-row gap-2 items-center mb-2">
-            <span className="text-sm font-medium">Couleurs complétées : </span>
-            {colorScores.map(({ color, points }) => (
-              <div
-                key={color}
-                className={cn(
-                  'w-6 h-6 rounded border-2 flex items-center justify-center text-[10px] font-bold',
-                  getColorBadgeClasses(color),
-                )}
-              >
-                {points > 0 ? `+${points}` : '0'}
-              </div>
-            ))}
-            {Array.from({ length: Math.max(0, 2 - colorScores.length) }, (_, i) => (
-              <div key={i} className="w-6 h-6 rounded border-2 bg-muted" />
-            ))}
+          <div>
+            <Colors colorScores={colorScores} />
           </div>
-
           <div>
             <p className="text-sm font-medium mb-2">
               Étoiles collectées ({player.starsCollected}/{TOTAL_STARS}) :{' '}
@@ -266,31 +270,14 @@ export const ScorePanel = ({
                   className={cn(
                     'w-4 h-4',
                     i < player.starsCollected ? 'text-yellow-800' : 'text-black',
-                    i < player.starsCollected ? 'fill-yellow-500' : 'fill-(--color-muted)',
+                    i < player.starsCollected ? 'fill-yellow-500' : 'fill-muted',
                   )}
                 />
               ))}
             </div>
           </div>
 
-          <div className="flex flex-row gap-2 items-baseline mb-2">
-            <span className="text-sm font-medium">
-              Jokers ({player.jokersRemaining}/{MAX_JOKERS})
-            </span>
-            <span className="flex font-mono">
-              {Array.from({ length: MAX_JOKERS }, (_, i) => (
-                <span
-                  key={i}
-                  className={cn(
-                    'text-xs border rounded-full',
-                    i >= MAX_JOKERS - player.jokersRemaining && 'border-primary',
-                  )}
-                >
-                  {i >= MAX_JOKERS - player.jokersRemaining ? '❗' : '❕'}
-                </span>
-              ))}
-            </span>
-          </div>
+          <Jokers jokersRemaining={player.jokersRemaining} />
         </div>
 
         {renderScorePanel('text-lg border-t pt-2')}
