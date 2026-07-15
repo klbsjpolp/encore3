@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 
-import { findMatchingDicePair } from '@/hooks/encore-game/dice'
+import { resolveAutoDiceSelection } from '@/hooks/encore-game/dice'
 import { findConnectedGroup } from '@/hooks/useEncoreGame'
 import { getSelectionLimit, MAX_SELECTABLE_CELLS } from '@/lib/game-rules'
 import type { DiceColor, DiceNumber, DiceResult, GameColor, GameState, Square } from '@/types/game'
@@ -52,18 +52,25 @@ export const useEncoreSelection = ({
       const group = findConnectedGroup(row, col, clickedColor, player.board)
       const square = { row, col }
 
-      // With no dice and no cells selected, clicking a group that matches an
-      // available color/number dice pair selects the dice and the group at once.
-      if (
-        !gameState.selectedDice.color &&
-        !gameState.selectedDice.number &&
-        selectedSquares.length === 0
-      ) {
-        const dicePair = findMatchingDicePair(gameState.dice, clickedColor, group.length)
-        if (dicePair && isValidMove(group, clickedColor, player.board)) {
-          selectDice(dicePair.color)
-          selectDice(dicePair.number)
-          setSelectedSquares(group)
+      // With no cells selected and at most one die selected, a click can
+      // complete the dice selection automatically: the whole group plus the
+      // missing dice when everything matches, or the clicked cell plus the
+      // color die when only the color matches.
+      if (selectedSquares.length === 0) {
+        const autoSelection = resolveAutoDiceSelection({
+          dice: gameState.dice,
+          selectedColor: gameState.selectedDice.color,
+          selectedNumber: gameState.selectedDice.number,
+          groupColor: clickedColor,
+          groupSize: group.length,
+          jokersRemaining: player.jokersRemaining,
+          isGroupMoveValid: isValidMove(group, clickedColor, player.board),
+        })
+        if (autoSelection) {
+          for (const die of autoSelection.diceToSelect) {
+            selectDice(die)
+          }
+          setSelectedSquares(autoSelection.selectGroup ? group : [square])
           return
         }
       }

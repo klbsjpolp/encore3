@@ -452,9 +452,50 @@ describe('useEncoreSelection', () => {
       ])
     })
 
-    it('never selects joker (wild) dice automatically', () => {
+    it('falls back to a color joker when no color die matches', () => {
       const { result, selectDice } = renderSelection(
         createAutoSelectState({
+          dice: [
+            { id: 'c-wild', type: 'color', value: 'wild', selected: false },
+            { id: 'n-2', type: 'number', value: 2, selected: false },
+          ],
+        }),
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice).toHaveBeenCalledTimes(2)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-wild' }))
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-2' }))
+      expect(result.current.selectedSquares).toHaveLength(2)
+    })
+
+    it('falls back to a number joker when no number die matches', () => {
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          dice: [
+            { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+          ],
+        }),
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice).toHaveBeenCalledTimes(2)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-wild' }))
+      expect(result.current.selectedSquares).toHaveLength(2)
+    })
+
+    it('uses two jokers when only wild dice remain and two jokers are available', () => {
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          players: [{ ...createPlayer(), jokersRemaining: 2 }],
           dice: [
             { id: 'c-wild', type: 'color', value: 'wild', selected: false },
             { id: 'n-wild', type: 'number', value: 'wild', selected: false },
@@ -466,11 +507,53 @@ describe('useEncoreSelection', () => {
         result.current.handleSquareClick(0, 0)
       })
 
-      expect(selectDice).not.toHaveBeenCalled()
+      expect(selectDice).toHaveBeenCalledTimes(2)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-wild' }))
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-wild' }))
+      expect(result.current.selectedSquares).toHaveLength(2)
+    })
+
+    it('spends at most the jokers the player has left', () => {
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          players: [{ ...createPlayer(), jokersRemaining: 1 }],
+          dice: [
+            { id: 'c-wild', type: 'color', value: 'wild', selected: false },
+            { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+          ],
+        }),
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      // Only the color joker fits the budget: the cell is selected with it.
+      expect(selectDice).toHaveBeenCalledTimes(1)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-wild' }))
       expect(result.current.selectedSquares).toEqual([{ row: 0, col: 0 }])
     })
 
-    it('does nothing automatically when a die is already selected', () => {
+    it('selects the cell and the color die when only the color matches', () => {
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          dice: [
+            { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            { id: 'n-5', type: 'number', value: 5, selected: false },
+          ],
+        }),
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice).toHaveBeenCalledTimes(1)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
+      expect(result.current.selectedSquares).toEqual([{ row: 0, col: 0 }])
+    })
+
+    it('completes the number die when a matching color die is already selected', () => {
       const { result, selectDice } = renderSelection(
         createAutoSelectState({
           selectedDice: {
@@ -484,7 +567,46 @@ describe('useEncoreSelection', () => {
         result.current.handleSquareClick(0, 0)
       })
 
+      expect(selectDice).toHaveBeenCalledTimes(1)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-2' }))
+      expect(result.current.selectedSquares).toHaveLength(2)
+    })
+
+    it('completes the color die when a matching number die is already selected', () => {
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          selectedDice: {
+            color: null,
+            number: { id: 'n-2', type: 'number', value: 2, selected: false },
+          },
+        }),
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice).toHaveBeenCalledTimes(1)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
+      expect(result.current.selectedSquares).toHaveLength(2)
+    })
+
+    it('does nothing automatically when both dice are already selected', () => {
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          selectedDice: {
+            color: { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            number: { id: 'n-2', type: 'number', value: 2, selected: false },
+          },
+        }),
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
       expect(selectDice).not.toHaveBeenCalled()
+      expect(result.current.selectedSquares).toHaveLength(2)
     })
 
     it('does nothing automatically when cells are already selected', () => {
@@ -541,7 +663,7 @@ describe('useEncoreSelection', () => {
       expect(selectDice).not.toHaveBeenCalled()
     })
 
-    it('does not select the dice when the group is not a valid move', () => {
+    it('keeps the cell and the color die when the group move is invalid', () => {
       const { result, selectDice } = renderSelection(createAutoSelectState(), {
         isValidMove: vi.fn(() => false),
       })
@@ -550,7 +672,8 @@ describe('useEncoreSelection', () => {
         result.current.handleSquareClick(0, 0)
       })
 
-      expect(selectDice).not.toHaveBeenCalled()
+      expect(selectDice).toHaveBeenCalledTimes(1)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
       expect(result.current.selectedSquares).toEqual([{ row: 0, col: 0 }])
     })
   })
