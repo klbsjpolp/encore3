@@ -9,6 +9,7 @@ import { EncoreGame } from './EncoreGame'
 
 const mockUseEncoreGame = vi.fn()
 const mockFindConnectedGroup = vi.fn()
+const mockUseIsMobile = vi.fn(() => true)
 
 vi.mock('@/hooks/useEncoreGame', async (importOriginal) => {
   const actual = await importOriginal<typeof UseEncoreGameModule>()
@@ -22,7 +23,7 @@ vi.mock('@/hooks/useEncoreGame', async (importOriginal) => {
 })
 
 vi.mock('@/hooks/use-mobile', () => ({
-  useIsMobile: () => true,
+  useIsMobile: () => mockUseIsMobile(),
 }))
 
 const boardConfiguration: BoardConfiguration = {
@@ -119,6 +120,7 @@ const getMainBoardSquares = () =>
 describe('EncoreGame mobile layout', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUseIsMobile.mockReturnValue(true)
   })
 
   it('renders compact mobile controls with panel toggles and sticky actions', async () => {
@@ -254,5 +256,24 @@ describe('EncoreGame mobile layout', () => {
       'aria-pressed',
       'true',
     )
+  })
+
+  it('switches to the scores panel once the viewport becomes mobile after the game already ended', async () => {
+    mockUseIsMobile.mockReturnValue(false)
+    mockUseEncoreGame.mockReturnValue(
+      buildMockGame({ gameState: { ...createGameState(), phase: 'game-over' } }),
+    )
+    mockFindConnectedGroup.mockImplementation((row: number, col: number) => [{ row, col }])
+
+    const { rerender } = render(<EncoreGame />)
+
+    expect(screen.queryByRole('button', { name: 'Scores' })).not.toBeInTheDocument()
+
+    mockUseIsMobile.mockReturnValue(true)
+    rerender(<EncoreGame />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Scores' })).toHaveAttribute('aria-pressed', 'true')
+    })
   })
 })
