@@ -90,13 +90,14 @@ export interface ForcedSelection {
 
 // Scans the board for whole-group moves that can be played with the currently
 // available dice. Returns a selection to apply when the turn is effectively
-// decided: exactly one placement, or a single affordable dice pair shared by
-// every placement. Subset plays are not enumerated (they are ambiguous), so a
-// null result simply means nothing is pre-selected.
+// decided: exactly one placement, or a single dice pair shared by every
+// placement. Only joker-free placements are considered: subset plays are not
+// enumerated, so a joker-requiring "only" move might not actually be the only
+// move, and a joker is scarce enough that spending one should stay the
+// player's explicit choice. A null result simply means nothing is pre-selected.
 export const findForcedSelection = (
   dice: DiceResult[],
   board: Square[][],
-  jokersRemaining: number,
   isValidMove: (
     squares: { row: number; col: number }[],
     color: GameColor,
@@ -131,7 +132,8 @@ export const findForcedSelection = (
       if (!isValidMove(group, cell.color, board)) {
         continue
       }
-      const pair = findDicePairForGroup(dice, cell.color, group.length, jokersRemaining)
+      // Budget 0 keeps this to exact (non-wild) dice only.
+      const pair = findDicePairForGroup(dice, cell.color, group.length, 0)
       if (pair) {
         placements.push({ color: pair.color, number: pair.number, squares: group })
       }
