@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { BoardConfiguration } from '@/data/boardConfigurations'
-import type { GameState, Player, Square } from '@/types/game'
+import type { DiceResult, GameState, Player, Square } from '@/types/game'
 
 import { useEncoreSelection } from './useEncoreSelection'
 
@@ -69,15 +69,17 @@ const renderSelection = (
 ) => {
   const makeMove = vi.fn()
   const skipTurn = vi.fn()
+  const selectDice = vi.fn()
   const { result } = renderHook(() =>
     useEncoreSelection({
       gameState,
       makeMove,
       skipTurn,
+      selectDice,
       isValidMove: isValidMove as never,
     }),
   )
-  return { result, makeMove, skipTurn }
+  return { result, makeMove, skipTurn, selectDice }
 }
 
 describe('useEncoreSelection', () => {
@@ -91,6 +93,7 @@ describe('useEncoreSelection', () => {
         gameState: createGameState(),
         makeMove,
         skipTurn,
+        selectDice: vi.fn(),
         isValidMove,
       }),
     )
@@ -127,6 +130,7 @@ describe('useEncoreSelection', () => {
         gameState: createGameState(),
         makeMove,
         skipTurn,
+        selectDice: vi.fn(),
         isValidMove,
       }),
     )
@@ -413,6 +417,116 @@ describe('useEncoreSelection', () => {
     })
 
     expect(result.current.canMakeMove()).toBe(true)
+  })
+
+  describe('automatic dice selection on group click', () => {
+    const createDice = (): DiceResult[] => [
+      { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+      { id: 'c-wild', type: 'color', value: 'wild', selected: false },
+      { id: 'n-2', type: 'number', value: 2, selected: false },
+      { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+    ]
+
+    const createAutoSelectState = (overrides: Partial<GameState> = {}): GameState =>
+      createGameState({
+        dice: createDice(),
+        selectedDice: { color: null, number: null },
+        ...overrides,
+      })
+
+    it('selects the group and the matching dice when nothing is selected', () => {
+      const { result, selectDice } = renderSelection(createAutoSelectState())
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice).toHaveBeenCalledTimes(2)
+      expect(selectDice).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'c-orange', value: 'orange' }),
+      )
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-2', value: 2 }))
+      expect(result.current.selectedSquares).toEqual([
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+      ])
+    })
+
+    it('never selects joker (wild) dice automatically', () => {
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          dice: [
+            { id: 'c-wild', type: 'color', value: 'wild', selected: false },
+            { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+          ],
+        }),
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice).not.toHaveBeenCalled()
+      expect(result.current.selectedSquares).toEqual([{ row: 0, col: 0 }])
+    })
+
+    it('does nothing automatically when a die is already selected', () => {
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          selectedDice: {
+            color: { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            number: null,
+          },
+        }),
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice).not.toHaveBeenCalled()
+    })
+
+    it('does nothing automatically when cells are already selected', () => {
+      const { result, selectDice } = renderSelection(createAutoSelectState())
+
+      act(() => {
+        result.current.setSelectedSquares([{ row: 1, col: 0 }])
+      })
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice).not.toHaveBeenCalled()
+    })
+
+    it('ignores dice already used by the active player', () => {
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          phase: 'passive-selection',
+          dice: createDice().map((die) => ({ ...die, selected: true })),
+        }),
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice).not.toHaveBeenCalled()
+    })
+
+    it('does not select the dice when the group is not a valid move', () => {
+      const { result, selectDice } = renderSelection(createAutoSelectState(), {
+        isValidMove: vi.fn(() => false),
+      })
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice).not.toHaveBeenCalled()
+      expect(result.current.selectedSquares).toEqual([{ row: 0, col: 0 }])
+    })
   })
 
   describe('hasAnyPossibleMove', () => {

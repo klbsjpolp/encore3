@@ -1,14 +1,16 @@
 import { useCallback, useState } from 'react'
 
+import { findMatchingDicePair } from '@/hooks/encore-game/dice'
 import { findConnectedGroup } from '@/hooks/useEncoreGame'
 import { getSelectionLimit, MAX_SELECTABLE_CELLS } from '@/lib/game-rules'
-import type { DiceColor, DiceNumber, GameColor, GameState, Square } from '@/types/game'
+import type { DiceColor, DiceNumber, DiceResult, GameColor, GameState, Square } from '@/types/game'
 import { DEFAULT_GAME_COLOR, GAME_COLORS } from '@/types/game'
 
 interface UseEncoreSelectionArgs {
   gameState: GameState
   makeMove: (squares?: { row: number; col: number }[]) => void
   skipTurn: () => void
+  selectDice: (dice: DiceResult) => void
   isValidMove: (
     squares: { row: number; col: number }[],
     color: GameColor,
@@ -20,6 +22,7 @@ export const useEncoreSelection = ({
   gameState,
   makeMove,
   skipTurn,
+  selectDice,
   isValidMove,
 }: UseEncoreSelectionArgs) => {
   const [selectedSquares, _setSelectedSquares] = useState<{ row: number; col: number }[]>([])
@@ -48,6 +51,23 @@ export const useEncoreSelection = ({
       const clickedColor = player.board[row][col].color
       const group = findConnectedGroup(row, col, clickedColor, player.board)
       const square = { row, col }
+
+      // With no dice and no cells selected, clicking a group that matches an
+      // available color/number dice pair selects the dice and the group at once.
+      if (
+        !gameState.selectedDice.color &&
+        !gameState.selectedDice.number &&
+        selectedSquares.length === 0
+      ) {
+        const dicePair = findMatchingDicePair(gameState.dice, clickedColor, group.length)
+        if (dicePair && isValidMove(group, clickedColor, player.board)) {
+          selectDice(dicePair.color)
+          selectDice(dicePair.number)
+          setSelectedSquares(group)
+          return
+        }
+      }
+
       const isSelected = selectedSquares.some((s) => s.row === row && s.col === col)
       const isSubsetSelection = isSelected && group.length > selectedSquares.length
 
@@ -118,12 +138,14 @@ export const useEncoreSelection = ({
     },
     [
       gameState.currentPlayer,
+      gameState.dice,
       gameState.phase,
       gameState.players,
       gameState.selectedDice.color,
       gameState.selectedDice.number,
       hoveredSquares,
       isValidMove,
+      selectDice,
       selectedSquares,
       setSelectedSquares,
     ],

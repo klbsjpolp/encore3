@@ -69,6 +69,7 @@ export const EncoreGame = () => {
     gameState,
     makeMove,
     skipTurn,
+    selectDice,
     isValidMove,
   })
 
