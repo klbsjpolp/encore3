@@ -53,19 +53,19 @@ export const useEncoreSelection = ({
   const phase = gameState.phase
   const { color: selectedColor, number: selectedNumber } = gameState.selectedDice
   const currentPlayer = gameState.players[gameState.currentPlayer]
+  // Depend on the board and joker count directly rather than the whole player
+  // object, which gets a fresh reference on every immutable state update: this
+  // keeps the O(cells) scan from re-running when nothing relevant changed.
+  const currentBoard = currentPlayer?.board
+  const currentJokers = currentPlayer?.jokersRemaining
   useEffect(() => {
     if (phase !== 'active-selection' && phase !== 'passive-selection') {
       return
     }
-    if (selectedColor || selectedNumber || selectedSquares.length > 0 || !currentPlayer) {
+    if (selectedColor || selectedNumber || selectedSquares.length > 0 || !currentBoard) {
       return
     }
-    const forced = findForcedSelection(
-      gameState.dice,
-      currentPlayer.board,
-      currentPlayer.jokersRemaining,
-      isValidMove,
-    )
+    const forced = findForcedSelection(gameState.dice, currentBoard, currentJokers ?? 0, isValidMove)
     if (!forced) {
       return
     }
@@ -84,7 +84,8 @@ export const useEncoreSelection = ({
     selectedColor,
     selectedNumber,
     selectedSquares.length,
-    currentPlayer,
+    currentBoard,
+    currentJokers,
     gameState.dice,
     isValidMove,
     selectDice,
