@@ -234,7 +234,7 @@ describe('encore-game/dice', () => {
         { id: 'n-1', type: 'number', value: 1, selected: false },
       ]
 
-      const forced = findForcedSelection(dice, singleGroupBoard(), 8, isValidMoveSelection)
+      const forced = findForcedSelection(dice, singleGroupBoard(), isValidMoveSelection)
 
       expect(forced).toEqual({
         mode: 'move',
@@ -260,7 +260,7 @@ describe('encore-game/dice', () => {
         { id: 'n-1', type: 'number', value: 1, selected: false },
       ]
 
-      const forced = findForcedSelection(dice, buildBoard(grid), 8, isValidMoveSelection)
+      const forced = findForcedSelection(dice, buildBoard(grid), isValidMoveSelection)
 
       expect(forced).toEqual({
         mode: 'dice',
@@ -284,7 +284,7 @@ describe('encore-game/dice', () => {
         { id: 'n-1', type: 'number', value: 1, selected: false },
       ]
 
-      expect(findForcedSelection(dice, buildBoard(grid), 8, isValidMoveSelection)).toBeNull()
+      expect(findForcedSelection(dice, buildBoard(grid), isValidMoveSelection)).toBeNull()
     })
 
     it('returns null when no move is playable with the available dice', () => {
@@ -293,8 +293,8 @@ describe('encore-game/dice', () => {
         { id: 'n-1', type: 'number', value: 1, selected: false },
       ]
 
-      // Only an orange group exists; no blue die and no joker budget.
-      expect(findForcedSelection(dice, singleGroupBoard(), 0, isValidMoveSelection)).toBeNull()
+      // Only an orange group exists; there is no blue die to play it.
+      expect(findForcedSelection(dice, singleGroupBoard(), isValidMoveSelection)).toBeNull()
     })
 
     it('ignores dice already used by the active player', () => {
@@ -303,19 +303,18 @@ describe('encore-game/dice', () => {
         { id: 'n-1', type: 'number', value: 1, selected: true },
       ]
 
-      expect(findForcedSelection(dice, singleGroupBoard(), 8, isValidMoveSelection)).toBeNull()
+      expect(findForcedSelection(dice, singleGroupBoard(), isValidMoveSelection)).toBeNull()
     })
 
-    it('can force a move that requires a joker within budget', () => {
+    it('never forces a move that would spend a joker', () => {
+      // The single orange group can only be played with a colour joker; a joker
+      // is scarce, so this is left to the player instead of being pre-selected.
       const dice: DiceResult[] = [
         { id: 'c-wild', type: 'color', value: 'wild', selected: false },
         { id: 'n-1', type: 'number', value: 1, selected: false },
       ]
 
-      const forced = findForcedSelection(dice, singleGroupBoard(), 1, isValidMoveSelection)
-
-      expect(forced?.mode).toBe('move')
-      expect(forced?.color).toEqual(expect.objectContaining({ id: 'c-wild' }))
+      expect(findForcedSelection(dice, singleGroupBoard(), isValidMoveSelection)).toBeNull()
     })
   })
 

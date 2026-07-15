@@ -839,9 +839,10 @@ describe('useEncoreSelection', () => {
       expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-2' }))
     })
 
-    it('pre-selects only the dice when one pair plays both groups', async () => {
-      // A single color joker + "2" is the only pair, playable on either group.
-      const { selectDice } = renderSelection(
+    it('does not pre-select a forced move that would spend a joker', async () => {
+      // Every playable move here needs the colour joker, so nothing is forced —
+      // spending a scarce joker stays the player's explicit choice.
+      const { result, selectDice } = renderSelection(
         createAutoSelectState({
           selectedDice: { color: null, number: null },
           dice: [
@@ -851,10 +852,10 @@ describe('useEncoreSelection', () => {
         }),
       )
 
-      await waitFor(() => {
-        expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-wild' }))
-      })
-      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-2' }))
+      // Give the deferred frame a chance to fire before asserting nothing ran.
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+      expect(selectDice).not.toHaveBeenCalled()
+      expect(result.current.selectedSquares).toEqual([])
     })
 
     it('does not pre-select anything when the choice is ambiguous', () => {
