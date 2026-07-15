@@ -68,12 +68,26 @@ export const EncoreGameMoveControls = ({
       >
         {isMobile ? (
           <span>
-            Confirmer ({selectedCount}/{selectionLimit})
+            Confirmer
+            {actionsDisabled ? (
+              ''
+            ) : (
+              <>
+                {' '}
+                ({selectedCount}/{selectionLimit})
+              </>
+            )}
           </span>
         ) : (
           <>
-            <span className="hidden sm:inline">Confirmer le placement ({selectedCount} cases)</span>
-            <span className="sm:hidden">Confirmer ({selectedCount})</span>
+            <span className="hidden sm:inline">
+              Confirmer le placement
+              {actionsDisabled ? '' : <> ({selectedCount} cases)</>}
+            </span>
+            <span className="sm:hidden">
+              Confirmer
+              {actionsDisabled ? '' : <> ({selectedCount})</>}
+            </span>
             {canConfirm && !actionsDisabled && <KeyboardHint />}
           </>
         )}
