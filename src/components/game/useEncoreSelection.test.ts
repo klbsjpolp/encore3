@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { BoardConfiguration } from '@/data/boardConfigurations'
@@ -81,6 +81,20 @@ const renderSelection = (
   )
   return { result, makeMove, skipTurn, selectDice }
 }
+
+const createDice = (): DiceResult[] => [
+  { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+  { id: 'c-wild', type: 'color', value: 'wild', selected: false },
+  { id: 'n-2', type: 'number', value: 2, selected: false },
+  { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+]
+
+const createAutoSelectState = (overrides: Partial<GameState> = {}): GameState =>
+  createGameState({
+    dice: createDice(),
+    selectedDice: { color: null, number: null },
+    ...overrides,
+  })
 
 describe('useEncoreSelection', () => {
   it('selects a valid connected group and confirms the move', () => {
@@ -420,20 +434,6 @@ describe('useEncoreSelection', () => {
   })
 
   describe('automatic dice selection on group click', () => {
-    const createDice = (): DiceResult[] => [
-      { id: 'c-orange', type: 'color', value: 'orange', selected: false },
-      { id: 'c-wild', type: 'color', value: 'wild', selected: false },
-      { id: 'n-2', type: 'number', value: 2, selected: false },
-      { id: 'n-wild', type: 'number', value: 'wild', selected: false },
-    ]
-
-    const createAutoSelectState = (overrides: Partial<GameState> = {}): GameState =>
-      createGameState({
-        dice: createDice(),
-        selectedDice: { color: null, number: null },
-        ...overrides,
-      })
-
     it('selects the group and the matching dice when nothing is selected', () => {
       const { result, selectDice } = renderSelection(createAutoSelectState())
 
@@ -455,8 +455,11 @@ describe('useEncoreSelection', () => {
     it('falls back to a color joker when no color die matches', () => {
       const { result, selectDice } = renderSelection(
         createAutoSelectState({
+          // c-blue gives the blue group a distinct playable pair, so no single
+          // move is forced and the click is what drives the selection here.
           dice: [
             { id: 'c-wild', type: 'color', value: 'wild', selected: false },
+            { id: 'c-blue', type: 'color', value: 'blue', selected: false },
             { id: 'n-2', type: 'number', value: 2, selected: false },
           ],
         }),
@@ -475,8 +478,11 @@ describe('useEncoreSelection', () => {
     it('falls back to a number joker when no number die matches', () => {
       const { result, selectDice } = renderSelection(
         createAutoSelectState({
+          // c-blue gives the blue group a distinct playable pair, so no single
+          // move is forced and the click is what drives the selection here.
           dice: [
             { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            { id: 'c-blue', type: 'color', value: 'blue', selected: false },
             { id: 'n-wild', type: 'number', value: 'wild', selected: false },
           ],
         }),
@@ -496,9 +502,13 @@ describe('useEncoreSelection', () => {
       const { result, selectDice } = renderSelection(
         createAutoSelectState({
           players: [{ ...createPlayer(), jokersRemaining: 2 }],
+          // c-blue / n-5 give the blue group a distinct pair, so no single move
+          // is forced; the orange group still resolves to the two jokers.
           dice: [
             { id: 'c-wild', type: 'color', value: 'wild', selected: false },
+            { id: 'c-blue', type: 'color', value: 'blue', selected: false },
             { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+            { id: 'n-5', type: 'number', value: 5, selected: false },
           ],
         }),
       )
@@ -635,6 +645,37 @@ describe('useEncoreSelection', () => {
       ])
     })
 
+    it('applies the exact die before the joker when switching replaces a committed wild', () => {
+      // A wild number die is already committed (1 joker spent) and only 1 joker
+      // is left. Clicking an orange group that needs a colour joker but has an
+      // exact number die must free the old wild number first, so the exact die
+      // is selected before the new colour joker.
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          players: [{ ...createPlayer(), jokersRemaining: 1 }],
+          selectedDice: {
+            color: null,
+            number: { id: 'n-committed', type: 'number', value: 'wild', selected: false },
+          },
+          dice: [
+            { id: 'c-wild', type: 'color', value: 'wild', selected: false },
+            { id: 'n-2', type: 'number', value: 2, selected: false },
+          ],
+        }),
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice.mock.calls[0][0]).toEqual(expect.objectContaining({ id: 'n-2' }))
+      expect(selectDice.mock.calls[1][0]).toEqual(expect.objectContaining({ id: 'c-wild' }))
+      expect(result.current.selectedSquares).toEqual([
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+      ])
+    })
+
     it('accumulates cells instead of switching while a number die is committed', () => {
       // A "1" number die is available, but the committed "2" die means the
       // player is placing two cells: clicks build the selection, they do not
@@ -720,9 +761,12 @@ describe('useEncoreSelection', () => {
       const { result, selectDice } = renderSelection(
         createAutoSelectState({
           phase: 'passive-selection',
+          // c-blue keeps the blue group playable with a distinct pair, so the
+          // click (not a forced move) drives the selection.
           dice: [
             { id: 'c-used', type: 'color', value: 'orange', selected: true },
             { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            { id: 'c-blue', type: 'color', value: 'blue', selected: false },
             { id: 'n-used', type: 'number', value: 2, selected: true },
             { id: 'n-2', type: 'number', value: 2, selected: false },
           ],
@@ -769,6 +813,80 @@ describe('useEncoreSelection', () => {
       expect(selectDice).toHaveBeenCalledTimes(1)
       expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
       expect(result.current.selectedSquares).toEqual([{ row: 0, col: 0 }])
+    })
+  })
+
+  describe('forced-move pre-selection', () => {
+    it('pre-selects dice and cells when a single move is possible', async () => {
+      // Only the orange die + "2" can be played: the blue group has no die.
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          selectedDice: { color: null, number: null },
+          dice: [
+            { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            { id: 'n-2', type: 'number', value: 2, selected: false },
+          ],
+        }),
+      )
+
+      await waitFor(() => {
+        expect(result.current.selectedSquares).toEqual([
+          { row: 0, col: 0 },
+          { row: 0, col: 1 },
+        ])
+      })
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-2' }))
+    })
+
+    it('pre-selects only the dice when one pair plays both groups', async () => {
+      // A single color joker + "2" is the only pair, playable on either group.
+      const { selectDice } = renderSelection(
+        createAutoSelectState({
+          selectedDice: { color: null, number: null },
+          dice: [
+            { id: 'c-wild', type: 'color', value: 'wild', selected: false },
+            { id: 'n-2', type: 'number', value: 2, selected: false },
+          ],
+        }),
+      )
+
+      await waitFor(() => {
+        expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-wild' }))
+      })
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-2' }))
+    })
+
+    it('does not pre-select anything when the choice is ambiguous', () => {
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          selectedDice: { color: null, number: null },
+          dice: [
+            { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            { id: 'c-blue', type: 'color', value: 'blue', selected: false },
+            { id: 'n-2', type: 'number', value: 2, selected: false },
+          ],
+        }),
+      )
+
+      expect(selectDice).not.toHaveBeenCalled()
+      expect(result.current.selectedSquares).toEqual([])
+    })
+
+    it('stays inert outside the selection phases', () => {
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          phase: 'rolling',
+          selectedDice: { color: null, number: null },
+          dice: [
+            { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            { id: 'n-2', type: 'number', value: 2, selected: false },
+          ],
+        }),
+      )
+
+      expect(selectDice).not.toHaveBeenCalled()
+      expect(result.current.selectedSquares).toEqual([])
     })
   })
 

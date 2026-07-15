@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ColorDiceResult, DiceResult, NumberDiceResult } from '@/types/game'
+import type { ColorDiceResult, DiceResult, GameColor, NumberDiceResult, Square } from '@/types/game'
 import { DICE_COLOR_FACES, DICE_NUMBER_FACES } from '@/types/game'
 
-import { findAutoColorDice, findAutoNumberDice, resolveAutoDiceSelection, rollDice } from './dice'
+import {
+  findAutoColorDice,
+  findAutoNumberDice,
+  findDicePairForGroup,
+  findForcedSelection,
+  resolveAutoDiceSelection,
+  rollDice,
+} from './dice'
+import { isValidMoveSelection } from './moveValidation'
 
 describe('encore-game/dice', () => {
   it('rolls 3 color dice and 3 number dice with valid values', () => {
@@ -194,6 +202,147 @@ describe('encore-game/dice', () => {
       expect(resolve({ isGroupMoveValid: false })).toEqual({
         diceToSelect: [expect.objectContaining({ id: 'c-orange' })],
         selectGroup: false,
+      })
+    })
+  })
+
+  describe('findForcedSelection', () => {
+    // Builds a board from a grid of colours; a `null` cell is crossed. Column H
+    // (index 7) is the free column, so single groups placed there are valid
+    // without needing an adjacent crossed cell.
+    const buildBoard = (grid: (GameColor | null)[][]): Square[][] =>
+      grid.map((cols, row) =>
+        cols.map((color, col) => ({
+          color: color ?? 'yellow',
+          hasStar: false,
+          crossed: color === null,
+          column: String.fromCharCode(65 + col),
+          row,
+        })),
+      )
+
+    // A single orange cell in the free column (H) is the only playable group.
+    const singleGroupBoard = () => {
+      const grid: (GameColor | null)[][] = [Array.from({ length: 8 }, () => null)]
+      grid[0][7] = 'orange'
+      return buildBoard(grid)
+    }
+
+    it('pre-selects both dice and cells when only one move is possible', () => {
+      const dice: DiceResult[] = [
+        { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+        { id: 'n-1', type: 'number', value: 1, selected: false },
+      ]
+
+      const forced = findForcedSelection(dice, singleGroupBoard(), 8, isValidMoveSelection)
+
+      expect(forced).toEqual({
+        mode: 'move',
+        color: expect.objectContaining({ id: 'c-orange' }),
+        number: expect.objectContaining({ id: 'n-1' }),
+        squares: [{ row: 0, col: 7 }],
+      })
+    })
+
+    it('pre-selects only the dice when one pair plays several placements', () => {
+      // Two single orange cells in the free column, kept apart by the crossed
+      // row between them: the same orange+1 pair plays either, so the placement
+      // is ambiguous but the dice are forced.
+      const grid: (GameColor | null)[][] = [
+        Array.from({ length: 8 }, () => null),
+        Array.from({ length: 8 }, () => null),
+        Array.from({ length: 8 }, () => null),
+      ]
+      grid[0][7] = 'orange'
+      grid[2][7] = 'orange'
+      const dice: DiceResult[] = [
+        { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+        { id: 'n-1', type: 'number', value: 1, selected: false },
+      ]
+
+      const forced = findForcedSelection(dice, buildBoard(grid), 8, isValidMoveSelection)
+
+      expect(forced).toEqual({
+        mode: 'dice',
+        color: expect.objectContaining({ id: 'c-orange' }),
+        number: expect.objectContaining({ id: 'n-1' }),
+        squares: [],
+      })
+    })
+
+    it('returns null when placements need different dice pairs', () => {
+      // An orange single and a blue single: distinct pairs, genuine choice.
+      const grid: (GameColor | null)[][] = [
+        Array.from({ length: 8 }, () => null),
+        Array.from({ length: 8 }, () => null),
+      ]
+      grid[0][7] = 'orange'
+      grid[1][7] = 'blue'
+      const dice: DiceResult[] = [
+        { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+        { id: 'c-blue', type: 'color', value: 'blue', selected: false },
+        { id: 'n-1', type: 'number', value: 1, selected: false },
+      ]
+
+      expect(findForcedSelection(dice, buildBoard(grid), 8, isValidMoveSelection)).toBeNull()
+    })
+
+    it('returns null when no move is playable with the available dice', () => {
+      const dice: DiceResult[] = [
+        { id: 'c-blue', type: 'color', value: 'blue', selected: false },
+        { id: 'n-1', type: 'number', value: 1, selected: false },
+      ]
+
+      // Only an orange group exists; no blue die and no joker budget.
+      expect(findForcedSelection(dice, singleGroupBoard(), 0, isValidMoveSelection)).toBeNull()
+    })
+
+    it('ignores dice already used by the active player', () => {
+      const dice: DiceResult[] = [
+        { id: 'c-orange', type: 'color', value: 'orange', selected: true },
+        { id: 'n-1', type: 'number', value: 1, selected: true },
+      ]
+
+      expect(findForcedSelection(dice, singleGroupBoard(), 8, isValidMoveSelection)).toBeNull()
+    })
+
+    it('can force a move that requires a joker within budget', () => {
+      const dice: DiceResult[] = [
+        { id: 'c-wild', type: 'color', value: 'wild', selected: false },
+        { id: 'n-1', type: 'number', value: 1, selected: false },
+      ]
+
+      const forced = findForcedSelection(dice, singleGroupBoard(), 1, isValidMoveSelection)
+
+      expect(forced?.mode).toBe('move')
+      expect(forced?.color).toEqual(expect.objectContaining({ id: 'c-wild' }))
+    })
+  })
+
+  describe('findDicePairForGroup', () => {
+    const dice: DiceResult[] = [
+      { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+      { id: 'c-wild', type: 'color', value: 'wild', selected: false },
+      { id: 'n-3', type: 'number', value: 3, selected: false },
+      { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+    ]
+
+    it('returns the exact affordable pair for a playable group', () => {
+      expect(findDicePairForGroup(dice, 'orange', 3, 8)).toEqual({
+        color: expect.objectContaining({ id: 'c-orange' }),
+        number: expect.objectContaining({ id: 'n-3' }),
+      })
+    })
+
+    it('returns null for an oversized group', () => {
+      expect(findDicePairForGroup(dice, 'orange', 6, 8)).toBeNull()
+    })
+
+    it('shares the joker budget across both dice', () => {
+      expect(findDicePairForGroup(dice, 'blue', 4, 1)).toBeNull()
+      expect(findDicePairForGroup(dice, 'blue', 4, 2)).toEqual({
+        color: expect.objectContaining({ id: 'c-wild' }),
+        number: expect.objectContaining({ id: 'n-wild' }),
       })
     })
   })

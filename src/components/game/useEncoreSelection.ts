@@ -1,6 +1,10 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-import { findDicePairForGroup, resolveAutoDiceSelection } from '@/hooks/encore-game/dice'
+import {
+  findDicePairForGroup,
+  findForcedSelection,
+  resolveAutoDiceSelection,
+} from '@/hooks/encore-game/dice'
 import { findConnectedGroup } from '@/hooks/useEncoreGame'
 import { getSelectionLimit, MAX_SELECTABLE_CELLS } from '@/lib/game-rules'
 import type { DiceColor, DiceNumber, DiceResult, GameColor, GameState, Square } from '@/types/game'
@@ -41,6 +45,52 @@ export const useEncoreSelection = ({
     _setSelectedSquares(deduped)
   }, [])
 
+  // When the turn is effectively decided, pre-select it so the player does not
+  // have to hunt for the only move: a single legal placement selects its dice
+  // and cells; several placements sharing one dice pair pre-select just the
+  // dice. Guarded to run only for a human turn with nothing selected yet, so it
+  // resolves once per roll and never fights a manual selection.
+  const phase = gameState.phase
+  const { color: selectedColor, number: selectedNumber } = gameState.selectedDice
+  const currentPlayer = gameState.players[gameState.currentPlayer]
+  useEffect(() => {
+    if (phase !== 'active-selection' && phase !== 'passive-selection') {
+      return
+    }
+    if (selectedColor || selectedNumber || selectedSquares.length > 0 || !currentPlayer) {
+      return
+    }
+    const forced = findForcedSelection(
+      gameState.dice,
+      currentPlayer.board,
+      currentPlayer.jokersRemaining,
+      isValidMove,
+    )
+    if (!forced) {
+      return
+    }
+    // Deferred a frame to avoid a synchronous state update inside the effect
+    // body; the guards above keep it from running again once dice are selected.
+    const frameId = requestAnimationFrame(() => {
+      selectDice(forced.color)
+      selectDice(forced.number)
+      if (forced.mode === 'move') {
+        setSelectedSquares(forced.squares)
+      }
+    })
+    return () => cancelAnimationFrame(frameId)
+  }, [
+    phase,
+    selectedColor,
+    selectedNumber,
+    selectedSquares.length,
+    currentPlayer,
+    gameState.dice,
+    isValidMove,
+    selectDice,
+    setSelectedSquares,
+  ])
+
   const handleSquareClick = useCallback(
     (row: number, col: number) => {
       if (gameState.phase !== 'active-selection' && gameState.phase !== 'passive-selection') {
@@ -70,8 +120,15 @@ export const useEncoreSelection = ({
           player.jokersRemaining,
         )
         if (pair && isValidMove(group, clickedColor, player.board)) {
-          selectDice(pair.color)
-          selectDice(pair.number)
+          // Apply the exact (non-joker) die first: if it replaces a previously
+          // committed wild die of its type, that joker is freed before the
+          // other die is selected, so the reducer never transiently sees more
+          // jokers than the player owns and rejects one of the two picks.
+          const ordered =
+            pair.color.value === 'wild' ? [pair.number, pair.color] : [pair.color, pair.number]
+          for (const die of ordered) {
+            selectDice(die)
+          }
           setSelectedSquares(group)
           return
         }
