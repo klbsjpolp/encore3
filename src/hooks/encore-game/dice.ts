@@ -103,7 +103,11 @@ export const findForcedSelection = (
     board: Square[][],
   ) => boolean,
 ): ForcedSelection | null => {
-  const placements: { color: ColorDiceResult; number: NumberDiceResult; squares: Square[] }[] = []
+  const placements: {
+    color: ColorDiceResult
+    number: NumberDiceResult
+    squares: { row: number; col: number }[]
+  }[] = []
   const seenGroups = new Set<string>()
 
   for (let row = 0; row < board.length; row++) {
