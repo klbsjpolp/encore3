@@ -65,7 +65,12 @@ export const useEncoreSelection = ({
     if (selectedColor || selectedNumber || selectedSquares.length > 0 || !currentBoard) {
       return
     }
-    const forced = findForcedSelection(gameState.dice, currentBoard, currentJokers ?? 0, isValidMove)
+    const forced = findForcedSelection(
+      gameState.dice,
+      currentBoard,
+      currentJokers ?? 0,
+      isValidMove,
+    )
     if (!forced) {
       return
     }
