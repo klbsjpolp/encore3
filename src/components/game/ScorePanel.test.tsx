@@ -106,8 +106,8 @@ describe('ScorePanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /détail des scores/i }))
 
-    expect(screen.getByText('+5')).toBeInTheDocument()
-    expect(screen.getByText('+3')).toBeInTheDocument()
+    expect(screen.getAllByText('+5')[1]).toBeVisible()
+    expect(screen.getAllByText('+3')[1]).toBeVisible()
   })
 
   it('shows the final score breakdown and the winner trophy at game over', () => {
