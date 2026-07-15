@@ -87,27 +87,30 @@ const createGameState = (): GameState => ({
 
 let testContainer: HTMLElement
 
+const buildMockGame = (overrides?: Partial<ReturnType<typeof mockUseEncoreGame>>) => ({
+  gameState: createGameState(),
+  initializeGame: vi.fn(),
+  rollNewDice: vi.fn(),
+  selectDice: vi.fn(),
+  makeMove: vi.fn(),
+  skipTurn: vi.fn(),
+  isValidMove: vi.fn(() => true),
+  completePlayerSwitch: vi.fn(),
+  ...overrides,
+})
+
 const setupGame = async (overrides?: Partial<ReturnType<typeof mockUseEncoreGame>>) => {
   window.resizeTo(390, 844)
 
-  mockUseEncoreGame.mockReturnValue({
-    gameState: createGameState(),
-    initializeGame: vi.fn(),
-    rollNewDice: vi.fn(),
-    selectDice: vi.fn(),
-    makeMove: vi.fn(),
-    skipTurn: vi.fn(),
-    isValidMove: vi.fn(() => true),
-    completePlayerSwitch: vi.fn(),
-    ...overrides,
-  })
-
+  mockUseEncoreGame.mockReturnValue(buildMockGame(overrides))
   mockFindConnectedGroup.mockImplementation((row: number, col: number) => [{ row, col }])
 
-  const { container } = render(<EncoreGame />)
-  testContainer = container
+  const renderResult = render(<EncoreGame />)
+  testContainer = renderResult.container
 
   await screen.findByTestId('compact-dice-row')
+
+  return renderResult
 }
 
 const getMainBoardSquares = () =>
@@ -206,35 +209,50 @@ describe('EncoreGame mobile layout', () => {
   })
 
   it('automatically switches to the scores panel once the game ends', async () => {
-    window.resizeTo(390, 844)
-
-    const buildMockGame = (gameState: GameState) => ({
-      gameState,
-      initializeGame: vi.fn(),
-      rollNewDice: vi.fn(),
-      selectDice: vi.fn(),
-      makeMove: vi.fn(),
-      skipTurn: vi.fn(),
-      isValidMove: vi.fn(() => true),
-      completePlayerSwitch: vi.fn(),
-    })
-
-    mockUseEncoreGame.mockReturnValue(buildMockGame(createGameState()))
-    mockFindConnectedGroup.mockImplementation((row: number, col: number) => [{ row, col }])
-
-    const { rerender } = render(<EncoreGame />)
-    await screen.findByTestId('compact-dice-row')
+    const { rerender } = await setupGame()
 
     expect(screen.getByRole('button', { name: 'Autre joueur' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
 
-    mockUseEncoreGame.mockReturnValue(buildMockGame({ ...createGameState(), phase: 'game-over' }))
+    mockUseEncoreGame.mockReturnValue(
+      buildMockGame({ gameState: { ...createGameState(), phase: 'game-over' } }),
+    )
     rerender(<EncoreGame />)
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Scores' })).toHaveAttribute('aria-pressed', 'true')
     })
+  })
+
+  it('lets the player switch back to the opponent panel after the auto-switch, and keeps it there', async () => {
+    const { rerender } = await setupGame()
+
+    mockUseEncoreGame.mockReturnValue(
+      buildMockGame({ gameState: { ...createGameState(), phase: 'game-over' } }),
+    )
+    rerender(<EncoreGame />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Scores' })).toHaveAttribute('aria-pressed', 'true')
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Autre joueur' }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Autre joueur' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+    })
+
+    // A further re-render while the game is still over (e.g. an unrelated state
+    // update) must not force the scores panel back open.
+    rerender(<EncoreGame />)
+
+    expect(screen.getByRole('button', { name: 'Autre joueur' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
   })
 })
