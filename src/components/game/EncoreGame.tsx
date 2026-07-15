@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { AppVersion } from '@/components/AppVersion'
+import { Jokers } from '@/components/game/Jokers.tsx'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -286,8 +287,6 @@ export const EncoreGame = () => {
   const currentPlayerSummary = (
     <EncoreGameCurrentPlayerSummary
       currentPlayerName={currentPlayer?.name}
-      selectedColor={gameState.selectedDice.color?.value}
-      selectedNumber={gameState.selectedDice.number?.value}
       statusLabel={statusLabel}
     />
   )
@@ -309,22 +308,25 @@ export const EncoreGame = () => {
     />
   )
   const mainBoard = (
-    <div className="@container" ref={mainBoardContainerRef} style={mainBoardStyle}>
-      <GameBoard
-        board={currentPlayer?.board || []}
-        boardConfiguration={currentPlayer?.boardConfiguration}
-        onSquareClick={handleSquareClick}
-        onSquareHover={handleSquareHover}
-        onSquareLeave={handleSquareLeave}
-        selectedSquares={selectedSquares}
-        hoveredSquares={hoveredSquares}
-        disabled={boardDisabled}
-        firstBonusClaimed={firstBonusClaimed}
-        iClaimedFirstBonus={currentPlayer.completedColumnsFirst}
-        iClaimedSecondBonus={currentPlayer.completedColumnsNotFirst}
-        compact={isMobile}
-      />
-    </div>
+    <>
+      {isMobile && <Jokers jokersRemaining={currentPlayer.jokersRemaining} />}
+      <div className="@container" ref={mainBoardContainerRef} style={mainBoardStyle}>
+        <GameBoard
+          board={currentPlayer?.board || []}
+          boardConfiguration={currentPlayer?.boardConfiguration}
+          onSquareClick={handleSquareClick}
+          onSquareHover={handleSquareHover}
+          onSquareLeave={handleSquareLeave}
+          selectedSquares={selectedSquares}
+          hoveredSquares={hoveredSquares}
+          disabled={boardDisabled}
+          firstBonusClaimed={firstBonusClaimed}
+          iClaimedFirstBonus={currentPlayer.completedColumnsFirst}
+          iClaimedSecondBonus={currentPlayer.completedColumnsNotFirst}
+          compact={isMobile}
+        />
+      </div>
+    </>
   )
   const otherBoard = (
     <div className="flex flex-col gap-1">
@@ -333,6 +335,7 @@ export const EncoreGame = () => {
           ? `Autre : ${otherPlayer?.name ?? '—'}`
           : `Autre joueur (${otherPlayer?.name ?? '—'}) :`}
       </p>
+      {isMobile && <Jokers size="xs" jokersRemaining={otherPlayer.jokersRemaining} />}
       <div className="@container" ref={otherBoardContainerRef} style={otherBoardStyle}>
         <GameBoard
           board={otherPlayer?.board || []}

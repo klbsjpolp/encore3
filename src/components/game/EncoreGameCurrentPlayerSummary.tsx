@@ -1,38 +1,12 @@
 import { Badge } from '@/components/ui/badge'
-import type { DiceColor, DiceNumber } from '@/types/game'
-
-const COLOR_LABELS: Record<DiceColor, string> = {
-  yellow: 'Jaune',
-  green: 'Vert',
-  blue: 'Bleu',
-  red: 'Rouge',
-  orange: 'Orange',
-  wild: 'Joker',
-}
-
-const formatDiceValue = (value?: DiceColor | DiceNumber) => {
-  if (value == null) {
-    return 'Aucun'
-  }
-
-  if (typeof value === 'number') {
-    return value.toString()
-  }
-
-  return COLOR_LABELS[value] ?? value
-}
 
 interface EncoreGameCurrentPlayerSummaryProps {
   currentPlayerName?: string
-  selectedColor?: DiceColor
-  selectedNumber?: DiceNumber
   statusLabel: string
 }
 
 export const EncoreGameCurrentPlayerSummary = ({
   currentPlayerName,
-  selectedColor,
-  selectedNumber,
   statusLabel,
 }: EncoreGameCurrentPlayerSummaryProps) => {
   return (
@@ -40,9 +14,6 @@ export const EncoreGameCurrentPlayerSummary = ({
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="text-base font-semibold sm:text-lg">Tour actuel : {currentPlayerName}</p>
-          <p className="text-xs text-muted-foreground sm:text-sm">
-            Couleur: {formatDiceValue(selectedColor)} · Nombre: {formatDiceValue(selectedNumber)}
-          </p>
         </div>
         <Badge
           variant="default"
