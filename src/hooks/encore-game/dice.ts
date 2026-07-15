@@ -1,3 +1,4 @@
+import { MAX_SELECTABLE_CELLS } from '@/lib/game-rules'
 import type { ColorDiceResult, DiceResult, GameColor, NumberDiceResult } from '@/types/game'
 import { DICE_COLOR_FACES, DICE_NUMBER_FACES } from '@/types/game'
 
@@ -24,20 +25,90 @@ export const rollDice = (): DiceResult[] => {
   return dice
 }
 
-// Strict value comparisons exclude wild faces: auto-selection never spends a joker.
-export const findMatchingDicePair = (
+// Exact faces are always preferred; a wild face (joker) is only a fallback,
+// and only when the player still has enough jokers to pay for it.
+export const findAutoColorDice = (
   dice: DiceResult[],
   color: GameColor,
+  jokersAvailable: number,
+): ColorDiceResult | null => {
+  const colorDice = dice.filter((d): d is ColorDiceResult => d.type === 'color' && !d.selected)
+  return (
+    colorDice.find((d) => d.value === color) ??
+    (jokersAvailable >= 1 ? (colorDice.find((d) => d.value === 'wild') ?? null) : null)
+  )
+}
+
+export const findAutoNumberDice = (
+  dice: DiceResult[],
   groupSize: number,
-): { color: ColorDiceResult; number: NumberDiceResult } | null => {
-  const colorDice = dice.find(
-    (d): d is ColorDiceResult => d.type === 'color' && !d.selected && d.value === color,
+  jokersAvailable: number,
+): NumberDiceResult | null => {
+  const numberDice = dice.filter((d): d is NumberDiceResult => d.type === 'number' && !d.selected)
+  const wildAllowed = jokersAvailable >= 1 && groupSize >= 1 && groupSize <= MAX_SELECTABLE_CELLS
+  return (
+    numberDice.find((d) => d.value === groupSize) ??
+    (wildAllowed ? (numberDice.find((d) => d.value === 'wild') ?? null) : null)
   )
-  const numberDice = dice.find(
-    (d): d is NumberDiceResult => d.type === 'number' && !d.selected && d.value === groupSize,
-  )
-  if (!colorDice || !numberDice) {
+}
+
+interface ResolveAutoDiceSelectionArgs {
+  dice: DiceResult[]
+  selectedColor: ColorDiceResult | null
+  selectedNumber: NumberDiceResult | null
+  groupColor: GameColor
+  groupSize: number
+  jokersRemaining: number
+  isGroupMoveValid: boolean
+}
+
+export interface AutoDiceSelection {
+  diceToSelect: DiceResult[]
+  // false: only the clicked cell is selected (color matched, group did not).
+  selectGroup: boolean
+}
+
+export const resolveAutoDiceSelection = ({
+  dice,
+  selectedColor,
+  selectedNumber,
+  groupColor,
+  groupSize,
+  jokersRemaining,
+  isGroupMoveValid,
+}: ResolveAutoDiceSelectionArgs): AutoDiceSelection | null => {
+  if ((selectedColor && selectedNumber) || groupSize === 0) {
     return null
   }
-  return { color: colorDice, number: numberDice }
+
+  const jokersAvailable =
+    jokersRemaining -
+    (selectedColor?.value === 'wild' ? 1 : 0) -
+    (selectedNumber?.value === 'wild' ? 1 : 0)
+
+  const colorDice = selectedColor ? null : findAutoColorDice(dice, groupColor, jokersAvailable)
+  const colorMatches = selectedColor
+    ? selectedColor.value === 'wild' || selectedColor.value === groupColor
+    : colorDice !== null
+  if (!colorMatches) {
+    return null
+  }
+
+  const jokersAfterColor = jokersAvailable - (colorDice?.value === 'wild' ? 1 : 0)
+  const numberDice = selectedNumber ? null : findAutoNumberDice(dice, groupSize, jokersAfterColor)
+  const numberMatches = selectedNumber
+    ? selectedNumber.value === groupSize ||
+      (selectedNumber.value === 'wild' && groupSize <= MAX_SELECTABLE_CELLS)
+    : numberDice !== null
+
+  if (numberMatches && isGroupMoveValid) {
+    const diceToSelect = [colorDice, numberDice].filter((d): d is DiceResult => d !== null)
+    return { diceToSelect, selectGroup: true }
+  }
+
+  if (colorDice) {
+    return { diceToSelect: [colorDice], selectGroup: false }
+  }
+
+  return null
 }
