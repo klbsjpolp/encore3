@@ -68,6 +68,8 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
 
   --grid-template-columns-15: repeat(15, minmax(0, 1fr));
+
+  --text-2xs: 0.5rem;
 }
 
 @utility container {

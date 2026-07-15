@@ -58,27 +58,25 @@ interface ColumnPointProps {
   isClaimedByMe: boolean
   isClaimedByOther: boolean
   display: string | number
-  compact?: boolean
 }
 
-function ColumnPoint({
-  index,
-  isClaimedByMe,
-  isClaimedByOther,
-  display,
-  compact = false,
-}: ColumnPointProps) {
+function ColumnPoint({ index, isClaimedByMe, isClaimedByOther, display }: ColumnPointProps) {
   return (
     <div
       className={cn(
-        'aspect-square bg-secondary flex items-center justify-center',
-        compact ? 'rounded-[3px]' : 'rounded-[1cqw]',
-        isClaimedByMe && 'ring-[0.5cqw] ring-yellow-400',
-        compact ? 'text-[0.45rem] font-semibold' : 'text-[3cqw] font-semibold',
+        'relative aspect-square bg-secondary flex items-center justify-center text-[3cqw] font-semibold rounded-[1cqw]',
+        isClaimedByMe &&
+          'bg-yellow-400 before:w-10/12 before:h-10/12 before:absolute before:border before:border-black before:rounded-full',
         isStartingColumn(index) && 'text-destructive font-black',
-        isClaimedByOther && 'line-through text-muted-foreground bg-secondary/80',
+        isClaimedByOther && 'bg-secondary/80',
       )}
     >
+      {isClaimedByOther && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-full bg-muted-foreground/50 transform rotate-45 h-[0.33cqw]" />
+          <div className="w-full bg-muted-foreground/50 transform -rotate-45 absolute h-[0.33cqw]" />
+        </div>
+      )}
       {display}
     </div>
   )
@@ -130,7 +128,6 @@ export const GameBoard = ({
             isClaimedByMe={false}
             isClaimedByOther={false}
             display={col}
-            compact={compact}
           />
         ))}
       </div>
@@ -180,35 +177,18 @@ export const GameBoard = ({
                   <Star
                     fill="white"
                     className={cn(
-                      compact
-                        ? 'absolute inset-0 m-auto w-full h-full max-h-3 max-w-3'
-                        : 'absolute inset-0 m-auto w-full h-full max-h-[4cqw] max-w-[4cqw]',
+                      'absolute inset-0 m-auto w-full h-full max-h-[4cqw] max-w-[4cqw]',
                       square.crossed ? 'text-muted-foreground' : 'text-black drop-shadow-md',
                     )}
                   />
                 ) : (
-                  <div
-                    className={cn(
-                      'absolute opacity-25 bg-white rounded-full',
-                      compact ? 'inset-px' : 'inset-[0.08cqw] w-11/12 h-11/12',
-                    )}
-                  />
+                  <div className="absolute opacity-25 bg-white rounded-full inset-[0.08cqw] w-11/12 h-11/12" />
                 )}
                 {square.crossed && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div
-                      className={cn(
-                        'w-full bg-foreground transform rotate-45',
-                        compact ? 'h-0.5' : 'h-[0.33cqw]',
-                      )}
-                    />
-                    <div
-                      className={cn(
-                        'w-full bg-foreground transform -rotate-45 absolute',
-                        compact ? 'h-0.5' : 'h-[0.33cqw]',
-                      )}
-                    />
-                  </div>
+                  <>
+                    <div className="absolute w-full bg-foreground transform rotate-45 h-[0.33cqw]" />
+                    <div className="absolute w-full bg-foreground transform -rotate-45 h-[0.33cqw]" />
+                  </>
                 )}
               </button>
             ))}
@@ -228,7 +208,6 @@ export const GameBoard = ({
                 isClaimedByMe={isClaimedByMe}
                 isClaimedByOther={isClaimedByOther}
                 display={points}
-                compact={compact}
               />
             )
           })}
@@ -241,7 +220,6 @@ export const GameBoard = ({
                 isClaimedByMe={isClaimedByMe}
                 isClaimedByOther={false}
                 display={points}
-                compact={compact}
               />
             )
           })}
