@@ -54,6 +54,16 @@ export const findAutoNumberDice = (
   )
 }
 
+// True when an unselected, non-wild number die could still play a smaller
+// selection within this group. While that's the case, auto-selection must not
+// reach for the joker on the player's behalf: picking a smaller cell count
+// that has a real die is a legitimate, still-open choice, so spending the
+// scarce joker to grab the whole group has to stay the player's own call.
+export const hasSmallerNumberDieAlternative = (dice: DiceResult[], groupSize: number): boolean =>
+  dice.some(
+    (d) => d.type === 'number' && !d.selected && typeof d.value === 'number' && d.value < groupSize,
+  )
+
 // Best affordable dice pair to play a whole group of `size` cells of `color`,
 // ignoring any current selection (exact preferred, joker fallback in budget).
 // Returns null when the group cannot be fully played.
