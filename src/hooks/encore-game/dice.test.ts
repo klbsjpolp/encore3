@@ -5,6 +5,7 @@ import { DICE_COLOR_FACES, DICE_NUMBER_FACES } from '@/types/game'
 
 import { findConnectedGroup } from './board'
 import {
+  excludeWildNumberDie,
   findAutoColorDice,
   findAutoNumberDice,
   findDicePairForGroup,
@@ -470,6 +471,28 @@ describe('encore-game/dice', () => {
       ]
 
       expect(findForcedSelection(dice, singleGroupBoard(), isValidMoveSelection)).toBeNull()
+    })
+  })
+
+  describe('excludeWildNumberDie', () => {
+    it('drops only the wild number die, keeping color dice and real number dice', () => {
+      const dice: DiceResult[] = [
+        { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+        { id: 'c-wild', type: 'color', value: 'wild', selected: false },
+        { id: 'n-2', type: 'number', value: 2, selected: false },
+        { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+      ]
+
+      expect(excludeWildNumberDie(dice).map((d) => d.id)).toEqual(['c-orange', 'c-wild', 'n-2'])
+    })
+
+    it('is a no-op when there is no wild number die', () => {
+      const dice: DiceResult[] = [
+        { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+        { id: 'n-2', type: 'number', value: 2, selected: false },
+      ]
+
+      expect(excludeWildNumberDie(dice)).toEqual(dice)
     })
   })
 
