@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { AppVersion } from '@/components/AppVersion'
+import { CompletedColorBadge } from '@/components/game/CompletedColorBadge.tsx'
 import { Jokers } from '@/components/game/Jokers.tsx'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,7 +17,7 @@ import { useEncoreGame } from '@/hooks/useEncoreGame'
 import { useStoredGameSetup } from '@/hooks/useStoredGameSetup'
 import { getSelectionLimit } from '@/lib/game-rules'
 import { cn } from '@/lib/utils'
-import type { DiceColor, DiceNumber } from '@/types/game'
+import type { DiceColor, DiceNumber, GameColor } from '@/types/game'
 
 import { DicePanel } from './DicePanel'
 import { EncoreGameCurrentPlayerSummary } from './EncoreGameCurrentPlayerSummary'
@@ -29,6 +30,32 @@ import { useEncoreSelection } from './useEncoreSelection'
 import { useSpacebarShortcut } from './useSpacebarShortcut'
 
 export const RESET_CONFIRM_TIMEOUT_MS = 4000
+
+const BoardHeader = ({
+  isMobile,
+  jokersRemaining,
+  size = 'sm',
+  completedColors,
+}: {
+  isMobile: boolean
+  jokersRemaining: number
+  size?: 'sm' | 'xs'
+  completedColors: GameColor[]
+}) => {
+  if (!isMobile) {
+    return null
+  }
+  return (
+    <div className="flex justify-between items-center">
+      <Jokers size={size} jokersRemaining={jokersRemaining} />
+      <div className="flex flex-row gap-1 items-center">
+        {completedColors.map((c) => (
+          <CompletedColorBadge key={c} color={c} points={0} />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export const EncoreGame = () => {
   const {
@@ -309,7 +336,11 @@ export const EncoreGame = () => {
   )
   const mainBoard = (
     <>
-      {isMobile && <Jokers jokersRemaining={currentPlayer.jokersRemaining} />}
+      <BoardHeader
+        jokersRemaining={currentPlayer.jokersRemaining}
+        completedColors={currentPlayer.completedColors}
+        isMobile={isMobile}
+      />
       <div className="@container" ref={mainBoardContainerRef} style={mainBoardStyle}>
         <GameBoard
           board={currentPlayer?.board || []}
@@ -335,7 +366,12 @@ export const EncoreGame = () => {
           ? `Autre : ${otherPlayer?.name ?? '—'}`
           : `Autre joueur (${otherPlayer?.name ?? '—'}) :`}
       </p>
-      {isMobile && <Jokers size="xs" jokersRemaining={otherPlayer.jokersRemaining} />}
+      <BoardHeader
+        size="xs"
+        jokersRemaining={otherPlayer.jokersRemaining}
+        completedColors={otherPlayer.completedColors}
+        isMobile={isMobile}
+      />
       <div className="@container" ref={otherBoardContainerRef} style={otherBoardStyle}>
         <GameBoard
           board={otherPlayer?.board || []}
@@ -449,7 +485,7 @@ export const EncoreGame = () => {
               </div>
               <div className="mt-3">{mobilePanel === 'other' ? otherBoard : scorePanels}</div>
             </div>
-            <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+            <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur supports-backdrop-filter:bg-background/85">
               <div className="mx-auto max-w-7xl">{moveControls}</div>
             </div>
           </>

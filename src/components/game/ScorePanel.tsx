@@ -1,7 +1,8 @@
 import { ChevronDown, Star, Trophy } from 'lucide-react'
 import { useId, useState } from 'react'
 
-import { Jokers } from '@/components/game/Jokers.tsx'
+import { CompletedColorBadge } from '@/components/game/CompletedColorBadge'
+import { Jokers } from '@/components/game/Jokers'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,28 +26,11 @@ interface ScorePanelProps {
   compact?: boolean
 }
 
-const getColorBadgeClasses = (color: string) =>
-  cn(
-    color === 'yellow' && 'bg-game-yellow border-yellow-600 text-black',
-    color === 'green' && 'bg-game-green border-green-700 text-white',
-    color === 'blue' && 'bg-game-blue border-blue-700 text-white',
-    color === 'red' && 'bg-game-red border-red-700 text-white',
-    color === 'orange' && 'bg-game-orange border-orange-700 text-black',
-  )
-
 const Colors = ({ colorScores }: { colorScores: { color: string; points: number }[] }) => (
   <div className="flex flex-row gap-2 items-center">
     <span className="text-sm font-medium">Couleurs complétées : </span>
     {colorScores.map(({ color, points }) => (
-      <div
-        key={color}
-        className={cn(
-          'w-6 h-6 rounded border-2 flex items-center justify-center text-[10px] font-bold',
-          getColorBadgeClasses(color),
-        )}
-      >
-        {points > 0 ? `+${points}` : '0'}
-      </div>
+      <CompletedColorBadge key={color} color={color} points={points} />
     ))}
     {Array.from({ length: Math.max(0, 2 - colorScores.length) }, (_, i) => (
       <div key={i} className="w-6 h-6 rounded border-2 bg-muted" />
@@ -142,15 +126,7 @@ export const ScorePanel = ({
               <>
                 Couleurs complétées :
                 {colorScores.map(({ color, points }) => (
-                  <div
-                    key={color}
-                    className={cn(
-                      'w-5 h-5 rounded border flex items-center justify-center text-[10px] font-bold',
-                      getColorBadgeClasses(color),
-                    )}
-                  >
-                    {points > 0 ? `+${points}` : '0'}
-                  </div>
+                  <CompletedColorBadge key={color} color={color} points={points} />
                 ))}
               </>
             ) : (

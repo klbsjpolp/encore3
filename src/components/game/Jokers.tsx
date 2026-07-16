@@ -7,7 +7,7 @@ interface JokersProps {
 }
 
 export const Jokers = ({ jokersRemaining, size = 'sm' }: JokersProps) => (
-  <div className="flex flex-row gap-2 items-baseline mb-2">
+  <div className="flex flex-row gap-2 items-baseline">
     <span
       className={cn(size === 'sm' && 'text-sm font-medium', size === 'xs' && 'text-xs font-normal')}
     >
