@@ -54,15 +54,63 @@ export const findAutoNumberDice = (
   )
 }
 
-// True when an unselected, non-wild number die could still play a smaller
-// selection within this group. While that's the case, auto-selection must not
-// reach for the joker on the player's behalf: picking a smaller cell count
-// that has a real die is a legitimate, still-open choice, so spending the
-// scarce joker to grab the whole group has to stay the player's own call.
-export const hasSmallerNumberDieAlternative = (dice: DiceResult[], groupSize: number): boolean =>
+interface CellRef { row: number; col: number }
+type IsValidMove = (squares: CellRef[], color: GameColor, board: Square[][]) => boolean
+
+// True when a real (non-wild), unselected number die could legally play a
+// `min < size <= max` selection within this group — i.e. an alternative the
+// player hasn't foreclosed yet. `group.slice(0, size)` mirrors how
+// findConnectedGroup's BFS order keeps any prefix connected (the same trick
+// hasAnyPossibleMove uses), so this checks an actually playable candidate
+// rather than just comparing face values.
+const hasPlayableNumberDieInRange = (
+  dice: DiceResult[],
+  group: CellRef[],
+  color: GameColor,
+  board: Square[][],
+  isValidMove: IsValidMove,
+  min: number,
+  max: number,
+): boolean =>
   dice.some(
-    (d) => d.type === 'number' && !d.selected && typeof d.value === 'number' && d.value < groupSize,
+    (d) =>
+      d.type === 'number' &&
+      !d.selected &&
+      typeof d.value === 'number' &&
+      d.value > min &&
+      d.value <= max &&
+      isValidMove(group.slice(0, d.value), color, board),
   )
+
+// True when the group offers a smaller, real-die-matched, still-open
+// alternative to auto-playing the whole group with the joker. While that's
+// the case, auto-selection must not reach for the joker on the player's
+// behalf: picking a smaller cell count that has a real die is a legitimate,
+// still-open choice, so spending the scarce joker to grab the whole group
+// has to stay the player's own call.
+export const hasSmallerNumberDieAlternative = (
+  dice: DiceResult[],
+  group: CellRef[],
+  color: GameColor,
+  board: Square[][],
+  isValidMove: IsValidMove,
+): boolean =>
+  hasPlayableNumberDieInRange(dice, group, color, board, isValidMove, 0, group.length - 1)
+
+// True when the group offers a larger, real-die-matched selection the player
+// could still reach by selecting more cells beyond `currentSize`. Smaller
+// sizes don't need checking here: if one had a real match, the incremental
+// auto-fill would already have locked it in on an earlier click, so by
+// construction the only still-open alternative left is a bigger one.
+export const hasLargerNumberDieAlternative = (
+  dice: DiceResult[],
+  group: CellRef[],
+  currentSize: number,
+  color: GameColor,
+  board: Square[][],
+  isValidMove: IsValidMove,
+): boolean =>
+  hasPlayableNumberDieInRange(dice, group, color, board, isValidMove, currentSize, group.length)
 
 // Best affordable dice pair to play a whole group of `size` cells of `color`,
 // ignoring any current selection (exact preferred, joker fallback in budget).

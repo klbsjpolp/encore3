@@ -835,6 +835,104 @@ describe('useEncoreSelection', () => {
       expect(selectDice).not.toHaveBeenCalledWith(expect.objectContaining({ id: 'n-wild' }))
     })
 
+    it('still spends the joker on the whole group when no smaller subset is actually legal', () => {
+      // A "2" die numerically fits under the 3-cell group, but this board only
+      // accepts the full 3-cell placement (a 2-cell subset is never valid
+      // here) — so the joker is genuinely forced, and the first click should
+      // spend it rather than waiting for a smaller option that doesn't exist.
+      const threeCells = Array.from({ length: 3 }, (_, col) => ({ row: 0, col }))
+      const board: Square[][] = [
+        threeCells.map((c) => ({
+          color: 'orange' as const,
+          hasStar: false,
+          crossed: false,
+          column: String.fromCharCode(65 + c.col),
+          row: 0,
+        })),
+      ]
+      const { result, selectDice } = renderSelection(
+        createAutoSelectState({
+          players: [{ ...createPlayer(), board }],
+          selectedDice: { color: null, number: null },
+          dice: [
+            { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+            { id: 'n-2', type: 'number', value: 2, selected: false },
+            { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+          ],
+        }),
+        { isValidMove: vi.fn((squares: { row: number; col: number }[]) => squares.length === 3) },
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-wild' }))
+      expect(result.current.selectedSquares).toHaveLength(3)
+    })
+
+    it('completes a manually built subset with the joker when no larger real die is reachable', () => {
+      // Only "1" and a joker are on offer for a 5-cell group. After the first
+      // click leaves the number die open (1 doesn't match the whole group),
+      // building up to 2 cells has no larger real die left to wait for, so the
+      // joker should complete the subset instead of leaving it stuck.
+      const fiveCells = Array.from({ length: 5 }, (_, col) => ({ row: 0, col }))
+      const board: Square[][] = [
+        fiveCells.map((c) => ({
+          color: 'orange' as const,
+          hasStar: false,
+          crossed: false,
+          column: String.fromCharCode(65 + c.col),
+          row: 0,
+        })),
+      ]
+      const gameState = createAutoSelectState({
+        players: [{ ...createPlayer(), board }],
+        selectedDice: { color: null, number: null },
+        dice: [
+          { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+          { id: 'n-1', type: 'number', value: 1, selected: false },
+          { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+        ],
+      })
+      const selectDice = vi.fn((die: DiceResult) => {
+        if (die.type === 'color') {
+          gameState.selectedDice = { ...gameState.selectedDice, color: die }
+        } else {
+          gameState.selectedDice = { ...gameState.selectedDice, number: die }
+        }
+      })
+      const isValidMove = vi.fn(
+        (squares: { row: number; col: number }[]) => squares.length >= 1 && squares.length <= 5,
+      )
+      const { result, rerender } = renderHook(
+        (gs: GameState) =>
+          useEncoreSelection({
+            gameState: gs,
+            makeMove: vi.fn(),
+            skipTurn: vi.fn(),
+            selectDice,
+            isValidMove,
+          }),
+        { initialProps: gameState },
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+      rerender({ ...gameState })
+      expect(gameState.selectedDice.number).toBeNull()
+
+      act(() => {
+        result.current.handleSquareClick(0, 1)
+      })
+      rerender({ ...gameState })
+
+      expect(result.current.selectedSquares).toHaveLength(2)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-wild' }))
+    })
+
     it('selects the dice the active player left unused during passive-selection', () => {
       const { result, selectDice } = renderSelection(
         createAutoSelectState({
