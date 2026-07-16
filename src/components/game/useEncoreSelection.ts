@@ -115,13 +115,13 @@ export const useEncoreSelection = ({
       // check entirely on a toggle/deselect click.
       const diceForAuto =
         !isSelected &&
-        hasSmallerNumberDieAlternative(
-          gameState.dice,
+        hasSmallerNumberDieAlternative({
+          dice: gameState.dice,
           group,
-          clickedColor,
-          player.board,
+          color: clickedColor,
+          board: player.board,
           isValidMove,
-        )
+        })
           ? excludeWildNumberDie(gameState.dice)
           : gameState.dice
 
@@ -255,14 +255,14 @@ export const useEncoreSelection = ({
       // player to manually undo it to keep growing toward that bigger die —
       // so the fill is skipped entirely until no larger real die is left.
       if (isValidMove(nextSelection, clickedColor, player.board)) {
-        const numberStillGrowable = hasLargerNumberDieAlternative(
-          gameState.dice,
+        const numberStillGrowable = hasLargerNumberDieAlternative({
+          dice: gameState.dice,
           group,
-          nextSelection.length,
-          clickedColor,
-          player.board,
+          currentSize: nextSelection.length,
+          color: clickedColor,
+          board: player.board,
           isValidMove,
-        )
+        })
         if (!numberStillGrowable) {
           const fill = resolveAutoDiceSelection({
             dice: gameState.dice,
