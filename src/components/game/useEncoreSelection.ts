@@ -110,16 +110,20 @@ export const useEncoreSelection = ({
       // would lock in the whole group before the player got a chance to pick
       // that smaller, joker-free count instead. Hiding the wild die from these
       // auto lookups leaves it selectable only by the player's own explicit
-      // click.
-      const diceForAuto = hasSmallerNumberDieAlternative(
-        gameState.dice,
-        group,
-        clickedColor,
-        player.board,
-        isValidMove,
-      )
-        ? excludeWildNumberDie(gameState.dice)
-        : gameState.dice
+      // click. Only the two auto-selection branches below ever read this, and
+      // both require the clicked cell not to be already selected, so skip the
+      // check entirely on a toggle/deselect click.
+      const diceForAuto =
+        !isSelected &&
+        hasSmallerNumberDieAlternative(
+          gameState.dice,
+          group,
+          clickedColor,
+          player.board,
+          isValidMove,
+        )
+          ? excludeWildNumberDie(gameState.dice)
+          : gameState.dice
 
       // Clicking a fresh cell whose whole group forms a valid, playable move
       // switches to it: the matching dice and cells are selected regardless of
