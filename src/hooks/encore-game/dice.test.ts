@@ -8,6 +8,7 @@ import {
   findAutoNumberDice,
   findDicePairForGroup,
   findForcedSelection,
+  hasSmallerNumberDieAlternative,
   resolveAutoDiceSelection,
   rollDice,
 } from './dice'
@@ -69,6 +70,27 @@ describe('encore-game/dice', () => {
 
     it('never uses a joker for an oversized group', () => {
       expect(findAutoNumberDice(createDice(), 6, 8)).toBeNull()
+    })
+  })
+
+  describe('hasSmallerNumberDieAlternative', () => {
+    const dice: DiceResult[] = [
+      { id: 'n-1', type: 'number', value: 1, selected: false },
+      { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+      { id: 'n-3', type: 'number', value: 3, selected: false },
+    ]
+
+    it('is true when a real die could play a smaller count', () => {
+      expect(hasSmallerNumberDieAlternative(dice, 5)).toBe(true)
+    })
+
+    it('is false when no real die is smaller than the group', () => {
+      expect(hasSmallerNumberDieAlternative(dice, 1)).toBe(false)
+    })
+
+    it('ignores already selected dice', () => {
+      const selected = dice.map((d) => ({ ...d, selected: true }))
+      expect(hasSmallerNumberDieAlternative(selected, 5)).toBe(false)
     })
   })
 

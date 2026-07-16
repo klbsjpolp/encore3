@@ -757,6 +757,84 @@ describe('useEncoreSelection', () => {
       expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-3' }))
     })
 
+    it('does not spend the joker on a group when a smaller real die could still play it', () => {
+      // A 5-cell group with dice 1, wild and 3: the wild could cover the whole
+      // group, but 1 and 3 are real, joker-free alternatives for smaller counts.
+      // Auto-selection must leave the joker alone and let the player build up
+      // their own count instead of spending it on their behalf.
+      const fiveCells = Array.from({ length: 5 }, (_, col) => ({ row: 0, col }))
+      const board: Square[][] = [
+        fiveCells.map((c) => ({
+          color: 'orange' as const,
+          hasStar: false,
+          crossed: false,
+          column: String.fromCharCode(65 + c.col),
+          row: 0,
+        })),
+      ]
+      const gameState = createAutoSelectState({
+        players: [{ ...createPlayer(), board }],
+        selectedDice: { color: null, number: null },
+        dice: [
+          { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+          { id: 'n-1', type: 'number', value: 1, selected: false },
+          { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+          { id: 'n-3', type: 'number', value: 3, selected: false },
+        ],
+      })
+      const selectDice = vi.fn((die: DiceResult) => {
+        if (die.type === 'color') {
+          gameState.selectedDice = { ...gameState.selectedDice, color: die }
+        } else {
+          gameState.selectedDice = { ...gameState.selectedDice, number: die }
+        }
+      })
+      const isValidMove = vi.fn(
+        (squares: { row: number; col: number }[]) => squares.length >= 1 && squares.length <= 5,
+      )
+      const { result, rerender } = renderHook(
+        (gs: GameState) =>
+          useEncoreSelection({
+            gameState: gs,
+            makeMove: vi.fn(),
+            skipTurn: vi.fn(),
+            selectDice,
+            isValidMove,
+          }),
+        { initialProps: gameState },
+      )
+
+      // First click: only the color die and the clicked cell are selected; the
+      // "1" and joker number dice both stay open so the player can keep going.
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+      rerender({ ...gameState })
+      expect(selectDice).toHaveBeenCalledTimes(1)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'c-orange' }))
+      expect(result.current.selectedSquares).toEqual([{ row: 0, col: 0 }])
+
+      // Second click: two cells selected, but neither "1" nor the joker fits,
+      // and 3 is still reachable, so no number die is auto-selected yet.
+      act(() => {
+        result.current.handleSquareClick(0, 1)
+      })
+      rerender({ ...gameState })
+      expect(selectDice).toHaveBeenCalledTimes(1)
+      expect(result.current.selectedSquares).toHaveLength(2)
+
+      // Third click: three cells match the real "3" die exactly, so it (and
+      // only it) is auto-selected — the joker was never touched.
+      act(() => {
+        result.current.handleSquareClick(0, 2)
+      })
+      rerender({ ...gameState })
+      expect(result.current.selectedSquares).toHaveLength(3)
+      expect(selectDice).toHaveBeenCalledTimes(2)
+      expect(selectDice).toHaveBeenCalledWith(expect.objectContaining({ id: 'n-3' }))
+      expect(selectDice).not.toHaveBeenCalledWith(expect.objectContaining({ id: 'n-wild' }))
+    })
+
     it('selects the dice the active player left unused during passive-selection', () => {
       const { result, selectDice } = renderSelection(
         createAutoSelectState({

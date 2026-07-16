@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   findDicePairForGroup,
   findForcedSelection,
+  hasSmallerNumberDieAlternative,
   resolveAutoDiceSelection,
 } from '@/hooks/encore-game/dice'
 import { findConnectedGroup } from '@/hooks/useEncoreGame'
@@ -102,6 +103,15 @@ export const useEncoreSelection = ({
       const square = { row, col }
       const isSelected = selectedSquares.some((s) => s.row === row && s.col === col)
 
+      // While a smaller cell count in this group still has a real (non-wild)
+      // number die, auto-selection must not reach for the joker: it would lock
+      // in the whole group before the player got a chance to pick that smaller,
+      // joker-free count instead. Hiding the wild die from these auto lookups
+      // leaves it selectable only by the player's own explicit click.
+      const diceForAuto = hasSmallerNumberDieAlternative(gameState.dice, group.length)
+        ? gameState.dice.filter((d) => !(d.type === 'number' && d.value === 'wild'))
+        : gameState.dice
+
       // Clicking a fresh cell whose whole group forms a valid, playable move
       // switches to it: the matching dice and cells are selected regardless of
       // what was selected before. Clicks inside the current selection fall
@@ -113,7 +123,7 @@ export const useEncoreSelection = ({
         !committedNumber || committedNumber === 'wild' || committedNumber === group.length
       if (!isSelected && groupMatchesCommittedNumber) {
         const pair = findDicePairForGroup(
-          gameState.dice,
+          diceForAuto,
           clickedColor,
           group.length,
           player.jokersRemaining,
@@ -138,7 +148,7 @@ export const useEncoreSelection = ({
       // group is too large or otherwise not directly playable in full).
       if (selectedSquares.length === 0) {
         const autoSelection = resolveAutoDiceSelection({
-          dice: gameState.dice,
+          dice: diceForAuto,
           selectedColor: gameState.selectedDice.color,
           selectedNumber: gameState.selectedDice.number,
           groupColor: clickedColor,
@@ -227,7 +237,7 @@ export const useEncoreSelection = ({
       // match it (fills the still-missing color/number slot).
       if (isValidMove(nextSelection, clickedColor, player.board)) {
         const fill = resolveAutoDiceSelection({
-          dice: gameState.dice,
+          dice: diceForAuto,
           selectedColor: gameState.selectedDice.color,
           selectedNumber: gameState.selectedDice.number,
           groupColor: clickedColor,
