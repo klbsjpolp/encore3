@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import {
+  excludeWildNumberDie,
   findDicePairForGroup,
   findForcedSelection,
   hasLargerNumberDieAlternative,
@@ -117,7 +118,7 @@ export const useEncoreSelection = ({
         player.board,
         isValidMove,
       )
-        ? gameState.dice.filter((d) => !(d.type === 'number' && d.value === 'wild'))
+        ? excludeWildNumberDie(gameState.dice)
         : gameState.dice
 
       // Clicking a fresh cell whose whole group forms a valid, playable move
@@ -244,11 +245,13 @@ export const useEncoreSelection = ({
       // Once a manually built subset forms a valid move, select the dice that
       // match it (fills the still-missing color/number slot). Smaller sizes
       // never needed checking on the way here — a real match would already
-      // have locked in on an earlier click — so only a still-reachable larger
-      // real die (not diceForAuto's smaller-alternative check) should hold the
-      // joker back at this size.
+      // have locked in on an earlier click. But if a bigger real die is still
+      // reachable by selecting more cells, auto-filling *any* number die now
+      // (exact match or joker) would lock the count early and force the
+      // player to manually undo it to keep growing toward that bigger die —
+      // so the fill is skipped entirely until no larger real die is left.
       if (isValidMove(nextSelection, clickedColor, player.board)) {
-        const diceForFill = hasLargerNumberDieAlternative(
+        const numberStillGrowable = hasLargerNumberDieAlternative(
           gameState.dice,
           group,
           nextSelection.length,
@@ -256,20 +259,20 @@ export const useEncoreSelection = ({
           player.board,
           isValidMove,
         )
-          ? gameState.dice.filter((d) => !(d.type === 'number' && d.value === 'wild'))
-          : gameState.dice
-        const fill = resolveAutoDiceSelection({
-          dice: diceForFill,
-          selectedColor: gameState.selectedDice.color,
-          selectedNumber: gameState.selectedDice.number,
-          groupColor: clickedColor,
-          groupSize: nextSelection.length,
-          jokersRemaining: player.jokersRemaining,
-          isGroupMoveValid: true,
-        })
-        if (fill?.selectGroup) {
-          for (const die of fill.diceToSelect) {
-            selectDice(die)
+        if (!numberStillGrowable) {
+          const fill = resolveAutoDiceSelection({
+            dice: gameState.dice,
+            selectedColor: gameState.selectedDice.color,
+            selectedNumber: gameState.selectedDice.number,
+            groupColor: clickedColor,
+            groupSize: nextSelection.length,
+            jokersRemaining: player.jokersRemaining,
+            isGroupMoveValid: true,
+          })
+          if (fill?.selectGroup) {
+            for (const die of fill.diceToSelect) {
+              selectDice(die)
+            }
           }
         }
       }

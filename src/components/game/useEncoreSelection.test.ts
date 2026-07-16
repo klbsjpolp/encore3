@@ -835,6 +835,75 @@ describe('useEncoreSelection', () => {
       expect(selectDice).not.toHaveBeenCalledWith(expect.objectContaining({ id: 'n-wild' }))
     })
 
+    it('does not lock in a smaller real die while a larger real die is still reachable', () => {
+      // A 6-cell group (too big to play whole) with dice 1, 2, 3 and a joker.
+      // Selecting exactly 2 cells must not auto-select "2": since "3" could
+      // still be reached by adding one more cell, locking in "2" now would
+      // force the player to manually undo it just to keep growing.
+      const sixCells = Array.from({ length: 6 }, (_, col) => ({ row: 0, col }))
+      const board: Square[][] = [
+        sixCells.map((c) => ({
+          color: 'orange' as const,
+          hasStar: false,
+          crossed: false,
+          column: String.fromCharCode(65 + c.col),
+          row: 0,
+        })),
+      ]
+      const gameState = createAutoSelectState({
+        players: [{ ...createPlayer(), board }],
+        selectedDice: { color: null, number: null },
+        dice: [
+          { id: 'c-orange', type: 'color', value: 'orange', selected: false },
+          { id: 'n-1', type: 'number', value: 1, selected: false },
+          { id: 'n-2', type: 'number', value: 2, selected: false },
+          { id: 'n-3', type: 'number', value: 3, selected: false },
+          { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+        ],
+      })
+      const selectDice = vi.fn((die: DiceResult) => {
+        if (die.type === 'color') {
+          gameState.selectedDice = { ...gameState.selectedDice, color: die }
+        } else {
+          gameState.selectedDice = { ...gameState.selectedDice, number: die }
+        }
+      })
+      const isValidMove = vi.fn(() => true)
+      const { result, rerender } = renderHook(
+        (gs: GameState) =>
+          useEncoreSelection({
+            gameState: gs,
+            makeMove: vi.fn(),
+            skipTurn: vi.fn(),
+            selectDice,
+            isValidMove,
+          }),
+        { initialProps: gameState },
+      )
+
+      act(() => {
+        result.current.handleSquareClick(0, 0)
+      })
+      rerender({ ...gameState })
+      act(() => {
+        result.current.handleSquareClick(0, 1)
+      })
+      rerender({ ...gameState })
+
+      expect(result.current.selectedSquares).toHaveLength(2)
+      expect(gameState.selectedDice.number).toBeNull()
+
+      // A third click is still possible (not blocked by a premature "2"),
+      // and it lands exactly on "3".
+      act(() => {
+        result.current.handleSquareClick(0, 2)
+      })
+      rerender({ ...gameState })
+
+      expect(result.current.selectedSquares).toHaveLength(3)
+      expect(gameState.selectedDice.number?.value).toBe(3)
+    })
+
     it('still spends the joker on the whole group when no smaller subset is actually legal', () => {
       // A "2" die numerically fits under the 3-cell group, but this board only
       // accepts the full 3-cell placement (a 2-cell subset is never valid

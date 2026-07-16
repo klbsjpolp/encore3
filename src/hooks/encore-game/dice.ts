@@ -1,5 +1,12 @@
 import { MAX_SELECTABLE_CELLS } from '@/lib/game-rules'
-import type { ColorDiceResult, DiceResult, GameColor, NumberDiceResult, Square } from '@/types/game'
+import type {
+  ColorDiceResult,
+  DiceNumberValue,
+  DiceResult,
+  GameColor,
+  NumberDiceResult,
+  Square,
+} from '@/types/game'
 import { DICE_COLOR_FACES, DICE_NUMBER_FACES } from '@/types/game'
 
 import { findConnectedGroup } from './board'
@@ -62,10 +69,13 @@ type IsValidMove = (squares: CellRef[], color: GameColor, board: Square[][]) => 
 
 // True when a real (non-wild), unselected number die could legally play a
 // `min < size <= max` selection within this group — i.e. an alternative the
-// player hasn't foreclosed yet. `group.slice(0, size)` mirrors how
-// findConnectedGroup's BFS order keeps any prefix connected (the same trick
-// hasAnyPossibleMove uses), so this checks an actually playable candidate
-// rather than just comparing face values.
+// player hasn't foreclosed yet. A group can branch (T/plus shapes), so a
+// single-size prefix from one starting point isn't enough: any legal subset
+// must contain a cell that alone satisfies isValidMove (column 7, or
+// adjacent to an already-crossed cell — the only shape-sensitive part of the
+// rule), so every such anchor is tried, growing a connected subset from it
+// via findConnectedGroup's own BFS order rather than enumerating every
+// combination.
 const hasPlayableNumberDieInRange = (
   dice: DiceResult[],
   group: CellRef[],
@@ -74,16 +84,27 @@ const hasPlayableNumberDieInRange = (
   isValidMove: IsValidMove,
   min: number,
   max: number,
-): boolean =>
-  dice.some(
-    (d) =>
-      d.type === 'number' &&
-      !d.selected &&
-      typeof d.value === 'number' &&
-      d.value > min &&
-      d.value <= max &&
-      isValidMove(group.slice(0, d.value), color, board),
+): boolean => {
+  const candidateSizes = dice
+    .filter((d): d is NumberDiceResult => d.type === 'number' && !d.selected)
+    .map((d) => d.value)
+    .filter(
+      (value): value is DiceNumberValue => typeof value === 'number' && value > min && value <= max,
+    )
+  if (candidateSizes.length === 0) {
+    return false
+  }
+  const anchors = group.filter((cell) => isValidMove([cell], color, board))
+  return candidateSizes.some((size) =>
+    anchors.some((anchor) =>
+      isValidMove(
+        findConnectedGroup(anchor.row, anchor.col, color, board).slice(0, size),
+        color,
+        board,
+      ),
+    ),
   )
+}
 
 // True when the group offers a smaller, real-die-matched, still-open
 // alternative to auto-playing the whole group with the joker. While that's
@@ -114,6 +135,12 @@ export const hasLargerNumberDieAlternative = (
   isValidMove: IsValidMove,
 ): boolean =>
   hasPlayableNumberDieInRange(dice, group, color, board, isValidMove, currentSize, group.length)
+
+// Drops the wild number die from a dice list, so auto-selection lookups can
+// only land on a real face — the joker stays selectable solely through the
+// player's own explicit click on it.
+export const excludeWildNumberDie = (dice: DiceResult[]): DiceResult[] =>
+  dice.filter((d) => !(d.type === 'number' && d.value === 'wild'))
 
 // Best affordable dice pair to play a whole group of `size` cells of `color`,
 // ignoring any current selection (exact preferred, joker fallback in budget).
@@ -159,11 +186,7 @@ export interface ForcedSelection {
 export const findForcedSelection = (
   dice: DiceResult[],
   board: Square[][],
-  isValidMove: (
-    squares: { row: number; col: number }[],
-    color: GameColor,
-    board: Square[][],
-  ) => boolean,
+  isValidMove: IsValidMove,
 ): ForcedSelection | null => {
   const placements: {
     color: ColorDiceResult
