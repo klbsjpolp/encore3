@@ -121,27 +121,39 @@ describe('encore-game/dice', () => {
 
     it('is true when a real die could legally play a smaller count', () => {
       expect(
-        hasSmallerNumberDieAlternative(dice, lineGroup, 'orange', lineBoard, isValidMoveSelection),
+        hasSmallerNumberDieAlternative({
+          dice,
+          group: lineGroup,
+          color: 'orange',
+          board: lineBoard,
+          isValidMove: isValidMoveSelection,
+        }),
       ).toBe(true)
     })
 
     it('is false when no real die is smaller than the group', () => {
       const oneCell = lineGroup.slice(0, 1)
       expect(
-        hasSmallerNumberDieAlternative(dice, oneCell, 'orange', lineBoard, isValidMoveSelection),
+        hasSmallerNumberDieAlternative({
+          dice,
+          group: oneCell,
+          color: 'orange',
+          board: lineBoard,
+          isValidMove: isValidMoveSelection,
+        }),
       ).toBe(false)
     })
 
     it('ignores already selected dice', () => {
       const selected = dice.map((d) => ({ ...d, selected: true }))
       expect(
-        hasSmallerNumberDieAlternative(
-          selected,
-          lineGroup,
-          'orange',
-          lineBoard,
-          isValidMoveSelection,
-        ),
+        hasSmallerNumberDieAlternative({
+          dice: selected,
+          group: lineGroup,
+          color: 'orange',
+          board: lineBoard,
+          isValidMove: isValidMoveSelection,
+        }),
       ).toBe(false)
     })
 
@@ -155,7 +167,13 @@ describe('encore-game/dice', () => {
         { id: 'n-wild', type: 'number', value: 'wild', selected: false },
       ]
       expect(
-        hasSmallerNumberDieAlternative(twoDice, threeCells, 'orange', lineBoard, isValidMove),
+        hasSmallerNumberDieAlternative({
+          dice: twoDice,
+          group: threeCells,
+          color: 'orange',
+          board: lineBoard,
+          isValidMove,
+        }),
       ).toBe(false)
     })
 
@@ -169,13 +187,13 @@ describe('encore-game/dice', () => {
         { id: 'n-wild', type: 'number', value: 'wild', selected: false },
       ]
       expect(
-        hasSmallerNumberDieAlternative(
-          dice3,
-          plusGroupFromLeftArm,
-          'orange',
-          plusBoard,
-          isValidMoveSelection,
-        ),
+        hasSmallerNumberDieAlternative({
+          dice: dice3,
+          group: plusGroupFromLeftArm,
+          color: 'orange',
+          board: plusBoard,
+          isValidMove: isValidMoveSelection,
+        }),
       ).toBe(true)
     })
   })
@@ -189,14 +207,14 @@ describe('encore-game/dice', () => {
 
     it('is true when a real die is still reachable by growing the selection', () => {
       expect(
-        hasLargerNumberDieAlternative(
+        hasLargerNumberDieAlternative({
           dice,
-          lineGroup,
-          2,
-          'orange',
-          lineBoard,
-          isValidMoveSelection,
-        ),
+          group: lineGroup,
+          currentSize: 2,
+          color: 'orange',
+          board: lineBoard,
+          isValidMove: isValidMoveSelection,
+        }),
       ).toBe(true)
     })
 
@@ -206,14 +224,14 @@ describe('encore-game/dice', () => {
         { id: 'n-wild', type: 'number', value: 'wild', selected: false },
       ]
       expect(
-        hasLargerNumberDieAlternative(
-          oneAndWild,
-          lineGroup,
-          2,
-          'orange',
-          lineBoard,
-          isValidMoveSelection,
-        ),
+        hasLargerNumberDieAlternative({
+          dice: oneAndWild,
+          group: lineGroup,
+          currentSize: 2,
+          color: 'orange',
+          board: lineBoard,
+          isValidMove: isValidMoveSelection,
+        }),
       ).toBe(false)
     })
 
@@ -223,21 +241,28 @@ describe('encore-game/dice', () => {
         { id: 'n-wild', type: 'number', value: 'wild', selected: false },
       ]
       expect(
-        hasLargerNumberDieAlternative(
-          dice3,
-          plusGroupFromLeftArm,
-          1,
-          'orange',
-          plusBoard,
-          isValidMoveSelection,
-        ),
+        hasLargerNumberDieAlternative({
+          dice: dice3,
+          group: plusGroupFromLeftArm,
+          currentSize: 1,
+          color: 'orange',
+          board: plusBoard,
+          isValidMove: isValidMoveSelection,
+        }),
       ).toBe(true)
     })
 
     it('ignores a larger die whose size is not actually legal to reach', () => {
       const isValidMove = vi.fn((squares: { row: number; col: number }[]) => squares.length !== 3)
       expect(
-        hasLargerNumberDieAlternative(dice, lineGroup, 2, 'orange', lineBoard, isValidMove),
+        hasLargerNumberDieAlternative({
+          dice,
+          group: lineGroup,
+          currentSize: 2,
+          color: 'orange',
+          board: lineBoard,
+          isValidMove,
+        }),
       ).toBe(false)
     })
   })
