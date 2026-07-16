@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ColorDiceResult, DiceResult, GameColor, NumberDiceResult, Square } from '@/types/game'
 import { DICE_COLOR_FACES, DICE_NUMBER_FACES } from '@/types/game'
 
+import { findConnectedGroup } from './board'
 import {
   findAutoColorDice,
   findAutoNumberDice,
@@ -14,6 +15,20 @@ import {
   rollDice,
 } from './dice'
 import { isValidMoveSelection } from './moveValidation'
+
+// Builds a board from a grid of colours; a `null` cell is crossed. Column H
+// (index 7) is the free column, so single groups placed there are valid
+// without needing an adjacent crossed cell.
+const buildBoard = (grid: (GameColor | null)[][]): Square[][] =>
+  grid.map((cols, row) =>
+    cols.map((color, col) => ({
+      color: color ?? 'yellow',
+      hasStar: false,
+      crossed: color === null,
+      column: String.fromCharCode(65 + col),
+      row,
+    })),
+  )
 
 describe('encore-game/dice', () => {
   it('rolls 3 color dice and 3 number dice with valid values', () => {
@@ -74,52 +89,93 @@ describe('encore-game/dice', () => {
     })
   })
 
+  // A straight 5-cell orange row with a crossed neighbour under the last
+  // cell (0,4): that cell is the group's only "anchor" (the only single cell
+  // that alone satisfies isValidMoveSelection).
+  const lineBoard = buildBoard([
+    ['orange', 'orange', 'orange', 'orange', 'orange', 'blue', 'blue', 'blue'],
+    ['blue', 'blue', 'blue', 'blue', null, 'blue', 'blue', 'blue'],
+  ])
+  const lineGroup = findConnectedGroup(0, 0, 'orange', lineBoard)
+
+  // A plus-shaped group — left/centre/up/down/right arms — where the only
+  // crossed neighbour sits beside the right arm, so only the right arm is an
+  // anchor. Clicking the left arm makes findConnectedGroup's BFS order
+  // [left, centre, up, down, right]: a naive size-3 prefix from that root
+  // (left, centre, up) never reaches the anchor and is invalid, even though
+  // {left, centre, right} legally plays 3 cells.
+  const plusBoard = buildBoard([
+    ['blue', 'orange', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue'],
+    ['orange', 'orange', 'orange', null, 'blue', 'blue', 'blue', 'blue'],
+    ['blue', 'orange', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue'],
+  ])
+  const plusGroupFromLeftArm = findConnectedGroup(1, 0, 'orange', plusBoard)
+
   describe('hasSmallerNumberDieAlternative', () => {
     const dice: DiceResult[] = [
       { id: 'n-1', type: 'number', value: 1, selected: false },
       { id: 'n-wild', type: 'number', value: 'wild', selected: false },
       { id: 'n-3', type: 'number', value: 3, selected: false },
     ]
-    const group = [
-      { row: 0, col: 0 },
-      { row: 0, col: 1 },
-      { row: 0, col: 2 },
-      { row: 0, col: 3 },
-      { row: 0, col: 4 },
-    ]
-    const board: Square[][] = []
-    const alwaysValid = () => true
 
     it('is true when a real die could legally play a smaller count', () => {
-      expect(hasSmallerNumberDieAlternative(dice, group, 'orange', board, alwaysValid)).toBe(true)
+      expect(
+        hasSmallerNumberDieAlternative(dice, lineGroup, 'orange', lineBoard, isValidMoveSelection),
+      ).toBe(true)
     })
 
     it('is false when no real die is smaller than the group', () => {
-      const oneCell = group.slice(0, 1)
-      expect(hasSmallerNumberDieAlternative(dice, oneCell, 'orange', board, alwaysValid)).toBe(
-        false,
-      )
+      const oneCell = lineGroup.slice(0, 1)
+      expect(
+        hasSmallerNumberDieAlternative(dice, oneCell, 'orange', lineBoard, isValidMoveSelection),
+      ).toBe(false)
     })
 
     it('ignores already selected dice', () => {
       const selected = dice.map((d) => ({ ...d, selected: true }))
-      expect(hasSmallerNumberDieAlternative(selected, group, 'orange', board, alwaysValid)).toBe(
-        false,
-      )
+      expect(
+        hasSmallerNumberDieAlternative(
+          selected,
+          lineGroup,
+          'orange',
+          lineBoard,
+          isValidMoveSelection,
+        ),
+      ).toBe(false)
     })
 
     it('ignores a smaller die whose subset is not actually a legal move', () => {
-      // The 3-cell group's only legal placement is the full group (e.g. a
-      // 2-cell subset misses the cell touching a crossed neighbour).
-      const threeCells = group.slice(0, 3)
+      // No single cell is treated as legal on its own, so no smaller subset
+      // (of any size) can be an alternative — not even the full group.
+      const threeCells = lineGroup.slice(0, 3)
       const isValidMove = vi.fn((squares: { row: number; col: number }[]) => squares.length === 3)
       const twoDice: DiceResult[] = [
         { id: 'n-2', type: 'number', value: 2, selected: false },
         { id: 'n-wild', type: 'number', value: 'wild', selected: false },
       ]
       expect(
-        hasSmallerNumberDieAlternative(twoDice, threeCells, 'orange', board, isValidMove),
+        hasSmallerNumberDieAlternative(twoDice, threeCells, 'orange', lineBoard, isValidMove),
       ).toBe(false)
+    })
+
+    it('finds a legal subset through another branch when the clicked cell is not the anchor', () => {
+      // Clicking the left arm orders the group [left, centre, up, down,
+      // right]; a naive slice(0, 3) would be {left, centre, up}, which never
+      // touches the crossed cell beside the right arm and is invalid. The
+      // real playable 3-cell subset is {left, centre, right}.
+      const dice3: DiceResult[] = [
+        { id: 'n-3', type: 'number', value: 3, selected: false },
+        { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+      ]
+      expect(
+        hasSmallerNumberDieAlternative(
+          dice3,
+          plusGroupFromLeftArm,
+          'orange',
+          plusBoard,
+          isValidMoveSelection,
+        ),
+      ).toBe(true)
     })
   })
 
@@ -129,18 +185,18 @@ describe('encore-game/dice', () => {
       { id: 'n-wild', type: 'number', value: 'wild', selected: false },
       { id: 'n-3', type: 'number', value: 3, selected: false },
     ]
-    const group = [
-      { row: 0, col: 0 },
-      { row: 0, col: 1 },
-      { row: 0, col: 2 },
-      { row: 0, col: 3 },
-      { row: 0, col: 4 },
-    ]
-    const board: Square[][] = []
-    const alwaysValid = () => true
 
     it('is true when a real die is still reachable by growing the selection', () => {
-      expect(hasLargerNumberDieAlternative(dice, group, 2, 'orange', board, alwaysValid)).toBe(true)
+      expect(
+        hasLargerNumberDieAlternative(
+          dice,
+          lineGroup,
+          2,
+          'orange',
+          lineBoard,
+          isValidMoveSelection,
+        ),
+      ).toBe(true)
     })
 
     it('is false when no real die is reachable beyond the current size', () => {
@@ -149,15 +205,39 @@ describe('encore-game/dice', () => {
         { id: 'n-wild', type: 'number', value: 'wild', selected: false },
       ]
       expect(
-        hasLargerNumberDieAlternative(oneAndWild, group, 2, 'orange', board, alwaysValid),
+        hasLargerNumberDieAlternative(
+          oneAndWild,
+          lineGroup,
+          2,
+          'orange',
+          lineBoard,
+          isValidMoveSelection,
+        ),
       ).toBe(false)
+    })
+
+    it('finds a legal subset through another branch when the clicked cell is not the anchor', () => {
+      const dice3: DiceResult[] = [
+        { id: 'n-3', type: 'number', value: 3, selected: false },
+        { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+      ]
+      expect(
+        hasLargerNumberDieAlternative(
+          dice3,
+          plusGroupFromLeftArm,
+          1,
+          'orange',
+          plusBoard,
+          isValidMoveSelection,
+        ),
+      ).toBe(true)
     })
 
     it('ignores a larger die whose size is not actually legal to reach', () => {
       const isValidMove = vi.fn((squares: { row: number; col: number }[]) => squares.length !== 3)
-      expect(hasLargerNumberDieAlternative(dice, group, 2, 'orange', board, isValidMove)).toBe(
-        false,
-      )
+      expect(
+        hasLargerNumberDieAlternative(dice, lineGroup, 2, 'orange', lineBoard, isValidMove),
+      ).toBe(false)
     })
   })
 
@@ -296,20 +376,6 @@ describe('encore-game/dice', () => {
   })
 
   describe('findForcedSelection', () => {
-    // Builds a board from a grid of colours; a `null` cell is crossed. Column H
-    // (index 7) is the free column, so single groups placed there are valid
-    // without needing an adjacent crossed cell.
-    const buildBoard = (grid: (GameColor | null)[][]): Square[][] =>
-      grid.map((cols, row) =>
-        cols.map((color, col) => ({
-          color: color ?? 'yellow',
-          hasStar: false,
-          crossed: color === null,
-          column: String.fromCharCode(65 + col),
-          row,
-        })),
-      )
-
     // A single orange cell in the free column (H) is the only playable group.
     const singleGroupBoard = () => {
       const grid: (GameColor | null)[][] = [Array.from({ length: 8 }, () => null)]
