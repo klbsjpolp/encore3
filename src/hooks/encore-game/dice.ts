@@ -54,7 +54,10 @@ export const findAutoNumberDice = (
   )
 }
 
-interface CellRef { row: number; col: number }
+interface CellRef {
+  row: number
+  col: number
+}
 type IsValidMove = (squares: CellRef[], color: GameColor, board: Square[][]) => boolean
 
 // True when a real (non-wild), unselected number die could legally play a
