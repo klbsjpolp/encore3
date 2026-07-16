@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ColorDiceResult, DiceResult, GameColor, NumberDiceResult, Square } from '@/types/game'
 import { DICE_COLOR_FACES, DICE_NUMBER_FACES } from '@/types/game'
@@ -8,6 +8,7 @@ import {
   findAutoNumberDice,
   findDicePairForGroup,
   findForcedSelection,
+  hasLargerNumberDieAlternative,
   hasSmallerNumberDieAlternative,
   resolveAutoDiceSelection,
   rollDice,
@@ -79,18 +80,84 @@ describe('encore-game/dice', () => {
       { id: 'n-wild', type: 'number', value: 'wild', selected: false },
       { id: 'n-3', type: 'number', value: 3, selected: false },
     ]
+    const group = [
+      { row: 0, col: 0 },
+      { row: 0, col: 1 },
+      { row: 0, col: 2 },
+      { row: 0, col: 3 },
+      { row: 0, col: 4 },
+    ]
+    const board: Square[][] = []
+    const alwaysValid = () => true
 
-    it('is true when a real die could play a smaller count', () => {
-      expect(hasSmallerNumberDieAlternative(dice, 5)).toBe(true)
+    it('is true when a real die could legally play a smaller count', () => {
+      expect(hasSmallerNumberDieAlternative(dice, group, 'orange', board, alwaysValid)).toBe(true)
     })
 
     it('is false when no real die is smaller than the group', () => {
-      expect(hasSmallerNumberDieAlternative(dice, 1)).toBe(false)
+      const oneCell = group.slice(0, 1)
+      expect(hasSmallerNumberDieAlternative(dice, oneCell, 'orange', board, alwaysValid)).toBe(
+        false,
+      )
     })
 
     it('ignores already selected dice', () => {
       const selected = dice.map((d) => ({ ...d, selected: true }))
-      expect(hasSmallerNumberDieAlternative(selected, 5)).toBe(false)
+      expect(hasSmallerNumberDieAlternative(selected, group, 'orange', board, alwaysValid)).toBe(
+        false,
+      )
+    })
+
+    it('ignores a smaller die whose subset is not actually a legal move', () => {
+      // The 3-cell group's only legal placement is the full group (e.g. a
+      // 2-cell subset misses the cell touching a crossed neighbour).
+      const threeCells = group.slice(0, 3)
+      const isValidMove = vi.fn((squares: { row: number; col: number }[]) => squares.length === 3)
+      const twoDice: DiceResult[] = [
+        { id: 'n-2', type: 'number', value: 2, selected: false },
+        { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+      ]
+      expect(
+        hasSmallerNumberDieAlternative(twoDice, threeCells, 'orange', board, isValidMove),
+      ).toBe(false)
+    })
+  })
+
+  describe('hasLargerNumberDieAlternative', () => {
+    const dice: DiceResult[] = [
+      { id: 'n-1', type: 'number', value: 1, selected: false },
+      { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+      { id: 'n-3', type: 'number', value: 3, selected: false },
+    ]
+    const group = [
+      { row: 0, col: 0 },
+      { row: 0, col: 1 },
+      { row: 0, col: 2 },
+      { row: 0, col: 3 },
+      { row: 0, col: 4 },
+    ]
+    const board: Square[][] = []
+    const alwaysValid = () => true
+
+    it('is true when a real die is still reachable by growing the selection', () => {
+      expect(hasLargerNumberDieAlternative(dice, group, 2, 'orange', board, alwaysValid)).toBe(true)
+    })
+
+    it('is false when no real die is reachable beyond the current size', () => {
+      const oneAndWild: DiceResult[] = [
+        { id: 'n-1', type: 'number', value: 1, selected: false },
+        { id: 'n-wild', type: 'number', value: 'wild', selected: false },
+      ]
+      expect(
+        hasLargerNumberDieAlternative(oneAndWild, group, 2, 'orange', board, alwaysValid),
+      ).toBe(false)
+    })
+
+    it('ignores a larger die whose size is not actually legal to reach', () => {
+      const isValidMove = vi.fn((squares: { row: number; col: number }[]) => squares.length !== 3)
+      expect(hasLargerNumberDieAlternative(dice, group, 2, 'orange', board, isValidMove)).toBe(
+        false,
+      )
     })
   })
 

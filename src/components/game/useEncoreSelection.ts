@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   findDicePairForGroup,
   findForcedSelection,
+  hasLargerNumberDieAlternative,
   hasSmallerNumberDieAlternative,
   resolveAutoDiceSelection,
 } from '@/hooks/encore-game/dice'
@@ -103,12 +104,19 @@ export const useEncoreSelection = ({
       const square = { row, col }
       const isSelected = selectedSquares.some((s) => s.row === row && s.col === col)
 
-      // While a smaller cell count in this group still has a real (non-wild)
-      // number die, auto-selection must not reach for the joker: it would lock
-      // in the whole group before the player got a chance to pick that smaller,
-      // joker-free count instead. Hiding the wild die from these auto lookups
-      // leaves it selectable only by the player's own explicit click.
-      const diceForAuto = hasSmallerNumberDieAlternative(gameState.dice, group.length)
+      // While a smaller, playable cell count in this group still has a real
+      // (non-wild) number die, auto-selection must not reach for the joker: it
+      // would lock in the whole group before the player got a chance to pick
+      // that smaller, joker-free count instead. Hiding the wild die from these
+      // auto lookups leaves it selectable only by the player's own explicit
+      // click.
+      const diceForAuto = hasSmallerNumberDieAlternative(
+        gameState.dice,
+        group,
+        clickedColor,
+        player.board,
+        isValidMove,
+      )
         ? gameState.dice.filter((d) => !(d.type === 'number' && d.value === 'wild'))
         : gameState.dice
 
@@ -234,10 +242,24 @@ export const useEncoreSelection = ({
       setSelectedSquares(nextSelection)
 
       // Once a manually built subset forms a valid move, select the dice that
-      // match it (fills the still-missing color/number slot).
+      // match it (fills the still-missing color/number slot). Smaller sizes
+      // never needed checking on the way here — a real match would already
+      // have locked in on an earlier click — so only a still-reachable larger
+      // real die (not diceForAuto's smaller-alternative check) should hold the
+      // joker back at this size.
       if (isValidMove(nextSelection, clickedColor, player.board)) {
+        const diceForFill = hasLargerNumberDieAlternative(
+          gameState.dice,
+          group,
+          nextSelection.length,
+          clickedColor,
+          player.board,
+          isValidMove,
+        )
+          ? gameState.dice.filter((d) => !(d.type === 'number' && d.value === 'wild'))
+          : gameState.dice
         const fill = resolveAutoDiceSelection({
-          dice: diceForAuto,
+          dice: diceForFill,
           selectedColor: gameState.selectedDice.color,
           selectedNumber: gameState.selectedDice.number,
           groupColor: clickedColor,
