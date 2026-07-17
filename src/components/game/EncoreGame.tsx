@@ -1,4 +1,4 @@
-import { Gamepad2, RotateCcw, Vibrate, VibrateOff } from 'lucide-react'
+import { Gamepad2, RotateCcw, Vibrate, VibrateOff, Volume2, VolumeX } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
@@ -14,6 +14,7 @@ import {
 } from '@/hooks/encore-game/playerSwitch'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useEncoreGame } from '@/hooks/useEncoreGame'
+import { useSoundPreference } from '@/hooks/useSoundPreference'
 import { useStoredGameSetup } from '@/hooks/useStoredGameSetup'
 import { useVibrationPreference } from '@/hooks/useVibrationPreference'
 import { getSelectionLimit } from '@/lib/game-rules'
@@ -79,7 +80,18 @@ export const EncoreGame = () => {
     toggleAIPlayer,
     setSelectedBoard,
   } = useStoredGameSetup()
-  const { vibrationEnabled, toggleVibration, vibrate, isSupported } = useVibrationPreference()
+  const {
+    vibrationEnabled,
+    toggleVibration,
+    vibrate,
+    isSupported: vibrationIsSupported,
+  } = useVibrationPreference()
+  const {
+    soundEnabled,
+    toggleSound,
+    playSound,
+    isSupported: soundIsSupported,
+  } = useSoundPreference()
   // Resume a stored in-progress game instead of showing the setup screen.
   const [setupMode, setSetupMode] = useState(() => !gameState.gameStarted)
   const [mobilePanel, setMobilePanel] = useState<'other' | 'scores'>('other')
@@ -117,16 +129,18 @@ export const EncoreGame = () => {
     isValidMove,
   })
 
-  // Give haptic feedback for the two primary actions, on top of their
-  // existing game-logic effect.
+  // Give haptic and sound feedback for the two primary actions, on top of
+  // their existing game-logic effect.
   const handleRoll = useCallback(() => {
     rollNewDice()
     vibrate(VIBRATION_PATTERNS.roll)
-  }, [rollNewDice, vibrate])
+    playSound('roll')
+  }, [rollNewDice, vibrate, playSound])
   const handleConfirmMoveWithFeedback = useCallback(() => {
     handleConfirmMove()
     vibrate(VIBRATION_PATTERNS.confirm)
-  }, [handleConfirmMove, vibrate])
+    playSound('confirm')
+  }, [handleConfirmMove, vibrate, playSound])
 
   // Spacebar triggers the highlighted primary action: roll the dice while
   // rolling, or confirm the placement while a valid move is selected.
@@ -440,7 +454,19 @@ export const EncoreGame = () => {
             <AppVersion />
           </div>
           <div className="flex flex-row items-center gap-2 shrink-0">
-            {isSupported && isMobile && (
+            {soundIsSupported && (
+              <Button
+                onClick={toggleSound}
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                aria-label={soundEnabled ? 'Désactiver le son' : 'Activer le son'}
+                title={soundEnabled ? 'Désactiver le son' : 'Activer le son'}
+              >
+                {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </Button>
+            )}
+            {vibrationIsSupported && isMobile && (
               <Button
                 onClick={toggleVibration}
                 variant="outline"
