@@ -129,17 +129,20 @@ export const EncoreGame = () => {
     isValidMove,
   })
 
-  // Give haptic and sound feedback for the two primary actions, on top of
-  // their existing game-logic effect.
+  // Give haptic and sound feedback for the two primary actions, but only when
+  // the action actually applied — rollNewDice/makeMove no-op on an invalid
+  // phase or move, and the feedback should track that, not the button press.
   const handleRoll = useCallback(() => {
-    rollNewDice()
-    vibrate(VIBRATION_PATTERNS.roll)
-    playSound('roll')
+    if (rollNewDice()) {
+      vibrate(VIBRATION_PATTERNS.roll)
+      playSound('roll')
+    }
   }, [rollNewDice, vibrate, playSound])
   const handleConfirmMoveWithFeedback = useCallback(() => {
-    handleConfirmMove()
-    vibrate(VIBRATION_PATTERNS.confirm)
-    playSound('confirm')
+    if (handleConfirmMove()) {
+      vibrate(VIBRATION_PATTERNS.confirm)
+      playSound('confirm')
+    }
   }, [handleConfirmMove, vibrate, playSound])
 
   // Spacebar triggers the highlighted primary action: roll the dice while

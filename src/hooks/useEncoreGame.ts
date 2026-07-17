@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { BoardId } from '@/data/boardConfigurations'
 import { getBoardConfiguration, getDefaultBoardId } from '@/data/boardConfigurations'
@@ -36,6 +36,34 @@ export {
   TOTAL_STARS,
 } from './encore-game/scoring'
 
+const isRollingPhase = (phase: GameState['phase']): boolean =>
+  phase === 'rolling' || phase === 'rolling-ai'
+
+const isSelectionPhase = (phase: GameState['phase']): boolean =>
+  phase === 'active-selection' ||
+  phase === 'passive-selection' ||
+  phase === 'active-selection-ai' ||
+  phase === 'passive-selection-ai'
+
+// Whether a human placement would actually be applied, checked against the
+// authoritative validator (applyMoveToState) rather than re-deriving the
+// rules — so the caller can tie feedback to real success instead of assuming
+// the call did something.
+const humanMoveApplies = (state: GameState, squares?: { row: number; col: number }[]): boolean => {
+  const { selectedDice, selectedFromJoker, phase } = state
+  if (!squares || !selectedDice.color || !selectedDice.number || !isSelectionPhase(phase)) {
+    return false
+  }
+  return (
+    applyMoveToState(
+      state,
+      squares,
+      { color: selectedDice.color, number: selectedDice.number },
+      selectedFromJoker,
+    ) != null
+  )
+}
+
 const createInitialGameState = (): GameState => ({
   players: [],
   currentPlayer: 0,
@@ -57,6 +85,14 @@ export const useEncoreGame = () => {
   const [gameState, setGameState] = useState<GameState>(
     () => loadStoredGameState() ?? createInitialGameState(),
   )
+  // Committed-state snapshot, so the action callbacks (stable, empty-deps) can
+  // report whether they actually applied without re-subscribing on every state
+  // change. Synced in an effect (not during render); the callbacks only read it
+  // from user event handlers, which run well after the commit.
+  const gameStateRef = useRef(gameState)
+  useEffect(() => {
+    gameStateRef.current = gameState
+  }, [gameState])
 
   useEffect(() => {
     if (shouldPersistGameState(gameState)) {
@@ -112,9 +148,14 @@ export const useEncoreGame = () => {
     [],
   )
 
-  const rollNewDice = useCallback(() => {
+  // Returns whether the dice were actually rolled, so callers can gate
+  // feedback on real success rather than assuming the call did something.
+  const rollNewDice = useCallback((): boolean => {
+    if (!isRollingPhase(gameStateRef.current.phase)) {
+      return false
+    }
     setGameState((prev) => {
-      if (prev.phase !== 'rolling' && prev.phase !== 'rolling-ai') {
+      if (!isRollingPhase(prev.phase)) {
         return prev
       }
       const nextPhase = prev.phase === 'rolling-ai' ? 'active-selection-ai' : 'active-selection'
@@ -127,6 +168,7 @@ export const useEncoreGame = () => {
         selectedFromJoker: { color: false, number: false },
       }
     })
+    return true
   }, [])
 
   const selectDice = useCallback((dice: DiceResult) => {
@@ -156,7 +198,13 @@ export const useEncoreGame = () => {
     })
   }, [])
 
-  const makeMove = useCallback((squares?: { row: number; col: number }[]) => {
+  // Returns whether a human placement was actually applied, so callers can
+  // gate feedback on real success. AI moves are dispatched directly (never
+  // through the feedback wrappers), so their return value is not relied upon
+  // and is reported as false.
+  const makeMove = useCallback((squares?: { row: number; col: number }[]): boolean => {
+    const snapshot = gameStateRef.current
+    const applied = !snapshot.phase.includes('-ai') && humanMoveApplies(snapshot, squares)
     setGameState((prev) => {
       const { phase } = prev
       const isAI = phase.includes('-ai')
@@ -229,6 +277,7 @@ export const useEncoreGame = () => {
         selectedFromJoker: { color: false, number: false },
       }
     })
+    return applied
   }, [])
 
   const skipTurn = useCallback(() => {
