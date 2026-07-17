@@ -303,6 +303,25 @@ describe('useEncoreGame dice rolling', () => {
     expect(result.current.gameState.dice).toBe(diceAfterFirstRoll)
     expect(result.current.gameState.phase).toBe('active-selection')
   })
+
+  it('reports whether the dice were actually rolled', () => {
+    const { result } = renderHook(() => useEncoreGame())
+
+    let firstRoll: boolean | undefined
+    act(() => {
+      result.current.initializeGame(['Player 1', 'Player 2'])
+      firstRoll = result.current.rollNewDice()
+    })
+    expect(firstRoll).toBe(true)
+
+    // A second roll while already in selection is a no-op, and must report it
+    // so the caller doesn't fire feedback for an action that didn't happen.
+    let secondRoll: boolean | undefined
+    act(() => {
+      secondRoll = result.current.rollNewDice()
+    })
+    expect(secondRoll).toBe(false)
+  })
 })
 
 describe('useEncoreGame dice selection', () => {
@@ -396,10 +415,14 @@ describe('useEncoreGame guards', () => {
 
     const before = result.current.gameState
 
+    let applied: boolean | undefined
     act(() => {
-      result.current.makeMove([{ row: 0, col: 7 }])
+      applied = result.current.makeMove([{ row: 0, col: 7 }])
     })
 
+    // No dice selected, so nothing is applied — and makeMove must report it so
+    // the caller doesn't fire feedback for a move that didn't happen.
+    expect(applied).toBe(false)
     expect(result.current.gameState).toBe(before)
   })
 
@@ -542,10 +565,12 @@ describe('useEncoreGame move limit', () => {
     }
     gameState.selectedFromJoker = { color: true, number: false }
 
+    let applied: boolean | undefined
     act(() => {
-      result.current.makeMove([{ row: targetRow, col: targetCol }])
+      applied = result.current.makeMove([{ row: targetRow, col: targetCol }])
     })
 
+    expect(applied).toBe(true)
     expect(result.current.gameState.phase).toBe('player-switching')
     expect(result.current.gameState.pendingGameOver).toBe(true)
     expect(result.current.gameState.winner).toBeNull()

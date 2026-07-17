@@ -15,7 +15,7 @@ import { DEFAULT_GAME_COLOR, GAME_COLORS } from '@/types/game'
 
 interface UseEncoreSelectionArgs {
   gameState: GameState
-  makeMove: (squares?: { row: number; col: number }[]) => void
+  makeMove: (squares?: { row: number; col: number }[]) => boolean
   skipTurn: () => void
   selectDice: (dice: DiceResult) => void
   isValidMove: (
@@ -369,8 +369,9 @@ export const useEncoreSelection = ({
   }, [])
 
   const handleConfirmMove = useCallback(() => {
-    makeMove(selectedSquares)
+    const applied = makeMove(selectedSquares)
     setSelectedSquares([])
+    return applied
   }, [makeMove, selectedSquares, setSelectedSquares])
 
   const canMakeMove = useCallback(() => {
