@@ -2,7 +2,7 @@
 export const VIBRATION_PATTERNS = {
   roll: 15,
   confirm: [20, 30, 20],
-} as const
+}
 
 export const isVibrationSupported = (): boolean =>
   typeof navigator !== 'undefined' && 'vibrate' in navigator
