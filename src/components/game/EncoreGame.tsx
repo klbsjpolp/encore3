@@ -1,4 +1,4 @@
-import { Gamepad2, RotateCcw } from 'lucide-react'
+import { Gamepad2, RotateCcw, Vibrate, VibrateOff } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
@@ -15,8 +15,10 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useEncoreGame } from '@/hooks/useEncoreGame'
 import { useStoredGameSetup } from '@/hooks/useStoredGameSetup'
+import { useVibrationPreference } from '@/hooks/useVibrationPreference'
 import { getSelectionLimit } from '@/lib/game-rules'
 import { cn } from '@/lib/utils'
+import { VIBRATION_PATTERNS } from '@/lib/vibration'
 import type { DiceColor, DiceNumber, GameColor } from '@/types/game'
 
 import { DicePanel } from './DicePanel'
@@ -77,6 +79,7 @@ export const EncoreGame = () => {
     toggleAIPlayer,
     setSelectedBoard,
   } = useStoredGameSetup()
+  const { vibrationEnabled, toggleVibration, vibrate, isSupported } = useVibrationPreference()
   // Resume a stored in-progress game instead of showing the setup screen.
   const [setupMode, setSetupMode] = useState(() => !gameState.gameStarted)
   const [mobilePanel, setMobilePanel] = useState<'other' | 'scores'>('other')
@@ -114,15 +117,26 @@ export const EncoreGame = () => {
     isValidMove,
   })
 
+  // Give haptic feedback for the two primary actions, on top of their
+  // existing game-logic effect.
+  const handleRoll = useCallback(() => {
+    rollNewDice()
+    vibrate(VIBRATION_PATTERNS.roll)
+  }, [rollNewDice, vibrate])
+  const handleConfirmMoveWithFeedback = useCallback(() => {
+    handleConfirmMove()
+    vibrate(VIBRATION_PATTERNS.confirm)
+  }, [handleConfirmMove, vibrate])
+
   // Spacebar triggers the highlighted primary action: roll the dice while
   // rolling, or confirm the placement while a valid move is selected.
   useSpacebarShortcut({
     canRoll: gameState.phase === 'rolling',
-    onRoll: rollNewDice,
+    onRoll: handleRoll,
     canConfirm:
       (gameState.phase === 'active-selection' || gameState.phase === 'passive-selection') &&
       canMakeMove(),
-    onConfirm: handleConfirmMove,
+    onConfirm: handleConfirmMoveWithFeedback,
   })
 
   const mainBoardContainerRef = useRef<HTMLDivElement>(null)
@@ -328,8 +342,8 @@ export const EncoreGame = () => {
       skipGlow={skipGlow}
       showRoll={gameState.phase === 'rolling' || gameState.phase === 'rolling-ai'}
       canRoll={canRoll}
-      onRoll={rollNewDice}
-      onConfirm={handleConfirmMove}
+      onRoll={handleRoll}
+      onConfirm={handleConfirmMoveWithFeedback}
       onClear={() => setSelectedSquares([])}
       onSkip={onSkipTurn}
     />
@@ -425,24 +439,44 @@ export const EncoreGame = () => {
             )}
             <AppVersion />
           </div>
-          <Button
-            onClick={handleResetClick}
-            onBlur={() => setConfirmingReset(false)}
-            variant={showResetConfirm ? 'destructive' : 'outline'}
-            size="sm"
-            className="shrink-0"
-            aria-label={showResetConfirm ? undefined : 'Nouvelle partie'}
-          >
-            <RotateCcw className="w-4 h-4 sm:mr-2" />
-            {showResetConfirm ? (
-              <>
-                <span className="sm:hidden">Abandonner ?</span>
-                <span className="hidden sm:inline">Abandonner la partie ?</span>
-              </>
-            ) : (
-              <span className="hidden sm:inline">Nouvelle partie</span>
+          <div className="flex flex-row items-center gap-2 shrink-0">
+            {isSupported && isMobile && (
+              <Button
+                onClick={toggleVibration}
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                aria-label={
+                  vibrationEnabled ? 'Désactiver les vibrations' : 'Activer les vibrations'
+                }
+                title={vibrationEnabled ? 'Désactiver les vibrations' : 'Activer les vibrations'}
+              >
+                {vibrationEnabled ? (
+                  <Vibrate className="w-4 h-4" />
+                ) : (
+                  <VibrateOff className="w-4 h-4" />
+                )}
+              </Button>
             )}
-          </Button>
+            <Button
+              onClick={handleResetClick}
+              onBlur={() => setConfirmingReset(false)}
+              variant={showResetConfirm ? 'destructive' : 'outline'}
+              size="sm"
+              className="shrink-0"
+              aria-label={showResetConfirm ? undefined : 'Nouvelle partie'}
+            >
+              <RotateCcw className="w-4 h-4 sm:mr-2" />
+              {showResetConfirm ? (
+                <>
+                  <span className="sm:hidden">Abandonner ?</span>
+                  <span className="hidden sm:inline">Abandonner la partie ?</span>
+                </>
+              ) : (
+                <span className="hidden sm:inline">Nouvelle partie</span>
+              )}
+            </Button>
+          </div>
         </div>
 
         {isMobile ? (
@@ -453,7 +487,7 @@ export const EncoreGame = () => {
               lastPhase={gameState.lastPhase}
               dice={gameState.dice}
               onDiceSelect={selectDice}
-              onRollDice={rollNewDice}
+              onRollDice={handleRoll}
               canRoll={canRoll}
               canSelect={canSelectDice}
               selectedColorDice={gameState.selectedDice.color}
@@ -503,7 +537,7 @@ export const EncoreGame = () => {
                 lastPhase={gameState.lastPhase}
                 dice={gameState.dice}
                 onDiceSelect={selectDice}
-                onRollDice={rollNewDice}
+                onRollDice={handleRoll}
                 canRoll={canRoll}
                 canSelect={canSelectDice}
                 selectedColorDice={gameState.selectedDice.color}
