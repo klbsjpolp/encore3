@@ -39,7 +39,7 @@ export interface UseOnlineConnectionParams {
   setConnectionStatus: (status: ConnectionStatus) => void
   setLastError: (error: string | null) => void
   setRoomSummary: Dispatch<SetStateAction<RoomSummary | null>>
-  setLobbyRemovalReason: (reason: 'removed' | null) => void
+  setLobbyRemovalReason: (reason: 'removed' | 'restore-failed' | null) => void
 }
 
 const buildHostFromLobby = (activeSeatIndices: number[], meta: HostRoomMeta | null): EncoreHost => {
@@ -210,7 +210,18 @@ export function useOnlineConnection(params: UseOnlineConnectionParams): void {
             break
           }
           case 'snapshotRestore': {
-            if (localIsHost && isHostSnapshotPayload(message.payload)) {
+            if (localIsHost && message.payload != null) {
+              if (!isHostSnapshotPayload(message.payload)) {
+                // A stored snapshot exists but its shape is unusable (e.g. the
+                // persisted GameState drifted across a deploy). Without a host
+                // runtime the room is dead, so fail loudly and tear the session
+                // down instead of silently dropping every future guest action.
+                clearOnlineSession()
+                intentionalLeaveRef.current = true
+                setLobbyRemovalReason('restore-failed')
+                currentSocket.close()
+                break
+              }
               const payload = message.payload
               activeSeatIndicesRef.current = payload.activeSeatIndices
               const host = EncoreHost.fromSnapshot(payload.state, payload.activeSeatIndices)
@@ -264,7 +275,10 @@ export function useOnlineConnection(params: UseOnlineConnectionParams): void {
             roomMetaRef.current = toRoomMeta(message.room)
             setRoomSummary(message.room)
             if (message.room.status === 'FINISHED') {
+              // The room is done; drop the session and stop the reconnect loop
+              // so a post-game disconnect doesn't re-auth against a discarded room.
               clearOnlineSession()
+              intentionalLeaveRef.current = true
             }
 
             // Guest reconnecting into a running game: ask the host for our view.

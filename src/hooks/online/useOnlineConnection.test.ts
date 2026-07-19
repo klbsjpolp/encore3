@@ -202,4 +202,60 @@ describe('useOnlineConnection routing', () => {
     expect(params.hostRef.current).toBeNull()
     expect(params.pushAuthority).not.toHaveBeenCalled()
   })
+
+  it('rebuilds the host runtime from a valid reconnection snapshot', async () => {
+    const params = makeParams(makeSession({ seatIndex: 0, hostSeatIndex: 0 }))
+    const socket = await mountConnected(params)
+    act(() =>
+      socket.fireMessage({
+        type: 'snapshotRestore',
+        payload: { state: gameStateFixture(), activeSeatIndices: [0, 1] },
+      }),
+    )
+    expect(params.hostRef.current).not.toBeNull()
+    expect(params.pushAuthority).toHaveBeenCalledTimes(1)
+    expect(params.setLobbyRemovalReason).not.toHaveBeenCalled()
+  })
+
+  it('fails loudly when a stored snapshot is present but malformed', async () => {
+    const params = makeParams(makeSession({ seatIndex: 0, hostSeatIndex: 0 }))
+    const socket = await mountConnected(params)
+    act(() =>
+      socket.fireMessage({ type: 'snapshotRestore', payload: { state: { phase: 'rolling' } } }),
+    )
+    expect(params.hostRef.current).toBeNull()
+    expect(params.setLobbyRemovalReason).toHaveBeenCalledWith('restore-failed')
+    expect(params.intentionalLeaveRef.current).toBe(true)
+  })
+
+  it('ignores a null snapshot (nothing stored yet) without tearing down', async () => {
+    const params = makeParams(makeSession({ seatIndex: 0, hostSeatIndex: 0 }))
+    const socket = await mountConnected(params)
+    act(() => socket.fireMessage({ type: 'snapshotRestore', payload: null }))
+    expect(params.setLobbyRemovalReason).not.toHaveBeenCalled()
+    expect(params.intentionalLeaveRef.current).toBe(false)
+  })
+
+  it('stops reconnecting once the room is FINISHED', async () => {
+    const params = makeParams(makeSession())
+    const socket = await mountConnected(params)
+    act(() =>
+      socket.fireMessage({
+        type: 'presence',
+        room: {
+          connectedSeats: [0, 1],
+          currentSeatIndex: null,
+          disconnectedSeats: [],
+          expiresAt: new Date(Date.now() + 60_000).toISOString(),
+          hostSeatIndex: 0,
+          lobbySeats: [],
+          roomCode: 'ABC',
+          seatCapacity: 4,
+          status: 'FINISHED',
+          version: 5,
+        },
+      }),
+    )
+    expect(params.intentionalLeaveRef.current).toBe(true)
+  })
 })
