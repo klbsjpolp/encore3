@@ -207,7 +207,12 @@ export function useOnlineEncoreGame(session: RoomSession | null) {
       if (dice.selected && state.phase === 'passive-selection') {
         return
       }
+      // Defend against a relayed view whose players array does not cover our
+      // seat (the shape guard should already reject it, but never crash here).
       const player = state.players[myPlayerIndex]
+      if (!player) {
+        return
+      }
       setSelection((prev) => {
         const nextFromJoker = { ...prev.fromJoker, [dice.type]: dice.value === 'wild' }
         const jokersNeeded = (nextFromJoker.color ? 1 : 0) + (nextFromJoker.number ? 1 : 0)

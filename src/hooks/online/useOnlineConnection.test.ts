@@ -51,10 +51,25 @@ class MockWebSocket {
   }
 }
 
+const playerFixture = (id: string) => ({
+  id,
+  name: id,
+  isAI: false,
+  board: [],
+  boardConfiguration: undefined,
+  starsCollected: 0,
+  completedColors: [],
+  completedColorsFirst: [],
+  completedColorsNotFirst: [],
+  completedColumnsFirst: [],
+  completedColumnsNotFirst: [],
+  jokersRemaining: 8,
+})
+
 const gameStateFixture = (): GameState => ({
   players: [
-    { id: 'player-0', name: 'A', board: [], boardConfiguration: undefined },
-    { id: 'player-1', name: 'B', board: [], boardConfiguration: undefined },
+    playerFixture('player-0'),
+    playerFixture('player-1'),
   ] as unknown as GameState['players'],
   currentPlayer: 0,
   activePlayer: 0,

@@ -20,10 +20,12 @@ export const isHostSnapshotPayload = (value: unknown): value is HostSnapshotPayl
     return false
   }
   const candidate = value as Record<string, unknown>
+  if (!isGameStateLike(candidate.state) || !Array.isArray(candidate.activeSeatIndices)) {
+    return false
+  }
   return (
-    isGameStateLike(candidate.state) &&
-    Array.isArray(candidate.activeSeatIndices) &&
-    candidate.activeSeatIndices.every((seat) => typeof seat === 'number')
+    candidate.activeSeatIndices.every((seat) => typeof seat === 'number') &&
+    candidate.state.players.length === candidate.activeSeatIndices.length
   )
 }
 
