@@ -1,4 +1,3 @@
-import type { BoardId } from '@/data/boardConfigurations'
 import { getBoardConfiguration, getDefaultBoardId } from '@/data/boardConfigurations'
 import { advanceStateOnSkip, advanceStateWithMove } from '@/hooks/encore-game/advance'
 import { createInitialBoard } from '@/hooks/encore-game/board'
@@ -18,7 +17,6 @@ export interface ApplyActionResult {
 export interface EncoreHostOptions {
   activeSeatIndices: number[]
   playerNames?: (string | undefined)[]
-  boardIds?: (BoardId | undefined)[]
 }
 
 const isSelectionPhase = (phase: GameState['phase']): boolean =>
@@ -27,10 +25,11 @@ const isSelectionPhase = (phase: GameState['phase']): boolean =>
 const createInitialState = ({
   activeSeatIndices,
   playerNames = [],
-  boardIds = [],
 }: EncoreHostOptions): GameState => {
+  // Online games use the default board for every seat; the per-player board
+  // selection in local hotseat setup is not surfaced in the online lobby.
   const players: Player[] = activeSeatIndices.map((_seat, index) => {
-    const boardId = boardIds[index] ?? getDefaultBoardId()
+    const boardId = getDefaultBoardId()
     const boardConfiguration = getBoardConfiguration(boardId)
     return {
       id: `player-${index}`,
