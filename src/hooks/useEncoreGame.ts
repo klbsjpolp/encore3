@@ -4,6 +4,7 @@ import type { BoardId } from '@/data/boardConfigurations'
 import { getBoardConfiguration, getDefaultBoardId } from '@/data/boardConfigurations'
 import type { DiceResult, GameState, Player } from '@/types/game'
 
+import { advanceStateOnSkip, advanceStateWithMove } from './encore-game/advance'
 import { computeBestAIMove } from './encore-game/aiPlayer'
 import { applyMoveToState } from './encore-game/applyMove'
 import { createInitialBoard } from './encore-game/board'
@@ -248,52 +249,25 @@ export const useEncoreGame = () => {
         return prev
       }
 
-      const application = applyMoveToState(
-        prev,
-        moveSquares,
-        { color: selectedDice.color, number: selectedDice.number },
-        selectedFromJoker,
+      // Invalid move for human, do nothing.
+      return (
+        advanceStateWithMove(
+          prev,
+          moveSquares,
+          { color: selectedDice.color, number: selectedDice.number },
+          selectedFromJoker,
+        ) ?? prev
       )
-      if (!application) {
-        return prev // Invalid move for human, do nothing
-      }
-
-      // Only mark dice as used (selected) when the active player makes their selection.
-      const isActiveSelectionPhase = phase === 'active-selection' || phase === 'active-selection-ai'
-      const newDice = isActiveSelectionPhase
-        ? prev.dice.map((d) => ({
-            ...d,
-            selected:
-              d.selected || d.id === selectedDice.color?.id || d.id === selectedDice.number?.id,
-          }))
-        : prev.dice
-      return {
-        ...prev,
-        ...application,
-        dice: newDice,
-        phase: 'player-switching',
-        lastPhase: phase,
-        selectedDice: { color: null, number: null },
-        selectedFromJoker: { color: false, number: false },
-      }
     })
     return applied
   }, [])
 
   const skipTurn = useCallback(() => {
-    setGameState((prev) => {
-      const { phase } = prev
-      if (phase.includes('active-selection') || phase.includes('passive-selection')) {
-        return {
-          ...prev,
-          phase: 'player-switching',
-          lastPhase: phase,
-          selectedDice: { color: null, number: null },
-          selectedFromJoker: { color: false, number: false },
-        }
-      }
-      return prev
-    })
+    setGameState((prev) =>
+      prev.phase.includes('active-selection') || prev.phase.includes('passive-selection')
+        ? advanceStateOnSkip(prev)
+        : prev,
+    )
   }, [])
 
   const completePlayerSwitch = useCallback(() => {
