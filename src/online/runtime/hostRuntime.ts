@@ -194,6 +194,18 @@ export class EncoreHost {
       return { ok: false, error: 'Ce dé a déjà été utilisé' }
     }
 
+    // Squares come from the network here, not from trusted local UI clicks, so
+    // reject out-of-range coordinates before they reach the board indexing in
+    // applyMoveToState (which would otherwise throw on an undefined row).
+    const board = this.state.players[this.state.currentPlayer].board
+    const squaresInBounds = action.squares.every(
+      ({ row, col }) =>
+        row >= 0 && row < board.length && col >= 0 && col < (board[row]?.length ?? 0),
+    )
+    if (!squaresInBounds) {
+      return { ok: false, error: 'Case hors du plateau' }
+    }
+
     const selectedFromJoker = {
       color: colorDie.value === 'wild',
       number: numberDie.value === 'wild',

@@ -38,7 +38,7 @@ export interface UseOnlineConnectionParams {
   setConnectionStatus: (status: ConnectionStatus) => void
   setLastError: (error: string | null) => void
   setRoomSummary: Dispatch<SetStateAction<RoomSummary | null>>
-  setLobbyRemovalReason: (reason: 'host-left' | 'kicked' | null) => void
+  setLobbyRemovalReason: (reason: 'removed' | null) => void
 }
 
 const buildHostFromLobby = (activeSeatIndices: number[], meta: HostRoomMeta | null): EncoreHost => {
@@ -270,21 +270,22 @@ export function useOnlineConnection(params: UseOnlineConnectionParams): void {
             }
             break
           }
-          case 'actionRejected': {
-            const knownStatus = roomMetaRef.current?.status ?? null
-            if (knownStatus === 'WAITING') {
-              intentionalLeaveRef.current = true
-              currentSocket.close()
-              setLobbyRemovalReason('kicked')
-            } else {
-              setLastError(message.reason)
-            }
+          case 'actionRejected':
+            // `actionRejected` is the server's response to any rejected action
+            // (a raced startGame, an invalid setReady, a stale action…), not a
+            // removal signal — a kick arrives as `roomClosed` below. Surface it
+            // as a recoverable error instead of dropping the connection.
+            setLastError(message.reason)
             break
-          }
           case 'roomClosed':
+            // The host closed the room or removed this seat (both arrive as a
+            // WAITING roomClosed with no distinguishing field); either way we
+            // are no longer in the lobby.
             clearOnlineSession()
             if (message.status === 'WAITING') {
-              setLobbyRemovalReason('host-left')
+              // The room is gone for us; stop the reconnect loop from re-auth'ing.
+              intentionalLeaveRef.current = true
+              setLobbyRemovalReason('removed')
             }
             setRoomSummary((previous) =>
               previous ? { ...previous, status: message.status } : previous,
