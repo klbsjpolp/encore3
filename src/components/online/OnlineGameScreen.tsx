@@ -15,13 +15,9 @@ interface OnlineGameScreenProps {
 }
 
 const REMOVAL_MESSAGES = {
-  'host-left': {
-    title: 'Partie annulée',
-    body: "L'hôte a quitté la salle. La partie a été annulée.",
-  },
-  kicked: {
-    title: 'Vous avez été exclu',
-    body: "L'hôte vous a retiré de la salle.",
+  removed: {
+    title: 'Salle fermée',
+    body: "Vous ne faites plus partie de cette salle : l'hôte l'a fermée ou vous en a exclu.",
   },
 } as const
 

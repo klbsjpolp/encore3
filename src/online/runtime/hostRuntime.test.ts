@@ -173,6 +173,20 @@ describe('EncoreHost', () => {
     expect(state.currentPlayer).toBe(1)
   })
 
+  it('rejects an out-of-range move without throwing (network-sourced squares)', () => {
+    const host = EncoreHost.fromSnapshot(createSelectionState(), [0, 1])
+    const result = host.applyAction(0, {
+      type: 'MOVE',
+      colorDiceId: 'c-red',
+      numberDiceId: 'n-1',
+      squares: [{ row: 99, col: 99 }],
+    })
+    expect(result.ok).toBe(false)
+    // State is untouched and the turn pointer still resolves cleanly.
+    expect(host.getState().phase).toBe('active-selection')
+    expect(host.currentSeatIndex()).toBe(0)
+  })
+
   it('advances the turn on skip', () => {
     const host = EncoreHost.fromSnapshot(createSelectionState(), [0, 1])
     const result = host.applyAction(0, { type: 'SKIP' })
