@@ -1,6 +1,6 @@
 import type { BoardId } from '@/data/boardConfigurations'
 import { getBoardConfiguration, getDefaultBoardId } from '@/data/boardConfigurations'
-import { applyMoveToState } from '@/hooks/encore-game/applyMove'
+import { advanceStateOnSkip, advanceStateWithMove } from '@/hooks/encore-game/advance'
 import { createInitialBoard } from '@/hooks/encore-game/board'
 import { rollDice } from '@/hooks/encore-game/dice'
 import { resolvePlayerSwitch } from '@/hooks/encore-game/playerSwitch'
@@ -211,35 +211,21 @@ export class EncoreHost {
       number: numberDie.value === 'wild',
     }
 
-    const application = applyMoveToState(
+    // Shared with local hotseat play so the two never drift; the host resolves
+    // the handoff synchronously (no turn-switch animation) instead of via a
+    // timed player-switching phase.
+    const advanced = advanceStateWithMove(
       this.state,
       action.squares,
       { color: colorDie, number: numberDie },
       selectedFromJoker,
     )
 
-    if (!application) {
+    if (!advanced) {
       return { ok: false, error: 'Coup invalide' }
     }
 
-    // Only mark dice as used when the active player makes their selection.
-    const newDice =
-      phase === 'active-selection'
-        ? this.state.dice.map((die) => ({
-            ...die,
-            selected: die.selected || die.id === colorDie.id || die.id === numberDie.id,
-          }))
-        : this.state.dice
-
-    this.state = resolvePlayerSwitch({
-      ...this.state,
-      ...application,
-      dice: newDice,
-      phase: 'player-switching',
-      lastPhase: phase,
-      selectedDice: { color: null, number: null },
-      selectedFromJoker: { color: false, number: false },
-    })
+    this.state = resolvePlayerSwitch(advanced)
     return { ok: true }
   }
 
@@ -249,13 +235,7 @@ export class EncoreHost {
       return { ok: false, error: 'Aucune sélection en cours' }
     }
 
-    this.state = resolvePlayerSwitch({
-      ...this.state,
-      phase: 'player-switching',
-      lastPhase: phase,
-      selectedDice: { color: null, number: null },
-      selectedFromJoker: { color: false, number: false },
-    })
+    this.state = resolvePlayerSwitch(advanceStateOnSkip(this.state))
     return { ok: true }
   }
 }

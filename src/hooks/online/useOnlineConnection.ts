@@ -303,13 +303,13 @@ export function useOnlineConnection(params: UseOnlineConnectionParams): void {
             setLastError(message.reason)
             break
           case 'roomClosed':
-            // The host closed the room or removed this seat (both arrive as a
-            // WAITING roomClosed with no distinguishing field); either way we
-            // are no longer in the lobby.
+            // The room is gone for us (the host closed it or removed this seat).
+            // Drop the session and always stop the reconnect loop from re-auth'ing
+            // against a discarded room, whatever status the server reports. A
+            // WAITING close additionally means we were still in the lobby.
             clearOnlineSession()
+            intentionalLeaveRef.current = true
             if (message.status === 'WAITING') {
-              // The room is gone for us; stop the reconnect loop from re-auth'ing.
-              intentionalLeaveRef.current = true
               setLobbyRemovalReason('removed')
             }
             setRoomSummary((previous) =>
