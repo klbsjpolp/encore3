@@ -32,7 +32,9 @@ export function useOnlineEncoreGame(session: RoomSession | null) {
   const [roomSummary, setRoomSummary] = useState<RoomSummary | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
   const [lastError, setLastError] = useState<string | null>(null)
-  const [lobbyRemovalReason, setLobbyRemovalReason] = useState<'removed' | null>(null)
+  const [lobbyRemovalReason, setLobbyRemovalReason] = useState<'removed' | 'restore-failed' | null>(
+    null,
+  )
   // Local dice selection overlay for the acting client. The authoritative view
   // never carries an in-progress selection (the host clears it on every move),
   // so the acting seat tracks its own highlight until it confirms.

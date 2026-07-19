@@ -19,6 +19,10 @@ const REMOVAL_MESSAGES = {
     title: 'Salle fermée',
     body: "Vous ne faites plus partie de cette salle : l'hôte l'a fermée ou vous en a exclu.",
   },
+  'restore-failed': {
+    title: 'Partie irrécupérable',
+    body: "La partie n'a pas pu être restaurée (version incompatible). Veuillez en créer une nouvelle.",
+  },
 } as const
 
 export const OnlineGameScreen = ({ session, onLeave }: OnlineGameScreenProps) => {
