@@ -107,7 +107,10 @@ export const LobbyScreen = ({
 
   const handleReady = () => {
     const trimmed = playerName.trim()
-    storePlayerName(trimmed)
+    // Don't clobber a previously remembered name with an empty value.
+    if (trimmed) {
+      storePlayerName(trimmed)
+    }
     onReady(trimmed || undefined)
   }
 

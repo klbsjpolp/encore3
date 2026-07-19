@@ -28,7 +28,11 @@ export const OnlineEntry = ({ onCreateRoom, onJoinRoom }: OnlineEntryHandlers) =
     }
     setError(null)
     setPending(kind)
-    storePlayerName(playerName.trim())
+    const trimmed = playerName.trim()
+    // Don't clobber a previously remembered name with an empty value.
+    if (trimmed) {
+      storePlayerName(trimmed)
+    }
     try {
       await action()
     } catch (caught) {

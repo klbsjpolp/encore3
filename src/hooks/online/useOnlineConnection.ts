@@ -236,12 +236,19 @@ export function useOnlineConnection(params: UseOnlineConnectionParams): void {
             if (localIsHost) {
               const host = hostRef.current
               if (!host) {
+                // The runtime is not built yet (the action raced ahead of
+                // gameStarted/snapshotRestore). Nothing to correct the sender
+                // with, but the imminent pushAuthority from those handlers
+                // broadcasts a fresh view that resyncs them anyway.
                 break
               }
 
               if (message.kind === 'move') {
                 const action = parseEncoreAction(message.payload)
                 if (!action) {
+                  // Malformed action: correct the sender with the authoritative
+                  // view instead of dropping it silently.
+                  sendRelay('view', host.getView(), [message.fromSeat])
                   break
                 }
                 const result = host.applyAction(message.fromSeat, action)
