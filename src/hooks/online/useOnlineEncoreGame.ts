@@ -268,6 +268,9 @@ export function useOnlineEncoreGame(session: RoomSession | null) {
   // Lobby controls
   // ---------------------------------------------------------------------------
   const startGame = useCallback((): void => {
+    // roomSummary.version is populated by the first presence message, which also
+    // populates the connectedSeats/lobbySeats that canStartGame gates on — so by
+    // the time the host can trigger this, the version is defined (not undefined).
     sendRaw({ type: 'startGame', clientVersion: roomSummary?.version })
   }, [roomSummary?.version, sendRaw])
 

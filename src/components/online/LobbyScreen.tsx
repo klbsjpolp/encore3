@@ -1,7 +1,7 @@
 import type { LobbyReadyState, LobbySeatInfo } from '@klbsjpolp/realtime-core'
 import { getDefaultPlayerName, MAX_PLAYER_NAME_LENGTH } from '@klbsjpolp/realtime-core'
 import { Check, Copy, LogOut, Pencil, Play, UserX } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -44,6 +44,26 @@ const SeatRow = ({
   const isReady = readyState === 'ready'
   const nameLabel = lobbyInfo?.displayName ?? getDefaultPlayerName(seatIndex)
 
+  // Kicking is destructive, so require a second click to confirm; the pending
+  // confirmation clears on its own or as soon as the button loses focus.
+  const [confirmingKick, setConfirmingKick] = useState(false)
+  useEffect(() => {
+    if (!confirmingKick) {
+      return
+    }
+    const timerId = window.setTimeout(() => setConfirmingKick(false), 4000)
+    return () => window.clearTimeout(timerId)
+  }, [confirmingKick])
+
+  const handleKickClick = () => {
+    if (!confirmingKick) {
+      setConfirmingKick(true)
+      return
+    }
+    setConfirmingKick(false)
+    onKick(seatIndex)
+  }
+
   return (
     <div className="flex items-center gap-3 rounded-lg border p-3">
       <div
@@ -65,11 +85,13 @@ const SeatRow = ({
           type="button"
           size="sm"
           variant="destructive"
-          onClick={() => onKick(seatIndex)}
-          aria-label={`Exclure le joueur au siège ${seatIndex + 1}`}
+          onClick={handleKickClick}
+          onBlur={() => setConfirmingKick(false)}
+          aria-label={confirmingKick ? undefined : `Exclure le joueur au siège ${seatIndex + 1}`}
         >
           <UserX className="mr-1 h-4 w-4" />
-          <span className="hidden sm:inline">Exclure</span>
+          <span className="hidden sm:inline">{confirmingKick ? 'Confirmer ?' : 'Exclure'}</span>
+          <span className="sm:hidden">{confirmingKick ? 'Sûr ?' : ''}</span>
         </Button>
       )}
     </div>

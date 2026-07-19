@@ -48,6 +48,10 @@ lobby, la présence et un pointeur de tour abstrait, puis relaie des charges uti
 (l'hôte) : il exécute la logique de jeu (`src/online/runtime`) et diffuse l'état complet à chaque
 joueur. Les autres joueurs envoient leurs actions (`ROLL`, `MOVE`, `SKIP`) que l'hôte valide.
 
+> **Modèle de confiance :** l'hôte est un simple client navigateur ; rien côté serveur ne
+> revérifie ses lancers ou ses coups. Un hôte modifié pourrait donc tricher. Ne jouez en tant
+> qu'invité que dans des parties dont vous faites confiance à l'hôte (même compromis que skip-bo).
+
 ### Configuration
 
 L'URL de l'API est lue depuis, dans l'ordre :
@@ -55,7 +59,10 @@ L'URL de l'API est lue depuis, dans l'ordre :
 1. la variable d'environnement de build `VITE_ENCORE_API_URL` ;
 2. le fichier runtime `public/runtime-config.json` (`apiBaseUrl`), modifiable sans reconstruction.
 
-Les salles sont créées avec l'identifiant de jeu `encore` sur le serveur partagé.
+Les salles sont créées avec l'identifiant de jeu `encore` sur le serveur partagé. Tant qu'aucune
+de ces deux sources n'est renseignée, le jeu local fonctionne mais le mode en ligne reste
+indisponible : le bouton « Jouer en ligne » échoue avec un message clair au moment de créer ou
+rejoindre une partie.
 
 ### Test en local
 
