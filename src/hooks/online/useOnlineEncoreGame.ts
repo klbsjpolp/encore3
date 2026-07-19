@@ -133,10 +133,12 @@ export function useOnlineEncoreGame(session: RoomSession | null) {
       if (isHost) {
         applyHostAction(action)
       } else {
-        sendRelay('move', action)
+        // Only the host applies actions; target it directly instead of
+        // broadcasting to every seat (other guests would just ignore it).
+        sendRelay('move', action, session ? [session.hostSeatIndex] : undefined)
       }
     },
-    [applyHostAction, isHost, sendRelay],
+    [applyHostAction, isHost, sendRelay, session],
   )
 
   useOnlineConnection({

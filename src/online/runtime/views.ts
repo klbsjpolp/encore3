@@ -24,7 +24,9 @@ const isPlayerLike = (value: unknown): boolean =>
   Array.isArray(value.board) &&
   Array.isArray(value.completedColumnsFirst) &&
   Array.isArray(value.completedColumnsNotFirst) &&
-  Array.isArray(value.completedColors)
+  Array.isArray(value.completedColors) &&
+  Array.isArray(value.completedColorsFirst) &&
+  Array.isArray(value.completedColorsNotFirst)
 
 // Peer-relayed views/snapshots come from another client's browser (the relay
 // server only forwards opaque payloads), so a malformed or version-skewed
