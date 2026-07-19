@@ -35,6 +35,42 @@ Exécute ESLint pour trouver et corriger les problèmes dans le code.
 
 Lance un serveur local pour prévisualiser la version de production.
 
+## Multijoueur en ligne
+
+Le mode en ligne s'appuie sur l'infrastructure temps réel partagée
+[`realtime-infra`](https://github.com/klbsjpolp/realtime-infra) — le même serveur relais que
+[skip-bo](https://github.com/klbsjpolp/skip-bo). Le protocole et le modèle de salle proviennent
+du paquet publié [`@klbsjpolp/realtime-core`](https://www.npmjs.com/package/@klbsjpolp/realtime-core).
+
+Le serveur relais ne contient **aucune logique de jeu** : il gère les salles, les sièges, le
+lobby, la présence et un pointeur de tour abstrait, puis relaie des charges utiles opaques. Encore
+étant un jeu à **information ouverte** (dés et plateaux visibles de tous), un client fait autorité
+(l'hôte) : il exécute la logique de jeu (`src/online/runtime`) et diffuse l'état complet à chaque
+joueur. Les autres joueurs envoient leurs actions (`ROLL`, `MOVE`, `SKIP`) que l'hôte valide.
+
+### Configuration
+
+L'URL de l'API est lue depuis, dans l'ordre :
+
+1. la variable d'environnement de build `VITE_ENCORE_API_URL` ;
+2. le fichier runtime `public/runtime-config.json` (`apiBaseUrl`), modifiable sans reconstruction.
+
+Les salles sont créées avec l'identifiant de jeu `encore` sur le serveur partagé.
+
+### Test en local
+
+Lancez le serveur relais local de `realtime-infra`, puis pointez l'application dessus :
+
+```bash
+# dans le dépôt realtime-infra
+pnpm install && pnpm dev:api        # http://127.0.0.1:8787
+
+# dans ce dépôt
+VITE_ENCORE_API_URL=http://127.0.0.1:8787 pnpm dev
+```
+
+Ouvrez deux onglets : créez une partie dans l'un, rejoignez avec le code dans l'autre.
+
 ## Tests
 
 Les exécutions `pnpm test` sur CI sont environ 2x plus lentes qu'en local. Il faut en tenir compte quand on évalue le temps d'exécution d'un test.
