@@ -1,6 +1,8 @@
 import { Bot, Gamepad2, Play, Users } from 'lucide-react'
 
 import { AppVersion } from '@/components/AppVersion'
+import type { OnlineEntryHandlers } from '@/components/online/OnlineEntry'
+import { OnlineEntry } from '@/components/online/OnlineEntry'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,6 +33,7 @@ interface EncoreGameSetupProps {
   toggleAIPlayer: (index: number) => void
   setSelectedBoard: (index: number, board: BoardId) => void
   onStart: () => void
+  onlineEntry?: OnlineEntryHandlers
 }
 
 export const EncoreGameSetup = ({
@@ -41,6 +44,7 @@ export const EncoreGameSetup = ({
   toggleAIPlayer,
   setSelectedBoard,
   onStart,
+  onlineEntry,
 }: EncoreGameSetupProps) => {
   return (
     <div className="min-h-screen bg-gradient-board flex items-center justify-center p-4">
@@ -107,6 +111,8 @@ export const EncoreGameSetup = ({
             <Play className="w-4 h-4 mr-2" />
             Commencer la partie
           </Button>
+
+          {onlineEntry && <OnlineEntry {...onlineEntry} />}
 
           <div className="text-center">
             <AppVersion />

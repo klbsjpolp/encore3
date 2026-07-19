@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { AppVersion } from '@/components/AppVersion'
 import { CompletedColorBadge } from '@/components/game/CompletedColorBadge.tsx'
 import { Jokers } from '@/components/game/Jokers.tsx'
+import type { OnlineEntryHandlers } from '@/components/online/OnlineEntry'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -60,7 +61,7 @@ const BoardHeader = ({
   )
 }
 
-export const EncoreGame = () => {
+export const EncoreGame = ({ onlineEntry }: { onlineEntry?: OnlineEntryHandlers } = {}) => {
   const {
     gameState,
     initializeGame,
@@ -266,6 +267,7 @@ export const EncoreGame = () => {
         toggleAIPlayer={toggleAIPlayer}
         setSelectedBoard={setSelectedBoard}
         onStart={handleGameSetup}
+        onlineEntry={onlineEntry}
       />
     )
   }
