@@ -14,16 +14,29 @@ export interface EncoreGameView {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
-// Shallow structural check on the fields the renderer and reducers actually
-// index into. Peer-relayed views/snapshots come from another client's browser,
-// so a malformed or version-skewed payload is validated (and dropped) here
-// rather than throwing deep inside a render/reducer path.
+// Structural check on the fields the renderer and reducers actually index into.
+// Enough of a Player that `players[i].jokersRemaining` / `.board` / the
+// completed-column lookups can't throw on a peer-relayed payload.
+const isPlayerLike = (value: unknown): boolean =>
+  isRecord(value) &&
+  typeof value.id === 'string' &&
+  typeof value.jokersRemaining === 'number' &&
+  Array.isArray(value.board) &&
+  Array.isArray(value.completedColumnsFirst) &&
+  Array.isArray(value.completedColumnsNotFirst) &&
+  Array.isArray(value.completedColors)
+
+// Peer-relayed views/snapshots come from another client's browser (the relay
+// server only forwards opaque payloads), so a malformed or version-skewed
+// payload is validated (and dropped) here rather than throwing deep inside a
+// render/reducer path.
 const isGameStateLike = (value: unknown): value is GameState => {
   if (!isRecord(value)) {
     return false
   }
   return (
     Array.isArray(value.players) &&
+    value.players.every(isPlayerLike) &&
     Array.isArray(value.dice) &&
     typeof value.phase === 'string' &&
     typeof value.currentPlayer === 'number' &&
@@ -32,10 +45,20 @@ const isGameStateLike = (value: unknown): value is GameState => {
   )
 }
 
-export const isEncoreGameView = (value: unknown): value is EncoreGameView =>
-  isRecord(value) &&
-  isGameStateLike(value.gameState) &&
-  Array.isArray(value.activeSeatIndices) &&
-  value.activeSeatIndices.every((seat) => typeof seat === 'number')
+export const isEncoreGameView = (value: unknown): value is EncoreGameView => {
+  if (
+    !isRecord(value) ||
+    !isGameStateLike(value.gameState) ||
+    !Array.isArray(value.activeSeatIndices)
+  ) {
+    return false
+  }
+  // A player array shorter than the seating would leave `players[mySeat]`
+  // undefined even when `currentPlayer` looks valid — reject that mismatch.
+  return (
+    value.activeSeatIndices.every((seat) => typeof seat === 'number') &&
+    value.gameState.players.length === value.activeSeatIndices.length
+  )
+}
 
 export { isGameStateLike }
