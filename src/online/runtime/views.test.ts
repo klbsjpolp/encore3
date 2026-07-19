@@ -63,6 +63,19 @@ describe('isEncoreGameView', () => {
     expect(isEncoreGameView(view)).toBe(false)
   })
 
+  it('rejects a player missing a scoring array the renderer dereferences', () => {
+    const [first, second] = gameStateLike(['player-0', 'player-1']).players
+    const { completedColorsFirst: _omitted, ...withoutColorsFirst } = first
+    const view = {
+      gameState: {
+        ...gameStateLike(['player-0', 'player-1']),
+        players: [withoutColorsFirst, second],
+      },
+      activeSeatIndices: [0, 1],
+    }
+    expect(isEncoreGameView(view)).toBe(false)
+  })
+
   it('rejects a players array shorter than the seating', () => {
     expect(
       isEncoreGameView({ gameState: gameStateLike(['player-0']), activeSeatIndices: [0, 1] }),
