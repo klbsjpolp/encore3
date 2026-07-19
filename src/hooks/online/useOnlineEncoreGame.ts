@@ -299,15 +299,15 @@ export function useOnlineEncoreGame(session: RoomSession | null) {
   const isLocalHost = session?.seatIndex === hostSeatIndex
   const myReadyState: LobbyReadyState =
     lobbySeats.find((seat) => seat.seatIndex === session?.seatIndex)?.readyState ?? 'never-ready'
-  const canStartGame = Boolean(
-    isLocalHost &&
-    roomStatus === 'WAITING' &&
+  // Single source of truth for "every connected seat is ready", shared by the
+  // host's start-gating below and the lobby's status text.
+  const allSeatsReady =
     connectedSeats.length >= 2 &&
     connectedSeats.every(
       (seatIndex) =>
         lobbySeats.find((seat) => seat.seatIndex === seatIndex)?.readyState === 'ready',
-    ),
-  )
+    )
+  const canStartGame = Boolean(isLocalHost && roomStatus === 'WAITING' && allSeatsReady)
 
   return {
     // Connection / room
@@ -324,6 +324,7 @@ export function useOnlineEncoreGame(session: RoomSession | null) {
     myReadyState,
     mySeatIndex: session?.seatIndex ?? null,
     canStartGame,
+    allSeatsReady,
     // Game
     gameState,
     activeSeatIndices,

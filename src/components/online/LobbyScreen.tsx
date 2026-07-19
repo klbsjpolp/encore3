@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { getStoredPlayerName, storePlayerName } from '@/online/session'
 
 interface LobbyScreenProps {
+  allSeatsReady: boolean
   canStartGame: boolean
   connectedSeats: number[]
   isHost: boolean
@@ -76,6 +77,7 @@ const SeatRow = ({
 }
 
 export const LobbyScreen = ({
+  allSeatsReady,
   canStartGame,
   connectedSeats,
   isHost,
@@ -111,12 +113,6 @@ export const LobbyScreen = ({
 
   const isReady = myReadyState === 'ready'
   const seats = Array.from({ length: seatCapacity }, (_, index) => index)
-  const allReady =
-    connectedSeats.length >= 2 &&
-    connectedSeats.every(
-      (seat) =>
-        lobbySeats.find((lobbySeat) => lobbySeat.seatIndex === seat)?.readyState === 'ready',
-    )
 
   return (
     <div className="min-h-screen bg-gradient-board flex items-center justify-center p-4">
@@ -166,7 +162,7 @@ export const LobbyScreen = ({
           <p className="text-center text-sm text-muted-foreground">
             {connectedSeats.length < 2
               ? "En attente d'au moins un autre joueur…"
-              : allReady
+              : allSeatsReady
                 ? 'Tous les joueurs sont prêts !'
                 : 'Tous les joueurs doivent être prêts pour démarrer.'}
           </p>
