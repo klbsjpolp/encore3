@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { MAX_SELECTABLE_CELLS } from '@/lib/game-rules'
+
 // Encore move/action payload. In the relay protocol this is the shape carried
 // inside `relay { kind: 'move', payload }` and validated by the host client
 // (the server never inspects it).
@@ -17,7 +19,10 @@ export const encoreActionSchema = z.discriminatedUnion('type', [
     type: z.literal('MOVE'),
     colorDiceId: z.string().min(1),
     numberDiceId: z.string().min(1),
-    squares: z.array(squareSchema).min(1),
+    // MAX_SELECTABLE_CELLS is the real ceiling on a legal move, so bound the
+    // array here to reject oversized payloads at the schema layer instead of
+    // scanning an attacker-controllable size in the host first.
+    squares: z.array(squareSchema).min(1).max(MAX_SELECTABLE_CELLS),
   }),
   // The current player passes on this roll without crossing anything.
   z.object({ type: z.literal('SKIP') }),

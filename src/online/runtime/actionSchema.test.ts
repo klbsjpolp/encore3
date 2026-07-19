@@ -31,6 +31,13 @@ describe('parseEncoreAction', () => {
     ).toBeNull()
   })
 
+  it('rejects a MOVE with more squares than the legal maximum', () => {
+    const squares = Array.from({ length: 6 }, (_, index) => ({ row: 0, col: index }))
+    expect(
+      parseEncoreAction({ type: 'MOVE', colorDiceId: 'c1', numberDiceId: 'n1', squares }),
+    ).toBeNull()
+  })
+
   it('rejects a MOVE with a non-string die id', () => {
     expect(
       parseEncoreAction({
