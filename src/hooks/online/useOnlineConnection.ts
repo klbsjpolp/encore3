@@ -11,13 +11,14 @@ import { type Dispatch, type RefObject, type SetStateAction, useEffect, useRef }
 import { parseEncoreAction } from '@/online/runtime/actionSchema'
 import { EncoreHost } from '@/online/runtime/hostRuntime'
 import type { EncoreGameView } from '@/online/runtime/views'
+import { isEncoreGameView } from '@/online/runtime/views'
 import { clearOnlineSession } from '@/online/session'
 import { RECONNECT_DELAYS_MS, WEBSOCKET_PING_INTERVAL_MS } from '@/online/timing'
 
 import {
   type ConnectionStatus,
   type HostRoomMeta,
-  type HostSnapshotPayload,
+  isHostSnapshotPayload,
   toRoomMeta,
 } from './types'
 
@@ -209,8 +210,8 @@ export function useOnlineConnection(params: UseOnlineConnectionParams): void {
             break
           }
           case 'snapshotRestore': {
-            if (localIsHost && message.payload) {
-              const payload = message.payload as HostSnapshotPayload
+            if (localIsHost && isHostSnapshotPayload(message.payload)) {
+              const payload = message.payload
               activeSeatIndicesRef.current = payload.activeSeatIndices
               const host = EncoreHost.fromSnapshot(payload.state, payload.activeSeatIndices)
               hostRef.current = host
@@ -247,8 +248,11 @@ export function useOnlineConnection(params: UseOnlineConnectionParams): void {
                 }
               }
               // Host ignores relayed 'view'.
-            } else if (message.kind === 'view') {
-              ingestView(message.payload as EncoreGameView)
+            } else if (message.kind === 'view' && isEncoreGameView(message.payload)) {
+              // The view comes from a peer (the host's browser), so validate its
+              // shape before rendering — a malformed/skewed message is dropped
+              // rather than thrown deep in the board render.
+              ingestView(message.payload)
             }
             break
           }

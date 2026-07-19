@@ -63,6 +63,7 @@ export const OnlineGameScreen = ({ session, onLeave }: OnlineGameScreenProps) =>
   if (roomStatus === 'WAITING' || !hasGameView || !gameState) {
     return (
       <LobbyScreen
+        allSeatsReady={online.allSeatsReady}
         canStartGame={online.canStartGame}
         connectedSeats={online.connectedSeats}
         isHost={online.isLocalHost}
