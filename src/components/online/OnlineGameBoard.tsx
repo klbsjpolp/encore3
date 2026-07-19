@@ -2,6 +2,7 @@ import { Check, Dices, SkipForward, X } from 'lucide-react'
 import { useCallback } from 'react'
 
 import { DicePanel } from '@/components/game/DicePanel'
+import { getGameStateMessage } from '@/components/game/encoreGameStatus'
 import { GameBoard } from '@/components/game/GameBoard'
 import { ScorePanel } from '@/components/game/ScorePanel'
 import { useEncoreSelection } from '@/components/game/useEncoreSelection'
@@ -25,10 +26,9 @@ const getTurnLabel = (
   currentPlayerName: string,
 ): string => {
   if (gameState.phase === 'game-over') {
-    if (gameState.winner) {
-      return `Partie terminée — ${gameState.winner.name} l'emporte !`
-    }
-    return 'Partie terminée — égalité !'
+    // Reuse the shared status helper so the online badge matches the local
+    // game, including the tied-winners name list.
+    return getGameStateMessage(gameState) ?? 'Partie terminée'
   }
   if (isMyTurn) {
     return gameState.phase === 'rolling' ? 'À vous de lancer les dés' : 'À vous de jouer'
