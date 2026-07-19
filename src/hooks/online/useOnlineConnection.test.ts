@@ -193,6 +193,23 @@ describe('useOnlineConnection routing', () => {
     expect(params.pushAuthority).toHaveBeenCalledTimes(1)
   })
 
+  it('corrects the sender with an authoritative view on a malformed move', async () => {
+    const params = makeParams(makeSession({ seatIndex: 0, hostSeatIndex: 0 }))
+    const socket = await mountConnected(params)
+    act(() =>
+      socket.fireMessage({ type: 'gameStarted', activeSeatIndices: [0, 1], currentSeatIndex: 0 }),
+    )
+    act(() =>
+      socket.fireMessage({
+        type: 'relayed',
+        kind: 'move',
+        fromSeat: 1,
+        payload: { type: 'NONSENSE' },
+      }),
+    )
+    expect(params.sendRelay).toHaveBeenCalledWith('view', expect.anything(), [1])
+  })
+
   it('does not build a host runtime for a guest seat on game start', async () => {
     const params = makeParams(makeSession({ seatIndex: 1, hostSeatIndex: 0 }))
     const socket = await mountConnected(params)
