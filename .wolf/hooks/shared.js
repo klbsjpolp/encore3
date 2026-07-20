@@ -78,9 +78,9 @@ export function appendMarkdown(filePath, line) {
 // parseAnatomy / serializeAnatomy / AnatomyEntry moved to ./anatomy-store.ts —
 // the single canonical home of the anatomy format (OPENWOLF-2.0 §F2b).
 // Files whose contents (or content-derived descriptions) must never reach
-// anatomy.md / memory.md because they hold secrets (issue #54). Kept in sync
-// with the copy in src/scanner/anatomy-scanner.ts — hooks are standalone
-// scripts and the scanner cannot be imported from here.
+// anatomy.md / memory.md because they hold secrets (issue #54). This list is
+// maintained upstream in the OpenWolf tool and inlined here because hooks are
+// standalone compiled scripts with no access to the tool's own modules.
 const SENSITIVE_EXTENSIONS = new Set([
     ".pem", ".key", ".p8", ".p12", ".pfx", ".keystore", ".jks", ".ppk", ".kdbx", ".tfstate",
 ]);
