@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"/Users/pierreluc/Development/encore3/.wolf/hooks/session-start.js\"",
+            "command": "node \"$CODEX_PROJECT_ROOT/.wolf/hooks/session-start.js\"",
             "timeout": 5,
             "statusMessage": "OpenWolf session bootstrap"
           }
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"/Users/pierreluc/Development/encore3/.wolf/hooks/pre-read.js\"",
+            "command": "node \"$CODEX_PROJECT_ROOT/.wolf/hooks/pre-read.js\"",
             "timeout": 5,
             "statusMessage": "OpenWolf read precheck"
           }
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"/Users/pierreluc/Development/encore3/.wolf/hooks/pre-write.js\"",
+            "command": "node \"$CODEX_PROJECT_ROOT/.wolf/hooks/pre-write.js\"",
             "timeout": 5,
             "statusMessage": "OpenWolf write precheck"
           }
@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"/Users/pierreluc/Development/encore3/.wolf/hooks/post-read.js\"",
+            "command": "node \"$CODEX_PROJECT_ROOT/.wolf/hooks/post-read.js\"",
             "timeout": 5,
             "statusMessage": "OpenWolf read tracking"
           }
@@ -54,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"/Users/pierreluc/Development/encore3/.wolf/hooks/post-write.js\"",
+            "command": "node \"$CODEX_PROJECT_ROOT/.wolf/hooks/post-write.js\"",
             "timeout": 10,
             "statusMessage": "OpenWolf anatomy update"
           }
@@ -67,7 +67,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"/Users/pierreluc/Development/encore3/.wolf/hooks/precompact.js\"",
+            "command": "node \"$CODEX_PROJECT_ROOT/.wolf/hooks/precompact.js\"",
             "timeout": 5,
             "statusMessage": "OpenWolf compaction snapshot"
           }
@@ -80,7 +80,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"/Users/pierreluc/Development/encore3/.wolf/hooks/stop.js\"",
+            "command": "node \"$CODEX_PROJECT_ROOT/.wolf/hooks/stop.js\"",
             "timeout": 10,
             "statusMessage": "OpenWolf session wrap-up"
           }
