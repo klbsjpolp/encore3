@@ -5,9 +5,10 @@ argument-hint: [migrate [framework] | audit [target] | fix [target]]
 
 Arguments: $ARGUMENTS
 
-Read `.wolf/reframe-frameworks.md` first — it contains the **Design Principles
-(anti-generic mandate)**, the framework knowledge base, and the migration prompts.
-Use `.wolf/anatomy.md` to locate UI files instead of scanning.
+If present, read `.wolf/reframe-frameworks.md` first — it contains the **Design
+Principles (anti-generic mandate)**, the framework knowledge base, and the migration
+prompts; if it is absent, apply the anti-generic design principles directly.
+When available, use `.wolf/anatomy.md` to locate UI files instead of scanning.
 
 Pick the mode from the arguments (default: `migrate` if a framework is named or the
 user is choosing one; otherwise ask which mode they want):
@@ -17,7 +18,7 @@ Framework selection and migration.
 1. If no framework is named, ask the Decision Questions from the knowledge file
    (stop early once the answer narrows to 1–2 options) and recommend one.
 2. Use that framework's prompt from the knowledge file, adapted to this project's
-   real structure via `.wolf/anatomy.md`.
+   real structure (via `.wolf/anatomy.md` if present, otherwise by scanning).
 3. The Design Principles override anything generic in the prompt: no template
    hero→features→CTA structures, no stock palettes — distinctive by default.
 
