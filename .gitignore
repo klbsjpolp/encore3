@@ -29,3 +29,10 @@ coverage
 
 # OpenWolf local tooling / state (not shared via git)
 .wolf/
+# OpenWolf-dependent agent config kept local (references .wolf/, per-dev install)
+/CLAUDE.md
+/GEMINI.md
+.claude/settings.json
+.claude/rules/openwolf.md
+.codex/config.toml
+.codex/hooks.json
