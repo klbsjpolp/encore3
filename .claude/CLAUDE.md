@@ -4,6 +4,19 @@
   - @AI_CONTEXT.md
   - @../AGENTS.md
 
+## Architecture (aperçu rapide)
+
+- `src/hooks/encore-game/` : logique de jeu pure (règles, dés, scoring, IA) — pas de JSX.
+- `src/components/game/` : composants UI + hooks React (ex: `useEncoreSelection`, `useSpacebarShortcut`).
+- `src/data/boards/` : définitions des plateaux.
+- `src/lib/` : utilitaires transverses (son, vibration, PWA, versioning).
+- Le jeu est une machine à états finis ; le détail des phases est documenté dans [README.md § Game State Machine](../README.md#game-state-machine).
+
+## Pièges connus
+
+- `pnpm test` est ~2x plus lent sur CI qu'en local (voir README) : viser une marge de sécurité sur les tests avec délais/timeouts.
+- Ne jamais utiliser `as const` sur un tableau passé à `navigator.vibrate()` (`src/lib/vibration.ts`) : ça infère un tuple `readonly`, rejeté par le typage de l'API. Vite/esbuild ne type-check pas, donc l'erreur ne surgit que via `tsc --noEmit` (CI).
+
 ## Principes généraux
 
 - Respecter l’architecture du projet.

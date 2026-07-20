@@ -33,3 +33,9 @@ pnpm format:check
 
 tests  
 pnpm test
+
+typecheck  
+pnpm typecheck
+
+validation complète (format + lint + typecheck + test)  
+pnpm check
