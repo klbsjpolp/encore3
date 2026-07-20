@@ -19,7 +19,7 @@ export interface EncoreHostOptions {
   playerNames?: (string | undefined)[]
 }
 
-const isSelectionPhase = (phase: GameState['phase']): boolean =>
+export const isSelectionPhase = (phase: GameState['phase']): boolean =>
   phase === 'active-selection' || phase === 'passive-selection'
 
 const createInitialState = ({

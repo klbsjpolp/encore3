@@ -17,8 +17,10 @@ export const encoreActionSchema = z.discriminatedUnion('type', [
   // and number dice identified by their ids in the authoritative roll.
   z.object({
     type: z.literal('MOVE'),
-    colorDiceId: z.string().min(1),
-    numberDiceId: z.string().min(1),
+    // Dice ids are short generated strings from rollDice(); cap the length so a
+    // guest can't send an arbitrarily long string (defense-in-depth like squares).
+    colorDiceId: z.string().min(1).max(64),
+    numberDiceId: z.string().min(1).max(64),
     // MAX_SELECTABLE_CELLS is the real ceiling on a legal move, so bound the
     // array here to reject oversized payloads at the schema layer instead of
     // scanning an attacker-controllable size in the host first.
