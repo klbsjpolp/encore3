@@ -26,11 +26,3 @@ Exécuter les validations définies dans le projet avant de considérer la tâch
 5. Formater et corriger automatiquement (`pnpm format`, puis `pnpm lint:fix`)
 6. Exécuter les validations
 7. Résumer les changements
-
-<!-- openwolf:begin -->
-# OpenWolf
-
-@.wolf/OPENWOLF.md
-
-This project uses OpenWolf for context management. Read and follow .wolf/OPENWOLF.md every session. Check .wolf/cerebrum.md before generating code. Check .wolf/anatomy.md before reading files.
-<!-- openwolf:end -->
