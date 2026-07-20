@@ -38,6 +38,17 @@ describe('parseEncoreAction', () => {
     ).toBeNull()
   })
 
+  it('rejects a MOVE with an over-long die id', () => {
+    expect(
+      parseEncoreAction({
+        type: 'MOVE',
+        colorDiceId: 'x'.repeat(65),
+        numberDiceId: 'n1',
+        squares: [{ row: 0, col: 0 }],
+      }),
+    ).toBeNull()
+  })
+
   it('rejects a MOVE with a non-string die id', () => {
     expect(
       parseEncoreAction({

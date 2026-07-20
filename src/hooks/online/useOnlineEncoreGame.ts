@@ -5,6 +5,7 @@ import { applyMoveToState } from '@/hooks/encore-game/applyMove'
 import { isValidMoveSelection } from '@/hooks/encore-game/moveValidation'
 import type { EncoreAction } from '@/online/runtime/actionSchema'
 import type { EncoreHost } from '@/online/runtime/hostRuntime'
+import { isSelectionPhase } from '@/online/runtime/hostRuntime'
 import type { EncoreGameView } from '@/online/runtime/views'
 import { clearOnlineSession } from '@/online/session'
 import type { ColorDiceResult, DiceResult, GameState, NumberDiceResult } from '@/types/game'
@@ -23,9 +24,6 @@ const EMPTY_SELECTION: Selection = {
   number: null,
   fromJoker: { color: false, number: false },
 }
-
-const isSelectionPhase = (phase: GameState['phase']): boolean =>
-  phase === 'active-selection' || phase === 'passive-selection'
 
 export function useOnlineEncoreGame(session: RoomSession | null) {
   const [view, setView] = useState<EncoreGameView | null>(null)
