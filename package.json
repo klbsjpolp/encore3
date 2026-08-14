@@ -58,7 +58,7 @@
     "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^17.8.0",
     "jsdom": "^30.0.1",
-    "postcss": "^8.5.24",
+    "postcss": "^8.5.26",
     "prettier": "^3.9.6",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
