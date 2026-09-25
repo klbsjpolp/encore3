@@ -46,6 +46,10 @@ updates:
         patterns:
           - '@aws-sdk/*'
           - 'aws-sdk'
+      # vite-plugin-pwa wants workbox-build and workbox-window on one release.
+      workbox:
+        patterns:
+          - 'workbox-*'
       sentry:
         patterns:
           - '@sentry/*'
