@@ -49,8 +49,10 @@ jobs:
       # bumps vitest without @vitest/* installs cleanly and fails later with a
       # confusing vitest error. Re-resolving with strict peers fails here
       # instead (pnpm 10 has no `pnpm peers check`).
+      # --no-frozen-lockfile: CI implies a frozen lockfile, which --resolution-only
+      # rejects; the install above has already proved the lockfile in sync.
       - name: Check peer dependencies
-        run: pnpm install --resolution-only --config.strict-peer-dependencies=true
+        run: pnpm install --resolution-only --no-frozen-lockfile --config.strict-peer-dependencies=true
 
       - name: Run format check
         run: pnpm format:check
