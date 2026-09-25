@@ -10,8 +10,8 @@ onlyBuiltDependencies:
 # exactly (a caret lets a fresh resolve move one member past the others).
 # CI fails on any unmet peer (see ci.yml).
 catalog:
-  vitest: 4.1.11
-  '@vitest/coverage-v8': 4.1.11
+  vitest: 5.0.1
+  '@vitest/coverage-v8': 5.0.1
   workbox-build: 7.4.1
   workbox-window: 7.4.1
 
