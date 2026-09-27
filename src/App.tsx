@@ -38,7 +38,7 @@ const App = () => {
 
   if (session) {
     return (
-      <Suspense fallback={<div className="min-h-screen bg-gradient-board" />}>
+      <Suspense fallback={<div className="min-h-app bg-gradient-board" />}>
         <OnlineGameScreen
           key={`${session.roomCode}-${session.seatToken}`}
           session={session}
