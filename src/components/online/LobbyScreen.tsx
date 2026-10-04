@@ -140,7 +140,7 @@ export const LobbyScreen = ({
   const seats = Array.from({ length: seatCapacity }, (_, index) => index)
 
   return (
-    <div className="min-h-screen bg-gradient-board flex items-center justify-center p-4">
+    <div className="min-h-app bg-gradient-board flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Salle d'attente</CardTitle>

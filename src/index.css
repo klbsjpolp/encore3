@@ -227,3 +227,43 @@
 @utility grid-cols-fit {
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
 }
+
+/*
+ * Installed to the home screen, iOS and iPadOS 26 draw a Liquid Glass edge
+ * effect under the status bar: a blur about 38pt deep that smears and reflects
+ * whatever sits there, so the header looked half-hidden under the bar. Nothing
+ * turns it off — no meta tag or CSS property, and `env(safe-area-inset-top)`
+ * stays 0 because the default status bar style already insets the page. The
+ * only fix is to put nothing with detail in that band, so an installed app
+ * starts its content 2.5rem lower. Safari draws no such effect and keeps the
+ * full height; a landscape phone is exempt, since iOS hides the status bar there.
+ *
+ * `min-h-app` is `min-h-screen` less that band — the screens still fill the
+ * viewport without being pushed 40px past it.
+ */
+:root {
+  --top-clear: 0px;
+}
+
+@media (display-mode: standalone) {
+  :root {
+    --top-clear: 2.5rem;
+  }
+}
+
+@media (display-mode: standalone) and (orientation: landscape) and (max-height: 640px) {
+  :root {
+    --top-clear: 0px;
+  }
+}
+
+/* The band is the board's own gradient, so it reads as the top of the screen
+   below it rather than a strip of the page's flat background. */
+#root {
+  padding-top: var(--top-clear);
+  background-image: var(--gradient-board);
+}
+
+@utility min-h-app {
+  min-height: calc(100vh - var(--top-clear));
+}
