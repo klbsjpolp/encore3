@@ -11,7 +11,7 @@ onlyBuiltDependencies:
 # CI fails on any unmet peer (see ci.yml).
 catalog:
   vitest: 5.0.2
-  '@vitest/coverage-v8': 5.0.2
+  '@vitest/coverage-v8': 5.0.3
   workbox-build: 7.4.1
   workbox-window: 7.4.1
 
