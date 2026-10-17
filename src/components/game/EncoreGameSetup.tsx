@@ -47,7 +47,7 @@ export const EncoreGameSetup = ({
   onlineEntry,
 }: EncoreGameSetupProps) => {
   return (
-    <div className="min-h-screen bg-gradient-board flex items-center justify-center p-4">
+    <div className="min-h-app bg-gradient-board flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="flex items-center justify-center gap-2 text-2xl">

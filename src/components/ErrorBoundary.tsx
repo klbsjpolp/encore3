@@ -27,7 +27,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="min-h-app flex items-center justify-center bg-background p-4">
           <div className="text-center space-y-4">
             <h1 className="text-2xl font-bold text-foreground">Oups ! Une erreur est survenue</h1>
             <p className="text-muted-foreground">
