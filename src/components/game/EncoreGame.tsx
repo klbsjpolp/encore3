@@ -438,7 +438,7 @@ export const EncoreGame = ({ onlineEntry }: { onlineEntry?: OnlineEntryHandlers 
   return (
     <div
       className={cn(
-        'min-h-screen bg-gradient-board',
+        'min-h-app bg-gradient-board',
         isMobile ? 'px-1 pb-28 pt-2' : 'p-4 overflow-hidden',
       )}
     >
