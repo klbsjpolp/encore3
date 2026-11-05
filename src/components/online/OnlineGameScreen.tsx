@@ -45,7 +45,7 @@ export const OnlineGameScreen = ({ session, onLeave }: OnlineGameScreenProps) =>
   if (lobbyRemovalReason) {
     const message = REMOVAL_MESSAGES[lobbyRemovalReason]
     return (
-      <div className="min-h-screen bg-gradient-board flex items-center justify-center p-4">
+      <div className="min-h-app bg-gradient-board flex items-center justify-center p-4">
         <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
@@ -86,7 +86,7 @@ export const OnlineGameScreen = ({ session, onLeave }: OnlineGameScreenProps) =>
   }
 
   return (
-    <div className="min-h-screen bg-gradient-board p-2 sm:p-4">
+    <div className="min-h-app bg-gradient-board p-2 sm:p-4">
       <div className="max-w-7xl mx-auto mb-3 flex items-center justify-between gap-2">
         <ConnectionBadge status={connectionStatus} />
         <div className="flex items-center gap-2">
